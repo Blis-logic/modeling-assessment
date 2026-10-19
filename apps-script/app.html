@@ -30,7 +30,7 @@ window.APP_CONFIG = {
   const loaded = {};
   function loadScript(url) {
     if (!loaded[url]) loaded[url] = new Promise((ok, no) => {
-      const s = document.createElement("script"); s.src = url; s.async = true;
+      const s = document.createElement("script"); s.src = url; s.async = true; s.crossOrigin = "anonymous";
       s.onload = ok; s.onerror = () => { delete loaded[url]; no(new Error("수식 도구를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.")); };
       document.head.appendChild(s);
     });
@@ -203,12 +203,17 @@ window.APP_CONFIG = {
 
   /* ───── 수식 입력 창 ───── */
   let dlg = null;
-  function close() { if (dlg) { dlg.cleanup(); dlg.el.remove(); dlg = null; } }
+  let sharedMF = null;
+  function close() { if (!dlg) return; const d = dlg; dlg = null; d.cleanup();
+    if (sharedMF && d.el.contains(sharedMF)) { try { sharedMF.blur(); } catch (e) {} let h = document.getElementById("mt-park"); if (!h) { h = document.createElement("div"); h.id = "mt-park"; h.hidden = true; document.body.appendChild(h); } h.appendChild(sharedMF); }
+    d.el.remove(); }
 
   async function open(field, opts) {
     opts = opts || {}; injectCss(); close();
     const text = field.value || "", pos = field.selectionStart ?? text.length;
-    const hit = tokens(text).find(t => pos >= t.start && pos <= t.end) || (opts.index != null ? tokens(text)[opts.index] : null);
+    // whole: 칸 전체가 수식 하나(수식 전용 칸) → 칸 전체를 고칩니다
+    const hit = opts.whole ? { start: 0, end: text.length, tex: (tokens(text)[0] || {}).tex ?? text.replace(/^\$|\$$/g, "").trim() }
+      : tokens(text).find(t => pos >= t.start && pos <= t.end) || (opts.index != null ? tokens(text)[opts.index] : null);
     const el = document.createElement("div"); el.className = "mt-dlg";
     el.innerHTML = `<div class="mt-box" role="dialog" aria-modal="true" aria-label="수식 입력기">
       <div class="mt-head"><b>수식 입력기</b><div class="mt-modes"><button type="button" data-mode="kb" aria-pressed="true">⌨ 키보드</button><button type="button" data-mode="hw" aria-pressed="false">✍ 기호 그리기</button></div><button type="button" class="mt-x" data-close aria-label="닫기">×</button></div>
@@ -246,8 +251,8 @@ window.APP_CONFIG = {
       if (b.dataset.mode) { el.querySelectorAll("[data-mode]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); $("[data-kb]").hidden = b.dataset.mode !== "kb"; $("[data-hw]").hidden = b.dataset.mode !== "hw"; if (b.dataset.mode === "hw") pad.fit(); return; }
       if (b.dataset.cat) { cat = b.dataset.cat; el.querySelectorAll("[data-cat]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); drawKeys(); return; }
       if (!mf) return;
-      if (b.dataset.k != null) { mf.executeCommand(["insert", KEYS[cat][+b.dataset.k][1], { focus: true, selectionMode: "placeholder", format: "latex", mode: "math" }]); mf.focus(); return; }
-      if (b.dataset.cmd) { if (b.dataset.cmd === "clear") { mf.value = ""; sync(); } else mf.executeCommand(b.dataset.cmd); mf.focus(); return; }
+      if (b.dataset.k != null) { mf.executeCommand(["insert", KEYS[cat][+b.dataset.k][1], { focus: true, selectionMode: "placeholder", format: "latex", mode: "math" }]); focusMF(); return; }
+      if (b.dataset.cmd) { if (b.dataset.cmd === "clear") { mf.value = ""; sync(); } else mf.executeCommand(b.dataset.cmd); focusMF(); return; }
       if (b.hasAttribute("data-ok")) { insert(); return; }
       if (b.dataset.tool) { pad.mode = b.dataset.tool; el.querySelectorAll("[data-tool]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); return; }
       if (b.hasAttribute("data-hwundo")) return pad.undo();
@@ -255,11 +260,13 @@ window.APP_CONFIG = {
       if (b.dataset.cand != null) { const c = cands[+b.dataset.cand]; if (!c) return; mf.executeCommand(["insert", c[1], { focus: true, selectionMode: "placeholder", format: "latex", mode: "math" }]); pad.clear(); sync(); return; }
     });
 
+    function focusMF() { try { mf.focus(); } catch (e) { /* MathLive 내부 포커스 오류: 입력에는 영향 없음 */ } }
     function sync() { if (mf && document.activeElement !== src) src.value = mf.getValue("latex"); }
     src.addEventListener("input", () => { if (mf) mf.setValue(src.value, { silenceNotifications: true }); });
 
     function insert() {
-      const tex = (mf ? mf.getValue("latex") : src.value).trim();
+      // 비어 있는 빈칸(placeholder)은 빼고 저장합니다
+      const tex = (mf ? mf.getValue("latex-without-placeholders") : src.value).replace(/\\placeholder\{\}/g, "").trim();
       let v = field.value, a, b2;
       if (hit) { a = hit.start; b2 = hit.end; } else { a = field.selectionStart ?? v.length; b2 = field.selectionEnd ?? a; }
       const piece = tex ? `$${tex}$` : "";
@@ -285,17 +292,22 @@ window.APP_CONFIG = {
     try {
       await loadMathLive();
       if (!el.isConnected) return;
-      mf = document.createElement("math-field");
-      mf.className = "mt-field";
-      mf.mathVirtualKeyboardPolicy = "manual";
-      mf.setAttribute("aria-label", "수식");
+      // 수식 칸은 한 번만 만들어 계속 다시 씁니다 (지웠다 새로 만들면 MathLive 내부 오류가 납니다)
+      if (!sharedMF) {
+        sharedMF = document.createElement("math-field");
+        sharedMF.className = "mt-field";
+        sharedMF.mathVirtualKeyboardPolicy = "manual";
+        sharedMF.setAttribute("aria-label", "수식");
+      }
+      mf = sharedMF;
       $("[data-mfbox]").appendChild(mf);
       try { mf.menuItems = []; } catch (e) {}
       mf.smartFence = true; mf.smartMode = false;
       mf.setValue(hit ? hit.tex : "");
-      mf.addEventListener("input", sync);
+      if (mf._mtSync) mf.removeEventListener("input", mf._mtSync);
+      mf._mtSync = sync; mf.addEventListener("input", sync);
       $("[data-load]").remove(); sync();
-      setTimeout(() => mf.focus(), 50);
+      setTimeout(() => focusMF(), 50);
     } catch (e) {
       $("[data-load]").textContent = e.message; $("[data-load]").className = "mt-msg err";
       src.value = hit ? hit.tex : ""; src.focus();
@@ -854,13 +866,73 @@ ul.files li>div{flex:1;min-width:0}ul.files b{display:block;font-size:14px}ul.fi
 .chart .lim{stroke:var(--warn);stroke-width:1.5;stroke-dasharray:6 4}
 .chart .limt{fill:var(--warn);font-size:11px}
 .chart .band{fill:color-mix(in srgb,var(--warn) 9%,transparent)}
+
+/* ── 수식 칸 (LaTeX 전용, 누르면 입력기) ── */
+.mfield{display:flex;align-items:center;gap:8px;min-height:46px;padding:6px 10px;cursor:pointer;background:var(--paper);font-size:16px;overflow-x:auto}
+.mfield.empty{background:var(--good-soft);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--good) 55%,transparent)}
+.mfield:hover,.mfield:focus{outline:0;box-shadow:inset 0 0 0 2px var(--accent)}
+.mfield .mshow{flex:1;min-width:0}.mfield .ph{color:var(--muted);font-size:13.5px}
+.mfield .mhint{flex:none;display:inline-flex;align-items:center;gap:4px;color:var(--g1,var(--accent));font-size:12.5px;font-weight:700}
+.cell .mfield{min-height:40px}
+@container (max-width:330px){.mfield .mhint span{display:none}}
+.cell{container-type:inline-size}
+/* ── 탐구 주제 예시 ── */
+details.examples{margin:6px 10px;font-size:13px}
+details.examples summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.examples>div{display:grid;gap:6px;margin-top:6px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.exbtn{text-align:left;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:7px 10px;font-size:13px;color:var(--ink)}
+.exbtn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.exbtn b{color:var(--accent);margin-right:4px}.exbtn small{display:block;color:var(--muted);font-size:11.5px}
+/* ── 모델 도구 ── */
+.formtpl{font-size:13.5px;background:var(--bg);border-radius:8px;padding:6px 10px;overflow-x:auto}
+.btn.btnA{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.btnB{background:var(--modelB);border-color:var(--modelB);color:#fff;font-weight:600}
+.logbtns{display:flex;gap:8px;flex-wrap:wrap}
+.term{border-bottom:1.5px dotted currentColor;cursor:help;font-weight:600}
+.rmse-ex{margin:8px 0 0;font-size:13px;background:var(--accent-soft);border-radius:10px;padding:8px 12px}
+details.eg table.t td{padding:7px 10px;font-size:13px;vertical-align:middle}
+/* ── 결과물 목록 이동 ── */
+ul.files li.go{cursor:pointer;border-style:dashed}
+ul.files li.go:hover{border-color:var(--accent);background:var(--accent-soft)}
+.gol{font-size:12.5px;font-weight:700;color:var(--accent);white-space:nowrap}
+.flash{animation:flash 1.2s ease 2}
+@keyframes flash{50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 45%,transparent)}}
+/* ── 구분구적법 탐구 ── */
+.rm{display:grid;gap:12px}
+.rm-head{display:flex;gap:12px;align-items:center}
+.rm-ico{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;color:#fff;font:700 24px "KaTeX_Main",serif;background:linear-gradient(135deg,var(--g1),var(--g2))}
+.rm-kicker{font-size:11.5px;letter-spacing:.06em;font-weight:700;color:var(--g1,var(--accent))}
+.rm-head h4{margin:0;font-size:18px}.rm-head p{margin:2px 0 0;font-size:13.5px;color:var(--muted)}
+.rm-work{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px}
+@container (max-width:760px){.rm-work{grid-template-columns:1fr}}
+.rm-graph,.rm-tools,.rm-guess{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--bg);display:grid;gap:8px;align-content:start;min-width:0}
+.rm-top{display:flex;justify-content:space-between;align-items:center}
+.rm-label{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
+.rm-live{font-size:11.5px;color:var(--good);display:flex;gap:5px;align-items:center}.rm-live i{width:7px;height:7px;border-radius:50%;background:var(--good)}
+.rm-fn{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:15px}
+.rm-badge{background:var(--accent);color:#fff;border-radius:8px;padding:1px 8px;font:700 13px var(--f-mono)}.rm-badge.b{background:var(--modelB)}
+.rm-int{margin-left:auto;font-size:13px;border:1px solid var(--line);border-radius:8px;padding:1px 8px;background:var(--paper)}
+.rm-note{margin:0;font-size:12.5px;color:var(--muted)}
+.rm-ctl{display:grid;gap:5px;font-size:13px}.rm-ctl>span{font-weight:600}
+.rm-ctl.two{grid-template-columns:1fr 1fr;gap:8px}
+.rm-ctl input[type=range]{width:100%;accent-color:var(--g1,var(--accent))}
+.rm-range{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.rmseg{display:flex;gap:4px;flex-wrap:wrap}
+.rmseg button{flex:1;border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:6px 8px;font-size:13px;color:var(--ink)}
+.rmseg button[aria-pressed="true"]{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-color:transparent;font-weight:700}
+.rm-sum{border-radius:12px;padding:10px 12px;background:var(--paper);border:2px solid color-mix(in srgb,var(--g1,var(--accent)) 40%,transparent);display:grid}
+.rm-sum span{font-size:12.5px;color:var(--muted)}.rm-sum b{font:700 26px var(--f-mono);color:var(--g1,var(--accent))}.rm-sum small{font-size:11.5px;color:var(--muted)}
+.rm-guess p{margin:0;font-size:13.5px}.rm-result{font-size:14px}.rm-result:empty{display:none}
+.chart .rr{fill:color-mix(in srgb,var(--accent) 22%,transparent);stroke:var(--accent);stroke-width:.8}
+.chart .rn{fill:color-mix(in srgb,var(--bad) 18%,transparent);stroke:var(--bad);stroke-width:.8}
+.rrsw{background:color-mix(in srgb,var(--accent) 35%,transparent)!important;height:10px!important;width:14px!important;border:1px solid var(--accent)}
 </style>
 
 </head>
 <body>
 <header class="top" id="top">
   <div class="wrap">
-    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 14c2.2-6.5 4.4-6.5 6.6 0s4.4 6.5 6.6 0"/><path d="M19.5 4.5c-1.4-.5-2.4.3-2.4 2v11c0 1.7-1 2.5-2.4 2"/></svg></span><span class="bt"><b>삼각함수·미적분 수학적 모델링 탐구</b><span>전문 수학 수행평가 (40점)</span></span></div>
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 14c2.2-6.5 4.4-6.5 6.6 0s4.4 6.5 6.6 0"/><path d="M19.5 4.5c-1.4-.5-2.4.3-2.4 2v11c0 1.7-1 2.5-2.4 2"/></svg></span><span class="bt"><b>삼각함수·미적분 수학적 모델링 탐구</b><span>전문 수학 수행평가</span></span></div>
     <div class="seg" id="roleSeg" hidden>
       <button id="roleT" type="button" aria-pressed="true">교사 대시보드</button>
       <button id="roleS" type="button" aria-pressed="false">학생 화면 미리보기</button>
@@ -888,7 +960,7 @@ const CARDS = [
   ["J","내가 제안하는 주제","KOSIS, 공공데이터포털, Kaggle 등","직접 쓰기"]
 ];
 const ELEMENTS = [
-  ["실험 설계 및 자료 수집","탐구 질문과 변인이 분명하고, 자료가 20개 이상이며 타당도·신뢰도 확보 방안이 있는가? (1단계)"],
+  ["실험 설계 및 자료 수집","탐구 질문과 변인이 분명하고, 자료가 20개 이상이며 수집 방법이 구체적인가? (1단계)"],
   ["자료 처리 및 수학적 표현","그래프가 정확하고, 특성을 숫자와 뜻으로 설명했는가? (2단계)"],
   ["수학적 모델링","모델을 고른 근거와 매개변수의 뜻을 쓰고, 미분·적분으로 알아낸 사실을 썼는가? (3·4단계)"],
   ["결과 분석·검증 및 성찰","오차를 숫자로 비교하고 원인·한계·개선·결론을 썼는가? (5단계)"]
@@ -898,14 +970,13 @@ const DATA_GOAL = 20;   // 자료 개수 목표
 // 라벨·안내 글의 $…$ 는 LaTeX 수식으로 그려집니다.
 const STAGES = [
  {name:"주제·탐구 설계", el:"실험 설계 및 자료 수집", time:"1시간째 · 60분", goal:"무엇을, 어떤 자료로, 어떻게 모을지 정하고 자료를 모읍니다.", blocks:[
-  {n:"①",t:"탐구 주제와 탐구 질문",showTitle:1,f:[["s1_card","탐구 주제","card"],["s1_phen","탐구할 현상"],["s1_q","탐구 질문","long"]]},
+  {n:"①",t:"탐구 주제와 탐구 질문",linkTopic:1,f:[["s1_topic","탐구 주제","topic"],["s1_phen","탐구할 현상"],["s1_q","탐구 질문","long"]]},
   {n:"②",t:"변인 정하기",table:{cols:["변인","이름","단위"],rows:[["독립변인 $x$ (가로축)","s1_xn","s1_xu"],["종속변인 $y$ (세로축)","s1_yn","s1_yu"],["통제변인 (같게 둔 조건)","s1_cn","s1_cu"]]}},
   {n:"③",t:"자료 수집 방법",hint:"외부 자료는 사이트, 검색 조건, 내려받은 날짜를 적습니다.",f:[["s1_m","수집 방식 (외부 자료 / 직접 측정)"],["s1_src","기관·사이트와 자료 이름"],["s1_proc","수집 절차 (검색 조건, 고른 규칙)","long"]]},
   {n:"④",t:"자료의 범위와 개수",hint:"20개 이상, 값이 급하게 변하는 곳(점근선·끝점 근처)의 자료도 넣기",f:[["s1_xr","$x$의 범위"],["s1_int","측정 간격"],["s1_cnt","자료 개수"]]},
-  {n:"⑤",star:1,t:"자료의 타당도와 신뢰도 확보 방안",f:[["s1_vm","방법","long"],["s1_vr","이유","long"]]},
-  {n:"⑥",t:"예상 그래프",f:[["s1_gs","예상 모양","long"],["s1_gb","근거","long"],["s1_gf","예상 관계식","math"]]},
+  {n:"⑤",t:"예상 그래프",f:[["s1_gs","예상 모양","long"],["s1_gb","근거","long"]]},
   {check:"다음 단계로 가기 전 확인",items:[["c1_1","자료가 20개 이상 나오는 계획이다"],["c1_3","삼각함수 모델(덧셈정리·배각·반각·합성 포함)과 미분·적분을 쓸 수 있는 주제다"]]},
-  {help:["타당도: 내가 알고 싶은 것을 제대로 재고 있는가 / 신뢰도: 다시 재어도 비슷한 값이 나오는가","각은 라디안으로 바꿔 기록합니다: $(\\text{라디안})=(\\text{도})\\times\\dfrac{\\pi}{180}$","외부 자료가 너무 많으면 일정한 간격으로 골라 씁니다. 고른 규칙을 ③에 적습니다.","자료 사이트: kosis.kr · data.go.kr · data.kma.go.kr · astro.kasi.re.kr · khoa.go.kr · kaggle.com"]}
+  {help:["각은 라디안으로 바꿔 기록합니다: $(\\text{라디안})=(\\text{도})\\times\\dfrac{\\pi}{180}$","외부 자료가 너무 많으면 일정한 간격으로 골라 씁니다. 고른 규칙을 ③에 적습니다.","자료 사이트: kosis.kr · data.go.kr · data.kma.go.kr · astro.kasi.re.kr · khoa.go.kr · kaggle.com"]}
  ]},
  {name:"자료·그래프", el:"자료 처리 및 수학적 표현", time:"2시간째 · 30분", goal:"그래프를 보고 어떤 모양으로, 얼마만큼 변하는지 숫자로 말합니다.", blocks:[
   {tool:"data"},
@@ -918,7 +989,7 @@ const STAGES = [
  {name:"모델 만들기", el:"수학적 모델링", time:"2시간째 · 30분", goal:"내 자료를 설명하는 식을 만들고, 각 문자가 무엇을 뜻하는지 설명합니다.", blocks:[
   {n:"①",t:"모델 후보 2개",table:{cols:["","식의 형태","고른 이유"],rows:[["후보 1","s3_c1f:math","s3_c1r"],["후보 2","s3_c2f:math","s3_c2r"]]}},
   {tool:"model"},
-  {n:"②",t:"맞추기 기록",hint:"도구에서 [지금 모델 A 값을 맞추기 기록에 넣기]를 누르면 빈 줄에 $a\\sim g$ 값과 평균 오차율이 들어갑니다. 바꾼 이유는 직접 씁니다.",table:{cols:["시도","$a,b,c,d,e,g$ 값","평균 오차율(%)","바꾼 이유와 그래프 변화"],rows:[["1","s3_t1p:math","s3_t1e","s3_t1r"],["2","s3_t2p:math","s3_t2e","s3_t2r"],["3","s3_t3p:math","s3_t3e","s3_t3r"]]}},
+  {n:"②",t:"맞추기 기록",hint:"도구에서 [모델 A 값을 기록에 넣기] 또는 [모델 B 값을 기록에 넣기]를 누르면 빈 줄에 $a\\sim g$ 값과 평균 오차율이 들어갑니다. 바꾼 이유는 직접 씁니다.",table:{cols:["시도","모델 · 형태 · 값","평균 오차율(%)","바꾼 이유와 그래프 변화"],rows:[["1","s3_t1p","s3_t1e","s3_t1r"],["2","s3_t2p","s3_t2e","s3_t2r"],["3","s3_t3p","s3_t3e","s3_t3r"]]}},
   {n:"③",t:"최종 모델과 선택 근거",f:[["s3_final","최종 모델 식","math",{auto:"formA"}],["s3_why","선택 근거","long"]]},
   {n:"⑤",star:1,t:"매개변수의 뜻",table:{cols:["매개변수","값 (단위)","내 현상에서의 뜻","자료에서 정한 방법"],rows:[["$a$","s3_pav","s3_pam","s3_pah"],["$b$","s3_pbv","s3_pbm","s3_pbh"],["$c$","s3_pcv","s3_pcm","s3_pch"],["$d$","s3_pdv","s3_pdm","s3_pdh"],["$e,\\ g$ (쓴 경우)","s3_pev","s3_pem","s3_peh"]]}},
   {help:["합성: $a\\sin u+e\\cos u=R\\sin(u+\\varphi)$, $R=\\sqrt{a^2+e^2}$, $\\tan\\varphi=\\dfrac{e}{a}$. $R$은 변화 폭, $\\varphi$는 시작이 앞당겨진 정도입니다.","배각·반각: $\\sin 2u=2\\sin u\\cos u$, $\\cos 2u=1-2\\sin^2 u$, $\\sin^2 u=\\dfrac{1-\\cos 2u}{2}$. 사인제곱형은 주기가 $\\dfrac{\\pi}{b}$입니다.","곡선이 이상하게 촘촘하거나 비어 있으면 각이 라디안인지, $b$의 크기가 알맞은지 확인합니다.","점근선·끝점·가운데 점으로 $c$, $d$를 먼저 정하고, 자료의 점 하나를 대입해 $a$, $b$를 정합니다."]}
@@ -927,14 +998,14 @@ const STAGES = [
   {n:"①",t:"도함수 구하기 (손 계산)",chart:"deriv",f:[["s4_f","모델 $f(x)$","math",{auto:"formA"}],["s4_fd","도함수 $f'(x)$","math"],["s4_fw","풀이 과정","longmath"]]},
   {n:"②",t:"변화율 표",last:1,hint:"알아볼 $x=a$ 값과 손으로 계산한 $f'(a)$를 넣으면 모델 A로 계산한 값과 차이가 나옵니다. 단위는 $\\dfrac{(y\\text{ 단위})}{(x\\text{ 단위})}$입니다.",tool:"rate"},
   {n:"③",star:1,t:"미분으로 알아낸 사실",hint:"가장 빠르게 변하는 때, 변화가 멈추는 때(최대·최소), 점근선·끝점 근처의 변화율을 살펴봅니다.",f:[["s4_d1","분석한 사실 1 (근거 수치)","long"],["s4_d2","분석한 사실 2 (근거 수치)","long"],["s4_dm","현상에서의 의미","long"]]},
-  {n:"④",t:"정적분 구하기 (손 계산)",tool:"integral",f:[["s4_iw","구간을 고른 이유"],["s4_ic","계산 과정","longmath"],["s4_iv","정적분 값 (단위)","math"],["s4_ia","평균값 $\\dfrac{1}{q-p}\\displaystyle\\int_p^q f(x)\\,dx$","math"]]},
-  {n:"⑤",star:1,t:"적분으로 알아낸 사실",hint:"구간 전체의 합(누적량)과 평균, 모델의 적분과 자료로 어림한 값의 차이를 살펴봅니다.",f:[["s4_j1","분석한 사실 1 (근거 수치)","long"],["s4_j2","분석한 사실 2: 모델과 자료의 차이","long"],["s4_jm","현상에서의 의미","long"]]},
+  {n:"④",t:"정적분 구하기 (구분구적법 탐구)",tool:"riemann",f:[["s4_rp","예상하는 넓이"],["s4_rn","탐험 노트: 직사각형 개수와 높이 위치를 바꿀 때 넓이의 합이 어떻게 변했나요?","long"],["s4_iw","구간을 고른 이유"],["s4_ic","정적분 손 계산 과정","longmath"],["s4_iv","정적분 값 (단위)","math"]]},
+  {n:"⑤",star:1,t:"적분으로 알아낸 사실",hint:"구간 전체의 누적량, 직사각형 개수를 늘릴 때 넓이의 합이 정적분 값에 가까워지는 모습을 살펴봅니다.",f:[["s4_j1","분석한 사실 1 (근거 수치)","long"],["s4_j2","분석한 사실 2 (근거 수치)","long"],["s4_jm","현상에서의 의미","long"]]},
   {n:"⑥",t:"미분·적분 분석 종합",f:[["s4_sd","미분이 알려 준 것","long"],["s4_si","적분이 알려 준 것","long"]]},
   {n:"+",t:"(선택) 이계도함수 $f''(x)$의 뜻 또는 로피탈의 정리를 쓴 극한",opt:1,f:[["s4_opt","선택 과제","longmath"]]},
   {help:["미분: $u=b(x-c)$라 하면 $\\dfrac{du}{dx}=b$","$(a\\sec u)'=ab\\sec u\\tan u$ · $(a\\csc u)'=-ab\\csc u\\cot u$ · $(a\\tan u)'=ab\\sec^2 u$","$(a\\arctan u)'=\\dfrac{ab}{1+u^2}$ · $(a\\sin^2 u)'=ab\\sin 2u$ · $(e\\cos 2u)'=-2eb\\sin 2u$","적분: $\\displaystyle\\int a\\sec u\\,dx=\\dfrac{a}{b}\\ln\\left|\\sec u+\\tan u\\right|+C$ · $\\displaystyle\\int a\\csc u\\,dx=\\dfrac{a}{b}\\ln\\left|\\tan\\dfrac{u}{2}\\right|+C$","$\\displaystyle\\int a\\tan u\\,dx=-\\dfrac{a}{b}\\ln\\left|\\cos u\\right|+C$ · $\\displaystyle\\int a\\sin^2 u\\,dx=a\\left(\\dfrac{x}{2}-\\dfrac{\\sin 2u}{4b}\\right)+C$","아크탄젠트형은 부분적분을 씁니다. 손 계산이 어려우면 도구 값을 쓰고 그 뜻을 해석해도 됩니다."]}
  ]},
  {name:"검증·결론", el:"결과 분석·검증 및 성찰", time:"4시간째 · 60분", goal:"모델이 얼마나 맞고, 왜 틀리며, 어떻게 고칠 수 있는지 숫자와 근거로 말합니다.", blocks:[
-  {n:"①",t:"숫자로 비교하기",hint:"오차 $=y-f(x)$ (실측값 − 모델값), 오차율 $=\\dfrac{\\left|y-f(x)\\right|}{\\left|y\\right|}\\times 100$ (실측값이 0인 점은 오차율에서 뺍니다)",tool:"errTable"},
+  {n:"①",t:"숫자로 비교하기",hint:"오차 $=y-f(x)$ (실측값 − 모델값), 오차율 $=\\dfrac{\\left|y-f(x)\\right|}{\\left|y\\right|}\\times 100$ (실측값이 0인 점은 오차율에서 뺍니다). RMSE는 모델이 실제 자료에서 평균적으로 몇 (y 단위)만큼 빗나가는지 나타내며, 0에 가까울수록 잘 맞습니다.",tool:"errTable"},
   {n:"②",t:"오차 그래프",hint:"점선은 오차 $\\pm 1$ 기준선입니다. 1을 넘는 오차는 그래프 안에 들어오도록 줄여서(로그 눈금) 그립니다.",tool:"errChart"},
   {n:"③",t:"오차 그래프에서 보이는 규칙",f:[["s5_pos","오차가 (+)인 구간"],["s5_neg","오차가 (−)인 구간"],["s5_rule","규칙","long"]]},
   {n:"④",t:"오차의 원인 2가지",hint:"자료의 오차(눈금, 반올림) · 식의 모양 자체의 한계 · 매개변수 값의 어긋남 · 통제하지 못한 조건 등",table:{cols:["","오차의 원인","근거 (그래프의 위치, 숫자)"],rows:[["1.","s5_c1","s5_c1b"],["2.","s5_c2","s5_c2b"]]}},
@@ -945,7 +1016,7 @@ const STAGES = [
   {tool:"submit"}
  ]}
 ];
-// [0 나의 수행]에서 쓰는 칸 (출처와 도구는 5단계에서 옮겨 왔습니다)
+// [나의 수행]에서 쓰는 칸 (출처와 도구는 5단계에서 옮겨 왔습니다)
 const HOME_SRC = {n:"④",t:"출처와 도구",f:[["s5_src","자료 출처 (기관·사이트·검색 날짜)","long"],["s5_tool","도구를 어디에 어떻게 썼는지","long"]]};
 const TOOLS = [["sheet","스프레드시트 (엑셀·구글 시트)"],["calc","공학용 계산기"],["graph","그래프 도구 (데스모스·지오지브라)"],["app","이 웹앱의 도구 (그래프·모델·적분)"],["ai","AI (챗GPT·제미나이·클로드 등)"],["etc","기타"]];
 const AI_TAG = "-AI를 활용함-";
@@ -955,8 +1026,7 @@ const USES_G = new Set(["사인·코사인파의 덧셈"]);
 const RATE_ROWS = ["$f'(x)$가 가장 큰 때 (가장 빠르게 증가)","$f'(x)$가 가장 작은 때 (가장 빠르게 감소)","$f'(x)=0$인 때 (없으면 이유)","내가 궁금한 순간 $x=a$"];
 // 칸 이름에 마우스를 대면 보이는 설명
 const FIELD_HELP = {
-  title:"내 탐구를 한 줄로 나타내는 제목입니다. 예: 하루 동안 막대 그림자 길이를 시컨트 함수로 모델링하기",
-  s1_card:"예시 카드(A~I)에서 고르거나, 직접 찾은 주제라면 J를 고르고 아래 '탐구할 현상'에 주제를 쓰세요.",
+  s1_topic:"목록에서 예시 자료(A~I)를 고르거나, 직접 찾은 주제를 한 줄로 씁니다. 예: 하루 동안 막대 그림자 길이를 시컨트 함수로 모델링하기",
   s1_phen:"무엇이 무엇에 따라 어떻게 변하는지 한 문장으로 씁니다. 예: 시각에 따라 막대 그림자 길이가 변한다.",
   s1_q:"자료와 모델로 답할 수 있는 질문으로 씁니다. 예: 그림자가 가장 빠르게 길어지는 시각은 언제인가?",
   s1_xn:"가로축에 놓을 변인(내가 바꾸거나 기준이 되는 값)의 이름입니다. 예: 시각",s1_xu:"x의 단위입니다. 예: 시, 라디안, 년",
@@ -984,9 +1054,9 @@ const FIELD_HELP = {
   s4_fw:"미분 공식을 어떻게 썼는지 차례대로 씁니다. 수식 입력기로 쓰거나 연습장 풀이를 사진으로 올릴 수 있습니다.",
   s4_r0:"그 순간의 x 값 a에서 손으로 계산한 f′(a)입니다.",
   s4_d1:"미분으로 알아낸 사실을 근거 수치와 함께 씁니다.",s4_d2:"또 다른 사실을 근거 수치와 함께 씁니다.",s4_dm:"그 사실이 현상에서 무엇을 뜻하는지 씁니다.",
-  s4_iw:"적분 구간 [p, q]를 고른 이유입니다.",s4_ic:"정적분을 손으로 계산한 과정입니다. 수식 입력기로 쓰거나 사진으로 올릴 수 있습니다.",
+  s4_iw:"적분 구간 [p, q]를 고른 이유입니다.",s4_rp:"직사각형 개수와 위치를 바꿔 본 뒤 예상한 실제 넓이(숫자)입니다. [예상 확인하기]로 정적분 값과 비교합니다.",s4_rn:"분할 개수를 늘리거나 높이 위치를 바꿀 때 넓이의 합이 어떻게 변했는지 관찰한 내용을 씁니다.",s4_ic:"정적분을 손으로 계산한 과정입니다. 수식 입력기로 쓰거나 사진으로 올릴 수 있습니다.",s4_ic:"정적분을 손으로 계산한 과정입니다. 수식 입력기로 쓰거나 사진으로 올릴 수 있습니다.",
   s4_iv:"정적분 값과 단위입니다.",s4_ia:"정적분 값을 구간 길이로 나눈 평균값입니다.",
-  s4_j1:"적분으로 알아낸 사실(누적량, 평균)을 근거 수치와 함께 씁니다.",s4_j2:"모델의 적분과 자료(사다리꼴 어림)의 차이와 그 이유입니다.",s4_jm:"그 사실이 현상에서 무엇을 뜻하는지 씁니다.",
+  s4_j1:"적분으로 알아낸 사실(누적량)을 근거 수치와 함께 씁니다.",s4_j2:"또 다른 사실(구분구적법과 정적분의 관계 등)을 근거 수치와 함께 씁니다.",s4_jm:"그 사실이 현상에서 무엇을 뜻하는지 씁니다.",
   s4_sd:"미분으로 알게 된 것을 정리합니다.",s4_si:"적분으로 알게 된 것을 정리합니다.",s4_opt:"이계도함수의 뜻이나 로피탈의 정리로 구한 극한을 씁니다(선택).",
   s5_pos:"오차(실측 − 모델)가 양수인 x 구간입니다.",s5_neg:"오차가 음수인 x 구간입니다.",s5_rule:"오차 그래프에서 보이는 규칙(커지는 곳, 반복)을 씁니다.",
   s5_c1:"오차가 생긴 원인입니다.",s5_c1b:"그 원인을 뒷받침하는 그래프 위치나 숫자입니다.",
@@ -1001,7 +1071,7 @@ const FIELD_HELP = {
 ["b","c","d","e"].forEach(p=>["v","m","h"].forEach(s=>{ FIELD_HELP["s3_p"+p+s]=FIELD_HELP["s3_pa"+s]; }));
 [1,2,3].forEach(i=>{ FIELD_HELP["s4_r"+i]=FIELD_HELP.s4_r0; });
 FIELD_HELP.s5_c2=FIELD_HELP.s5_c1; FIELD_HELP.s5_c2b=FIELD_HELP.s5_c1b;
-// 단계 머리의 색(그라데이션)과 아이콘: 0 나의 수행, 1~5단계
+// 단계 머리의 색(그라데이션)과 아이콘: 나의 수행, 1~5단계
 const STAGE_LOOK = [
   ["#4F46E5","#7C3AED",'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="M9 13l2 2 4-4"/>'],
   ["#2563EB","#06B6D4",'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>'],
@@ -1196,6 +1266,9 @@ const AUTO_SRC={s2_n:"n",s2_xr:"xr",s2_yr:"yr"};
 function fieldHTML(doc,key,kind,ro,label){ const v=(doc.ans||{})[key]??""; const math=kind==="math"||kind==="longmath"; const long=kind==="long"||kind==="longmath"||kind==="link";
   const al=esc(plain(label||key));
   if(kind==="auto") return `<div class="ro autoval" data-autoval="${key}">${esc(v)||"–"}</div>`;
+  if(kind==="topic"){ const tv=topicOf(doc); if(ro) return `<div class="ro${tv?"":" empty"}">${esc(tv)||"(비어 있음)"}</div>`;
+    return `<input class="fld" id="f_${key}" data-p="ans.${key}" list="topicList" value="${esc(tv)}" placeholder="예시 자료를 선택하거나, 직접 주제를 찾아 작성하시오" aria-label="${al}" autocomplete="off"><datalist id="topicList">${CARDS.filter(c=>c[0]!=="J").map(c=>`<option value="${esc(c[0]+" · "+c[1])}">${esc(c[3])}</option>`).join("")}</datalist><details class="examples"><summary>📋 예시 자료 보기 (눌러서 고르기 · 직접 써도 됩니다)</summary><div>${CARDS.filter(c=>c[0]!=="J").map(c=>`<button type="button" class="exbtn" data-topic="${esc(c[0]+" · "+c[1])}"><b>${c[0]}</b>${esc(c[1])}<small>${esc(c[3])} · ${esc(c[2])}</small></button>`).join("")}</div></details>`; }
+  if(kind==="math"&&!ro) return `<div class="mfield${v?"":" empty"}" role="button" tabindex="0" data-mfield="${key}" aria-label="${al}: 눌러서 수식 입력"><span class="mshow" data-mshow="${key}">${mshowHTML(v)}</span><span class="mhint">${MathTool.iconSVG}<span>수식</span></span></div><input type="hidden" id="f_${key}" data-p="ans.${key}" value="${esc(v)}">`;
   if(ro){ if(kind==="link") return `<div class="ro${v?"":" empty"}">${v?linkify(v):"(비어 있음)"}</div>`;
     return `<div class="ro${v?"":" empty"}${math?" math":""}"${v&&MathTool.hasMath(v)?" data-mathro":""}>${v?esc(v):"(비어 있음)"}</div>${kind==="longmath"?photoHTML(doc,key,true):""}`; }
   if(kind==="card") return `<select class="fld${v?"":" empty"}" id="f_${key}" data-p="ans.${key}" aria-label="${al}"><option value="">예시 자료를 선택하거나, 직접 주제를 찾아 작성하시오</option>${CARDS.map(c=>`<option value="${c[0]}"${v===c[0]?" selected":""}>${c[0]} · ${esc(c[1])} (${esc(c[3])})</option>`).join("")}</select>`;
@@ -1210,14 +1283,14 @@ function updPrev(el){ const key=(el.dataset.p||"").replace(/^ans\./,""), pv=key&
   if(MathTool.hasMath(el.value)) MathTool.renderInto(pv,el.value); else pv.textContent=""; }
 function openMath(field,index,mode){ if(!field||locked()) return; MathTool.open(field,{index,mode}); }
 function autoChip(key,auto,ro){ return `<div class="autochip">도구 값: <code data-auto="${auto}"></code>${ro?"":`<button class="linkbtn" data-fill="${key}" data-src="${auto}" type="button">이 값 넣기</button>`}</div>`; }
-function cardInfo(doc){ const c=CARDS.find(c=>c[0]===(doc.ans||{}).s1_card); return c?`<div class="sub">현상: ${esc(c[1])} · 자료 얻는 곳: ${esc(c[2])} · 함수 형태: <b>${esc(c[3])}</b></div>`:""; }
+function cardInfo(doc){ const c=cardOf(doc); return c?`<div class="sub">현상: ${esc(c[1])} · 자료 얻는 곳: ${esc(c[2])} · 함수 형태: <b>${esc(c[3])}</b></div>`:""; }
 
 function blockHTML(doc,b,si,bi,ro){
   if(b.help) return `<details class="help"><summary>💡 막히면 보세요 (감점 없음)</summary><ul>${b.help.map(h=>`<li>${tx(h)}</li>`).join("")}</ul></details>`;
   if(b.check) return `<div class="blk"><div class="no">✓</div><div><h3>${esc(b.check)}</h3></div><div class="body checks">${b.items.map(([k,t])=>`<label><input type="checkbox" id="c_${k}" data-p="checks.${k}"${(doc.checks||{})[k]?" checked":""}${ro?" disabled":""}> <span>${esc(t)}</span></label>`).join("")}</div></div>`;
   if(b.tool&&!b.n) return toolHTML(doc,b.tool,ro);
   let body="";
-  if(b.showTitle) body+=`<div class="linked">🔗 탐구 제목: <b>${esc((doc.info||{}).title||"(아직 없음)")}</b><span class="sub"> · 제목은 [0 나의 수행]에서 씁니다. 아래 탐구 주제는 [0 나의 수행]과 연결되어 함께 바뀝니다.</span></div>`;
+  if(b.linkTopic) body+=`<div class="linked">🔗 탐구 주제는 [나의 수행]과 연결되어 어느 쪽에서 고쳐도 함께 바뀝니다.</div>`;
   if(b.tool) body+=toolHTML(doc,b.tool,ro);
   if(b.f) body+=b.f.map(([k,l,kind,o])=>`<div class="row">${labHTML(l,k)}<div style="min-width:0">${fieldHTML(doc,k,kind,ro,l)}${o&&o.auto&&kind!=="auto"?autoChip(k,o.auto,ro):""}${kind==="card"?`<div data-cardinfo style="padding:4px 10px">${cardInfo(doc)}</div>`:""}</div></div>`).join("");
   if(b.table){ const t=b.table; body+=`<div class="tbl-wrap"><table class="t"><thead><tr>${t.cols.map(c=>`<th>${tx(c)}</th>`).join("")}</tr></thead><tbody>${t.rows.map(r=>{ const keys=r.slice(1).map(k=>k.split(":")[0]), tp=tipAttr(...keys);
@@ -1255,19 +1328,17 @@ function toolHTML(doc,tool,ro){ const d=doc.data||{}, M=doc.models||{}, c=doc.ca
     ${["A","B"].map(k=>{ const m=M[k]||{}; return `<div class="mrow"><h4><span class="sw" style="background:var(${k==="A"?"--accent":"--modelB"})"></span>모델 ${k}</h4><div class="params">
       <label class="mini">형태<select id="t_models_${k}_t" data-p="models.${k}.t"${dis}>${FORMS.map(f=>`<option${m.t===f?" selected":""}>${f}</option>`).join("")}</select></label>
       ${["a","b","c","d","e","g"].map(p=>inp(`models.${k}.${p}`,m[p],"$"+p+"$"+(p==="e"?" (합성·합·배각·덧셈)":p==="g"?" (덧셈)":""),'inputmode="decimal"')).join("")}</div>
-      <div class="formula" data-out="form${k}"></div><div class="sub" data-out="err${k}"></div></div>`; }).join("")}
+      <div class="formtpl" data-out="tpl${k}"></div><div class="formula" data-out="form${k}"></div><div class="sub" data-out="err${k}"></div></div>`; }).join("")}
     <div data-out="chartModel"></div>
     <div class="legend"><span><i></i>자료</span><span><span class="sw" style="background:var(--accent)"></span> 모델 A</span><span><span class="sw" style="background:var(--modelB)"></span> 모델 B</span></div>
-    ${ro?"":`<div><button class="btn" type="button" data-act="logTry">지금 모델 A 값을 맞추기 기록에 넣기</button></div>`}
+    ${EG_HELP}
+    ${ro?"":`<div class="logbtns"><button class="btn btnA" type="button" data-act="logTry" data-m="A">모델 A 값을 기록에 넣기</button><button class="btn btnB" type="button" data-act="logTry" data-m="B">모델 B 값을 기록에 넣기</button></div>`}
     <dl class="kv" data-out="cands"></dl></div></div>`;
   case "rate": { const xs=c.x||[]; return `<div class="ratedefs" data-out="rateDefs"></div><div class="tbl-wrap"><table class="t"><thead><tr><th>알아볼 순간</th><th>${tx("$x=a$ 의 $a$")}</th><th>${tx("손 계산 $f'(a)$ (단위)")}</th><th>${tx("도구 $f_A'(a)$")}</th><th>차이</th><th>${tx("$f_A(a)$")}</th><th>${tx("$f_A''(a)$")}</th><th>${tx("$f_B'(a)$")}</th></tr></thead><tbody>
     ${RATE_ROWS.map((r,i)=>`<tr><td class="lab"${tipAttr("s4_r"+i)}>${tx(r)}</td><td><div class="cell">${ro?`<div class="ro num">${esc(xs[i]||"")}</div>`:`<input class="num" id="t_calc_x_${i}" data-p="calc.x.${i}" value="${esc(xs[i]||"")}" placeholder=" " inputmode="decimal" aria-label="a 값">`}</div></td><td><div class="cell">${fieldHTML(doc,"s4_r"+i,"math",ro,"손 계산")}</div></td><td class="auto" data-out="r${i}d"></td><td class="auto" data-out="r${i}diff"></td><td class="auto" data-out="r${i}f"></td><td class="auto" data-out="r${i}dd"></td><td class="auto" data-out="r${i}b"></td></tr>`).join("")}
     </tbody></table></div>`; }
-  case "integral": return `<div class="tool"><div class="tool-h">∫ 적분 구간과 도구 확인값 <span>시트 4_미분적분과 같은 계산</span></div><div class="tool-b">
-    <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,140px))">${inp("calc.p",c.p,"$p$ (구간 시작)",'inputmode="decimal"')}${inp("calc.q",c.q,"$q$ (구간 끝)",'inputmode="decimal"')}</div>
-    <div class="tbl-wrap"><table class="t"><thead><tr><th>${tx("정적분 $\\displaystyle\\int_p^q f(x)\\,dx$")}</th><th>값</th><th>${tx("평균값 = 값 $\\div (q-p)$")}</th></tr></thead><tbody data-out="integ"></tbody></table></div>
-    <p class="sub" style="margin:0">${tx("사다리꼴 어림: $x$가 $p$ 이상 $q$ 이하인 이웃한 두 점마다 $\\dfrac{y_1+y_2}{2}\\times\\Delta x$를 더한 값입니다.")}</p></div></div>`;
-  case "errTable": return `<div class="tbl-wrap"><table class="t"><thead><tr><th>비교 항목</th><th>모델 A</th><th>모델 B</th></tr></thead><tbody data-out="errTable"></tbody></table></div>`;
+  case "riemann": return riemannHTML(doc,ro);
+  case "errTable": return `<div class="tbl-wrap"><table class="t"><thead><tr><th>비교 항목</th><th>모델 A</th><th>모델 B</th></tr></thead><tbody data-out="errTable"></tbody></table></div><p class="rmse-ex">💡 ${esc(GLOSS.rmse)}</p>`;
   case "errChart": return `<div data-out="errChart"></div><div class="legend"><span><span class="sw" style="background:var(--accent);height:8px;width:8px"></span> 모델 A 오차</span><span><span class="sw" style="background:var(--modelB);height:8px;width:8px"></span> 모델 B 오차</span><span><span class="sw" style="background:var(--warn)"></span> ±1 기준선</span></div>`;
   case "submit": return `<div class="submitbox" data-out="submit"></div>`;
   } return ""; }
@@ -1279,16 +1350,15 @@ function updateOutputs(root,doc,owner){ const an=analyze(doc), $=s=>root.querySe
   put("cands", f?`<dt>도구 특성표</dt><dd>${tx(`$a$ 후보 ${fmt(f.aC)} · $d$ 후보 ${fmt(f.dC)} · $b$ 후보 ${fmt(f.bC)}`)}</dd>`:"");
   put("chartModel",chartSVG(an,{xl,yl,models:true,id:"m1"}));
   ["A","B"].forEach(k=>{ const m=an[k], e=an["e"+k]; put("form"+k, m.ok?tx(`$${formulaTex(m)}$`):"a, b, c, d를 모두 넣으면 완성된 식이 나옵니다.");
-    put("err"+k, e?`평균 오차율 ${fmt(e.mean,2)}% · RMSE ${fmt(e.rmse,3)}`:""); });
+    put("err"+k, e?`${term("mape","평균 오차율")} ${fmt(e.mean,2)}% · ${term("rmse","RMSE")} ${fmt(e.rmse,3)} <span class="sub">(평균적으로 ${fmt(e.rmse,3)}만큼 빗나감)</span>`:""); put("tpl"+k,tplHTML((doc.models||{})[k])); });
   const fx=(m,nm)=>m.ok?tx(`$${formulaTex(m).replace(/^y=/,nm+"(x)=")}$`):'<span class="sub">(아직 정하지 않음)</span>';
   put("rateDefs",`<div>${tx("$f_A(x)$")} <b>모델 A</b> · 3단계에서 정한 모델: ${fx(an.A,"f_A")}</div><div>${tx("$f_B(x)$")} <b>모델 B</b> · 비교용 다른 후보 또는 5단계에서 고친 모델: ${fx(an.B,"f_B")}</div><div class="sub">${tx("$f'$은 도함수(순간변화율), $f''$은 이계도함수입니다. $a$는 알아볼 순간의 $x$ 값입니다.")}</div>`);
   const xs=(doc.calc||{}).x||[];
   for(let i=0;i<4;i++){ const x=xs[i], ok=isNum(x); const d1=ok?fd1(an.A,+x):NaN; put(`r${i}d`,ok?fmt(d1):""); put(`r${i}f`,ok?fmt(fval(an.A,+x)):""); put(`r${i}dd`,ok?fmt(fd2(an.A,+x)):""); put(`r${i}b`,ok?fmt(fd1(an.B,+x)):"");
-    const h=(doc.ans||{})["s4_r"+i]; put(`r${i}diff`, ok&&isNum(h)&&!isNaN(d1)?fmt(+h-d1):""); }
-  const c=doc.calc||{}, w=isNum(c.p)&&isNum(c.q)&&+c.q!==+c.p?(+c.q-+c.p):NaN;
-  put("integ",[["모델 A",an.iA],["모델 B",an.iB],["자료 (사다리꼴 어림)",an.tr]].map(([l,v])=>`<tr><td class="lab">${l}</td><td class="auto">${fmt(v)}</td><td class="auto">${fmt(v/w)}</td></tr>`).join(""));
+    const hv=parseNum((doc.ans||{})["s4_r"+i]); put(`r${i}diff`, ok&&!isNaN(hv)&&!isNaN(d1)?fmt(hv-d1):""); }
+  if($("rmGraph").length) riemannOutputs(root,doc,an,put);
   const eA=an.eA, eB=an.eB, cell=(e,fn)=>e?fn(e):"–";
-  put("errTable",[["평균 오차율 (%)",e=>fmt(e.mean,2)],["가장 큰 오차율 (%)과 그때의 x",e=>`${fmt(e.max,2)} (x = ${fmt(e.maxX)})`],["RMSE (y 단위)",e=>fmt(e.rmse,3)],["평균 오차",e=>fmt(e.me,3)],["오차 (+) / (−) 개수",e=>`${e.pos} / ${e.neg}`]].map(([l,fn])=>`<tr><td class="lab">${l}</td><td class="auto">${cell(eA,fn)}</td><td class="auto">${cell(eB,fn)}</td></tr>`).join(""));
+  put("errTable",[[term("mape","평균 오차율")+" (%)",e=>fmt(e.mean,2)],["가장 큰 오차율 (%)과 그때의 x",e=>`${fmt(e.max,2)} (x = ${fmt(e.maxX)})`],[term("rmse","RMSE")+" · 평균적으로 빗나간 크기 (y 단위)",e=>fmt(e.rmse,3)],["평균 오차",e=>fmt(e.me,3)],["오차 (+) / (−) 개수",e=>`${e.pos} / ${e.neg}`]].map(([l,fn])=>`<tr><td class="lab">${l}</td><td class="auto">${cell(eA,fn)}</td><td class="auto">${cell(eB,fn)}</td></tr>`).join(""));
   put("errChart",chartSVG(an,{xl,residual:true,id:"e1"}));
   if($("derivF").length){ const [cf,cd]=derivCharts(doc,an); put("derivF",cf); put("derivD",cd); }
   // 자료 요약 자동 칸: 화면에 보여 주고, 학생 기록(ans)에도 넣어 보고서에 들어가게 합니다
@@ -1307,7 +1377,7 @@ function updateOutputs(root,doc,owner){ const an=analyze(doc), $=s=>root.querySe
   $("submit").forEach(e=>e.innerHTML=submitHTML(doc));
   loadPhotos(root,owner); mathPass(root); }
 
-/* ── [0 나의 수행] ── */
+/* ── [나의 수행] ── */
 const tmFmt=s=>{ s=Math.round(s||0); const h=Math.floor(s/3600), m=Math.floor(s%3600/60); return h?`${h}시간 ${m}분`:`${m}분`; };
 const hhmm=t=>{ const d=new Date(t); return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };
 const dayKey=(t=Date.now())=>{ const d=new Date(t); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
@@ -1323,19 +1393,19 @@ function dashHTML(doc){ const p=progress(doc), an=analyze(doc), avg=Math.round(p
     <div><small>⌨ 입력 시간</small><b>${tmFmt(A.input)}</b><span>글·수식을 입력한 시간</span></div>
     <div><small>💤 활동 없음</small><b>${A.idleN||0}회</b><span>모두 ${tmFmt(A.idleSec)}</span></div>
     <div><small>📊 자료 개수</small><b class="${an.pts.length>=DATA_GOAL?"ok":"warn"}">${an.pts.length}<em> / ${DATA_GOAL}</em></b><span>${an.pts.length>=DATA_GOAL?"목표 달성":"목표까지 "+(DATA_GOAL-an.pts.length)+"개"}</span></div>
-    <div><small>🎯 모델 A 오차율</small><b class="acc">${an.eA?fmt(an.eA.mean,2)+"%":"–"}</b><span>RMSE ${an.eA?fmt(an.eA.rmse,3):"–"}</span></div>
-    <div><small>🔁 모델 B 오차율</small><b>${an.eB?fmt(an.eB.mean,2)+"%":"–"}</b><span>RMSE ${an.eB?fmt(an.eB.rmse,3):"–"}</span></div>
+    <div><small>🎯 모델 A 오차율</small><b class="acc">${an.eA?fmt(an.eA.mean,2)+"%":"–"}</b><span>${term("rmse","RMSE")} ${an.eA?fmt(an.eA.rmse,3):"–"}</span></div>
+    <div><small>🔁 모델 B 오차율</small><b>${an.eB?fmt(an.eB.mean,2)+"%":"–"}</b><span>${term("rmse","RMSE")} ${an.eB?fmt(an.eB.rmse,3):"–"}</span></div>
   </div>
   <div class="dmodel"><small>모델 A</small>${an.A.ok?tx(`$${formulaTex(an.A)}$`):'<span class="sub">3단계에서 모델을 정하면 여기에 나타납니다</span>'}</div>
-  <div class="dsplit"><div class="dbars dtime"><small>단계별 탐구 시간</small>${keys.map(k=>`<div><span>${k<0?"0 나의 수행":(k+1)+" "+SHORT[k]}</span><i><b style="width:${Math.round((st[k]||0)/mx*100)}%"></b></i><em>${tmFmt(st[k])}</em></div>`).join("")}</div>
+  <div class="dsplit"><div class="dbars dtime"><small>단계별 탐구 시간</small>${keys.map(k=>`<div><span>${k<0?"나의 수행":(k+1)+" "+SHORT[k]}</span><i><b style="width:${Math.round((st[k]||0)/mx*100)}%"></b></i><em>${tmFmt(st[k])}</em></div>`).join("")}</div>
   <div class="dlog"><small>최근 활동 기록</small>${logs.length?`<ul>${logs.map(s=>`<li><b>${new Date(s.s).getMonth()+1}/${new Date(s.s).getDate()} ${hhmm(s.s)}–${hhmm(s.e)}</b><span>탐구 ${tmFmt(s.x)} · 입력 ${tmFmt(s.i)}${s.n?` · <em>활동 없음 ${s.n}회 (${tmFmt(s.d)})</em>`:""}</span></li>`).join("")}</ul>`:'<p class="sub">아직 기록이 없습니다.</p>'}</div></div>
   </div>`; }
 function fieldLabel(k){ for(const s of STAGES) for(const b of s.blocks) for(const f of (b.f||[])) if(f[0]===k) return plain(f[1]); return k; }
 function filesHTML(doc){ const F=doc.files||{}, P=doc.photos||{}, isT=ME&&ME.role==="teacher";
-  const item=(ic,t,sub,url)=>`<li><span class="fi">${ic}</span><div><b>${t}</b><small>${sub}</small></div>${url&&isT?`<a class="btn" style="text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">열기 ↗</a>`:""}</li>`;
+  const item=(ic,t,sub,url,go)=>`<li${go&&!isT?` class="go" data-goto="${go}" role="button" tabindex="0"`:""}><span class="fi">${ic}</span><div><b>${t}</b><small>${sub}</small></div>${go&&!isT?'<span class="gol">이동 →</span>':""}${url&&isT?`<a class="btn" style="text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">열기 ↗</a>`:""}</li>`;
   const pk=Object.keys(P);
-  return `<ul class="files">${F.data?item("📎",esc(F.data.name),`2단계 원본 자료 · ${kb(F.data.size)} · ${ago(F.data.at)}`,F.data.url):item("📎","원본 자료 파일 없음","2단계 자료 입력표 아래 [파일 올리기]로 올릴 수 있습니다")}
-    ${pk.length?pk.map(k=>item("📷",`풀이 사진 · ${esc(fieldLabel(k))}`,`${kb(P[k].size)} · ${ago(P[k].at)} · 활동지(구글 문서·PDF)에 함께 들어갑니다`,P[k].url)).join(""):item("📷","풀이 사진 없음","4단계 풀이·계산 과정 칸의 [사진] 버튼으로 올릴 수 있습니다")}</ul>`; }
+  return `<ul class="files">${F.data?item("📎",esc(F.data.name),`2단계 원본 자료 · ${kb(F.data.size)} · ${ago(F.data.at)}`,F.data.url):item("📎","원본 자료 파일 없음","2단계 자료 입력표 아래 [파일 올리기]로 올릴 수 있습니다",null,"data")}
+    ${pk.length?pk.map(k=>item("📷",`풀이 사진 · ${esc(fieldLabel(k))}`,`${kb(P[k].size)} · ${ago(P[k].at)} · 활동지(구글 문서·PDF)에 함께 들어갑니다`,P[k].url)).join(""):item("📷","풀이 사진 없음","4단계 풀이·계산 과정 칸의 [사진] 버튼으로 올릴 수 있습니다",null,"photo")}</ul>`; }
 const AI_BOX=`<b>⚠ AI 활용 규칙 · 꼭 지키세요</b><ol><li>AI를 활용해 계산하거나 식을 얻은 칸에는 반드시 <mark>${AI_TAG}</mark> 라고 적습니다. (풀이·계산 칸의 <mark>${AI_TAG}</mark> 단추를 누르면 들어갑니다)</li><li>AI가 준 수식을 그대로 옮기지 말고, <b>그 수식을 정확하게 이해한 뒤</b> 자기 말과 풀이로 작성합니다.</li><li>위 '도구를 어디에 어떻게 썼는지'에 AI에게 무엇을 물었고, 결과를 어떻게 확인했는지 적습니다.</li></ol>`;
 function homeHTML(doc,ro,acct){ const i=doc.info||{}; acct=acct||{}; const sid=acct.sid||i.sid||"", name=acct.name||i.name||"", T=doc.tools||{};
   const row=([k,l,kind])=>`<div class="row">${labHTML(l,k)}<div style="min-width:0">${fieldHTML(doc,k,kind,ro,l)}</div></div>`;
@@ -1344,8 +1414,7 @@ function homeHTML(doc,ro,acct){ const i=doc.info||{}; acct=acct||{}; const sid=a
   <div class="card c5"><div class="blk"><div class="no">①</div><div><h3>기본 정보</h3><p class="hint">학번·이름은 가입할 때 정한 값으로 고정됩니다. 틀렸다면 선생님께 알려 주세요.</p></div><div class="body">
     <div class="row"><div class="lab">학번 🔒</div><div class="ro locked num">${esc(sid)||"–"}</div></div>
     <div class="row"><div class="lab">이름 🔒</div><div class="ro locked">${esc(name)||"–"}</div></div>
-    <div class="row">${labHTML("탐구 제목","title")}<div style="min-width:0">${ro?`<div class="ro${i.title?"":" empty"}">${esc(i.title)||"(비어 있음)"}</div>`:`<input class="fld" id="i_title" data-p="info.title" value="${esc(i.title||"")}" placeholder=" " autocomplete="off" aria-label="탐구 제목">`}</div></div>
-    <div class="row">${labHTML("탐구 주제","s1_card")}<div style="min-width:0">${fieldHTML(doc,"s1_card","card",ro,"탐구 주제")}<div data-cardinfo style="padding:4px 10px">${cardInfo(doc)}</div><div class="sub" style="padding:0 10px 6px">🔗 1단계 ① 탐구 주제와 연결되어 함께 바뀝니다.</div></div></div>
+    <div class="row">${labHTML("탐구 주제","s1_topic")}<div style="min-width:0">${fieldHTML(doc,"s1_topic","topic",ro,"탐구 주제")}<div data-cardinfo style="padding:4px 10px">${cardInfo(doc)}</div><div class="sub" style="padding:0 10px 6px">🔗 1단계 ① 탐구 주제와 연결되어 함께 바뀝니다.</div></div></div>
   </div></div></div>
   <div class="card c7"><div class="blk"><div class="no">②</div><div><h3>활동 대시보드</h3><p class="hint">탐구 시간·입력 시간은 화면을 쓰는 동안 자동으로 기록됩니다. 2분 넘게 아무 움직임이 없으면 '활동 없음'으로 기록하고 시간에서 뺍니다.</p></div><div class="body"><div data-out="dash"></div></div></div></div>
   <div class="card"><div class="blk"><div class="no">③</div><div><h3>내 결과물 확인 및 내려받기</h3><p class="hint">쓴 내용은 활동지 서식의 구글 문서로 선생님 폴더에 자동으로 반영됩니다. PDF로 내려받아 확인하세요.</p></div><div class="body">
@@ -1369,9 +1438,9 @@ function cardsHTML(doc,si,ro){ return STAGES[si].blocks.map((b,bi)=>{
 const lookStyle=si=>{ const L=STAGE_LOOK[si+1]; return `--g1:${L[0]};--g2:${L[1]}`; };
 function stageHeadHTML(si,ro){ const L=STAGE_LOOK[si+1], s=si<0?null:STAGES[si];
   return `<div class="stage-head"><div class="sico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${L[2]}</svg></div>
-  <div style="min-width:0"><div class="kicker">${si<0?"STEP 0 · 기초 자료":`STEP ${si+1} · 평가요소 ${esc(s.el)} (10점)`}</div><h2>${si<0?"0 · 나의 수행":`${si+1}단계 · ${esc(s.name)}`}</h2>
+  <div style="min-width:0"><div class="kicker">${si<0?"기초 자료":`STEP ${si+1} · 평가요소 ${esc(s.el)}`}</div><h2>${si<0?"나의 수행":`${si+1}단계 · ${esc(s.name)}`}</h2>
   <p>${si<0?"기본 정보 · 활동 대시보드 · 내 결과물 · 출처와 도구":`🎯 ${esc(s.goal)}`}${s?` <span class="time">⏱ ${esc(s.time)}</span>`:""}</p></div></div>`; }
-function footNav(si){ return `<div class="foot-nav"><button class="btn" type="button" data-go="${si-1}"${si<0?" disabled":""}>${si===0?"← 0 나의 수행":"← 이전 단계"}</button><button class="btn pri" type="button" data-go="${si+1}"${si===4?" disabled":""}>${si<0?"1단계 시작하기 →":"다음 단계 →"}</button></div>`; }
+function footNav(si){ return `<div class="foot-nav"><button class="btn" type="button" data-go="${si-1}"${si<0?" disabled":""}>${si===0?"← 나의 수행":"← 이전 단계"}</button><button class="btn pri" type="button" data-go="${si+1}"${si===4?" disabled":""}>${si<0?"1단계 시작하기 →":"다음 단계 →"}</button></div>`; }
 function stageHTML(doc,si,ro){ return `<section class="stage" style="${lookStyle(si)}">${stageHeadHTML(si,ro)}<div class="bento">${cardsHTML(doc,si,ro)}</div>${ro?"":footNav(si)}</section>`; }
 /** 도함수 카드용 작은 그래프. fn을 그리고 x=a 표시(marks)와 접선(tangent)을 덧그립니다. */
 function plotSVG(o){ const W=520,H=190,L=46,R=10,Tp=10,B=26, x1=o.x1, x2=o.x2;
@@ -1399,9 +1468,98 @@ function derivCharts(doc,an){ const A=an.A; if(!A.ok) return ["",`<div class="em
   return [plotSVG({id:"df",label:"모델 A 그래프",x1,x2,fn:x=>fval(A,x),cls:"ca",pts:an.pts,tangent:true,marks:xs.map(x=>({x,y:fval(A,x),s:fd1(A,x)}))}),
           plotSVG({id:"dd",label:"도함수 그래프",x1,x2,fn:x=>fd1(A,x),cls:"cd",zero:true,marks:xs.map(x=>({x,y:fd1(A,x)}))})]; }
 
+/* ── 탐구 주제: 예시 자료를 고르거나 직접 씁니다 (예전 기록의 s1_card·탐구 제목도 읽음) ── */
+function topicOf(doc){ const a=doc.ans||{}; if(a.s1_topic) return a.s1_topic; const c=CARDS.find(c=>c[0]===a.s1_card); if(c&&c[0]!=="J") return c[0]+" · "+c[1]; return (doc.info||{}).title||""; }
+function cardOf(doc){ const m=topicOf(doc).match(/^([A-I]) · /); return m?CARDS.find(c=>c[0]===m[1]):null; }
+/* ── 수식 칸: LaTeX 결과만 담고, 누르면 수식 입력기가 열립니다 ── */
+function mshowHTML(v){ return v?(MathTool.hasMath(v)?tx(v):esc(v)):'<span class="ph">눌러서 수식 입력기로 쓰기</span>'; }
+function updMShow(key){ const el=app.querySelector(`[data-mshow="${key}"]`), f=document.getElementById("f_"+key); if(!el||!f) return;
+  el.innerHTML=mshowHTML(f.value); el.closest(".mfield").classList.toggle("empty",!f.value); mathPass(el); }
+function openMathField(key){ if(locked()) return; const f=document.getElementById("f_"+key); if(f) MathTool.open(f,{whole:true}); }
+/* ── 모델 형태별 식과 e·g 설명 ── */
+const FORM_TEX={"사인":"y=a\\sin u+d","코사인":"y=a\\cos u+d","탄젠트형":"y=a\\tan u+d","시컨트형":"y=a\\sec u+d","코시컨트형":"y=a\\csc u+d","코탄젠트":"y=a\\cot u+d","아크탄젠트형":"y=a\\arctan u+d",
+  "삼각함수의 합성":"y=a\\sin u+e\\cos u+d","두 삼각함수의 합":"y=a\\sin u+e\\sin 2u+d","배각 공식 활용":"y=a\\sin u+e\\cos 2u+d","반각 공식 활용":"y=a\\sin^2 u+d","사인·코사인파의 덧셈":"y=a\\sin u+e\\sin 2u+g\\sin 3u+d"};
+function tplHTML(m){ m=m||{}; const t=m.t||"사인", E=USES_E.has(t), G=USES_G.has(t);
+  return `형태: ${tx(`$${FORM_TEX[t]||""}$, $u=b(x-c)$`)} · 쓰는 문자: <b>a, b, c, d${E?", e":""}${G?", g":""}</b>${E?"":" <span class=\"sub\">(이 형태는 e, g를 쓰지 않으니 비워 둡니다)</span>"}`; }
+const EG_HELP=`<details class="help eg"><summary>❓ e와 g는 무엇인가요? (예시 보기)</summary>
+<p>${tx("$u=b(x-c)$일 때, 기본 물결 $a\\sin u$에 두 번째·세 번째 물결을 더하는 형태에서 그 물결의 크기(계수)를 $e$, $g$라고 합니다. 쓰지 않는 형태에서는 비워 두면 0으로 계산됩니다.")}</p>
+<div class="tbl-wrap"><table class="t"><thead><tr><th>형태</th><th>식</th><th>e, g의 뜻</th><th>예시</th></tr></thead><tbody>
+<tr><td class="lab">삼각함수의 합성</td><td>${tx("$a\\sin u+e\\cos u+d$")}</td><td>${tx("$e$: 코사인 물결의 크기. 사인과 합치면 봉우리가 앞뒤로 옮겨집니다.")}</td><td>${tx("월평균 기온 $y=8\\sin u+3\\cos u+12$ → $a=8,\\ e=3$")}</td></tr>
+<tr><td class="lab">두 삼각함수의 합</td><td>${tx("$a\\sin u+e\\sin 2u+d$")}</td><td>${tx("$e$: 2배 빠르게 오르내리는 작은 물결의 크기")}</td><td>${tx("조위 $y=1.2\\sin u+0.4\\sin 2u+2$ → $e=0.4$")}</td></tr>
+<tr><td class="lab">배각 공식 활용</td><td>${tx("$a\\sin u+e\\cos 2u+d$")}</td><td>${tx("$e$: 한 주기에 봉우리를 두 번 만드는 물결의 크기")}</td><td>${tx("전력 수요 $y=5\\sin u-3\\cos 2u+60$ → $e=-3$")}</td></tr>
+<tr><td class="lab">사인·코사인파의 덧셈</td><td>${tx("$a\\sin u+e\\sin 2u+g\\sin 3u+d$")}</td><td>${tx("$e$: 2배 진동, $g$: 3배 진동의 크기(배음)")}</td><td>${tx("악기 소리 $y=\\sin u+0.5\\sin 2u+0.2\\sin 3u$ → $e=0.5,\\ g=0.2$")}</td></tr>
+</tbody></table></div><p class="sub">e, g 값을 바꿔 보며 그래프가 어떻게 바뀌는지 관찰하세요. 0이면 그 물결이 없는 것입니다.</p></details>`;
+/* ── 어려운 용어 풀이 (마우스를 대면 설명) ── */
+const GLOSS={rmse:"RMSE(평균 제곱근 오차): 모델이 실제 자료에서 평균적으로 몇 (y 단위)만큼 빗나가는지 나타냅니다. 각 점의 '실측값 − 모델값'을 제곱해 평균을 낸 뒤 제곱근을 씌워 구합니다. 0에 가까울수록 잘 맞습니다. 예: RMSE가 0.3이고 y의 단위가 m라면, 모델이 평균 0.3 m쯤 틀리게 예측한다는 뜻입니다.",
+  mape:"평균 오차율: 각 점에서 빗나간 정도를 실측값에 대한 백분율(%)로 나타내 평균 낸 값입니다. 예: 5%면 실제 값의 5%쯤 빗나갑니다."};
+const term=(k,label)=>`<span class="term" data-tip="${esc(GLOSS[k])}" tabindex="0">${label}</span>`;
+/* ── 이동: 결과물 목록에서 빠진 항목을 누르면 그 칸으로 ── */
+function goTo(where){ stage=where==="data"?1:3; renderStudent(); const el=app.querySelector(where==="data"?".upbox":"[data-photo]");
+  if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),2400); } }
+
+/* ── 4단계 ④ 구분구적법 탐구: 모델 A/B 아래 넓이를 직사각형 n개로 ── */
+const RM_POS=[["left","왼쪽 끝점"],["right","오른쪽 끝점"],["mid","가운데 점"]];
+function rmState(doc){ const c=doc.calc||{}; return {m:c.rm==="B"?"B":"A", n:Math.max(1,Math.min(100,Math.round(N(c.n,10)))), pos:["left","right","mid"].includes(c.pos)?c.pos:"left", p:c.p, q:c.q}; }
+/** 직사각형 넓이의 합: Δx=(q−p)/n, 높이는 왼쪽·오른쪽·가운데 점의 함숫값 */
+function riemannSum(m,p,q,n,pos){ if(!m.ok||!isNum(p)||!isNum(q)||+q===+p) return NaN; p=+p; q=+q; const dx=(q-p)/n, off=pos==="right"?1:pos==="mid"?.5:0; let s=0;
+  for(let i=0;i<n;i++){ const h=fval(m,p+(i+off)*dx); if(!isFinite(h)) return NaN; s+=h*dx; } return s; }
+function riemannSVG(doc,an){ const S=rmState(doc), m=an[S.m];
+  if(!m.ok) return `<div class="empty-note">3단계에서 모델 ${S.m}의 a, b, c, d를 정하면 그래프가 나타납니다.</div>`;
+  if(!isNum(S.p)||!isNum(S.q)||+S.q<=+S.p) return `<div class="empty-note">구간 시작 p와 끝 q를 넣으세요 (p &lt; q).</div>`;
+  const p=+S.p, q=+S.q, W=640,H=330,L=52,R=14,Tp=14,B=36;
+  let x1=Math.min(p,...an.pts.map(t=>t.x)), x2=Math.max(q,...an.pts.map(t=>t.x)); if(!an.pts.length){ x1=p-(q-p)*.2; x2=q+(q-p)*.2; } const xp=(x2-x1)*.04; x1-=xp; x2+=xp;
+  const dx=(q-p)/S.n, off=S.pos==="right"?1:S.pos==="mid"?.5:0, hs=[...Array(S.n)].map((_,i)=>fval(m,p+(i+off)*dx));
+  const vs=[]; for(let i=0;i<=300;i++){ const v=fval(m,x1+(x2-x1)*i/300); if(isFinite(v)) vs.push(v); }
+  let ys=vs.concat(hs.filter(isFinite),[0]).sort((a,b)=>a-b); let y1=ys[Math.floor(ys.length*.02)], y2=ys[Math.ceil(ys.length*.98)-1]; y1=Math.min(y1,0); y2=Math.max(y2,0); if(y1===y2) y2+=1; const yp=(y2-y1)*.1; y1-=yp; y2+=yp; const span=y2-y1;
+  const sx=x=>L+(x-x1)/(x2-x1)*(W-L-R), sy=y=>Tp+(y2-y)/(y2-y1)*(H-Tp-B);
+  let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="구분구적법 그래프"><defs><clipPath id="cprm"><rect x="${L}" y="${Tp}" width="${W-L-R}" height="${H-Tp-B}"/></clipPath></defs>`;
+  ticks(x1,x2,8).forEach(v=>{ const X=sx(v); g+=`<line class="gl" x1="${X}" x2="${X}" y1="${Tp}" y2="${H-B}"/><text x="${X}" y="${H-B+14}" text-anchor="middle">${fmt(v,3)}</text>`; });
+  ticks(y1,y2,5).forEach(v=>{ const Y=sy(v); g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${Y}" y2="${Y}"/><text x="${L-6}" y="${Y+4}" text-anchor="end">${fmt(v,3)}</text>`; });
+  g+=`<line class="zero" x1="${L}" x2="${W-R}" y1="${sy(0)}" y2="${sy(0)}"/>`;
+  hs.forEach((h,i)=>{ if(!isFinite(h)) return; const a=sx(p+i*dx), b=sx(p+(i+1)*dx), Y=sy(h), Z=sy(0); g+=`<rect class="${h>=0?"rr":"rn"}" x="${a.toFixed(1)}" y="${Math.min(Y,Z).toFixed(1)}" width="${Math.max(.5,b-a).toFixed(1)}" height="${Math.max(.5,Math.abs(Y-Z)).toFixed(1)}" clip-path="url(#cprm)"/>`; });
+  let d="",prev=null; for(let i=0;i<=480;i++){ const x=x1+(x2-x1)*i/480, v=fval(m,x); if(!isFinite(v)||Math.abs(v-(y1+y2)/2)>span*4||(prev!=null&&Math.abs(v-prev)>span*1.2)){ prev=isFinite(v)?v:null; if(isFinite(v)) d+=`M${sx(x).toFixed(1)},${sy(v).toFixed(1)}`; continue; } d+=(prev==null?"M":"L")+sx(x).toFixed(1)+","+sy(v).toFixed(1); prev=v; }
+  g+=`<path class="${S.m==="A"?"ca":"cb"}" d="${d}" clip-path="url(#cprm)"/>`;
+  [p,q].forEach((v,i)=>{ g+=`<line class="mk" x1="${sx(v)}" x2="${sx(v)}" y1="${Tp}" y2="${H-B}"/><text class="mkt" x="${sx(v)+(i?-4:4)}" y="${Tp+11}" text-anchor="${i?"end":"start"}">${i?"q":"p"}=${fmt(v,3)}</text>`; });
+  return g+`<text class="lbl" x="${(L+W-R)/2}" y="${H-4}" text-anchor="middle">${esc(axisLabel(doc,"x"))}</text></svg>`; }
+function riemannHTML(doc,ro){ const S=rmState(doc), dis=ro?" disabled":"", c=doc.calc||{};
+  const seg=(k,opts,cur)=>`<div class="rmseg" role="group">${opts.map(([v,l])=>`<button type="button" data-act="rmSet" data-k="${k}" data-v="${v}" aria-pressed="${cur===v}"${dis}>${l}</button>`).join("")}</div>`;
+  return `<div class="rm">
+  <div class="rm-head"><div class="rm-ico" aria-hidden="true">∫</div><div><div class="rm-kicker">구분구적법 탐구 · 자유 탐구</div><h4>내 모델 아래 넓이를 직사각형으로 구해요!</h4><p>모델과 구간을 고르고, 직사각형 개수와 높이를 정하는 위치를 바꾸며 넓이의 합이 어떻게 변하는지 관찰해요.</p></div></div>
+  <div class="rm-work">
+    <div class="rm-graph"><div class="rm-top"><span class="rm-label">넓이 관찰 창</span><span class="rm-live"><i></i> 실시간 반영</span></div>
+      <div class="rm-fn"><span class="rm-badge ${S.m==="B"?"b":""}">f<sub>${S.m}</sub></span><span data-out="rmFormula"></span><span class="rm-int" data-out="rmInt"></span></div>
+      <div data-out="rmGraph"></div>
+      <div class="legend"><span><span class="sw" style="background:var(${S.m==="A"?"--accent":"--modelB"})"></span> 모델 ${S.m} 그래프</span><span><span class="sw rrsw"></span> 직사각형 (높이: ${RM_POS.find(x=>x[0]===S.pos)[1]})</span></div>
+      <p class="rm-note" data-out="rmNote"></p></div>
+    <div class="rm-tools"><div class="rm-label">탐험 도구</div>
+      <div class="rm-ctl"><span>모델 고르기</span>${seg("rm",[["A","모델 A"],["B","모델 B"]],S.m)}</div>
+      <div class="rm-ctl two"><label class="mini">${tx("구간 시작 $p$")}<input data-p="calc.p" value="${esc(c.p??"")}" placeholder=" " inputmode="decimal" autocomplete="off"${dis}></label><label class="mini">${tx("구간 끝 $q$")}<input data-p="calc.q" value="${esc(c.q??"")}" placeholder=" " inputmode="decimal" autocomplete="off"${dis}></label></div>
+      <div class="rm-ctl"><span>직사각형(분할) 개수 <b data-out="rmN">${S.n}</b>개</span><input type="range" min="1" max="100" step="1" data-p="calc.n" value="${S.n}" aria-label="직사각형 개수"${dis}><div class="rm-range"><span>1개</span><span>100개</span></div></div>
+      <div class="rm-ctl"><span>높이를 정하는 위치</span>${seg("pos",RM_POS,S.pos)}</div>
+      <div class="rm-sum"><span>현재 직사각형 넓이의 합 ${tx("$S_n$")}</span><b data-out="rmSum">–</b><small>개수를 늘려 보며 넓이의 합이 어떻게 달라지는지 비교해요.</small></div>
+      <div class="tbl-wrap"><table class="t"><thead><tr><th>${tx("$n$")}</th><th>왼쪽 끝점</th><th>오른쪽 끝점</th><th>가운데 점</th></tr></thead><tbody data-out="rmTable"></tbody></table></div>
+    </div>
+  </div>
+  <div class="rm-guess"><div class="rm-label">🤔 먼저 생각해 보기 · 실제 넓이는 얼마쯤일까요?</div><p>직사각형 개수와 위치를 바꿔 본 뒤, 아래 '예상하는 넓이' 칸에 예상값을 쓰고 확인해 보세요.</p>
+    ${ro?"":`<button type="button" class="btn pri" data-act="rmCheck">예상 확인하기 →</button>`}<div class="rm-result" data-out="rmResult"></div></div>
+  </div>`; }
+function riemannOutputs(root,doc,an,put){ const S=rmState(doc), m=an[S.m], c=doc.calc||{};
+  put("rmFormula",m.ok?tx(`$${formulaTex(m).replace(/^y=/,(S.m==="A"?"f_A":"f_B")+"(x)=")}$`):'<span class="sub">모델이 아직 없습니다</span>');
+  put("rmInt",isNum(S.p)&&isNum(S.q)?tx(`$${S.p}\\le x\\le ${S.q}$`):"구간을 넣으세요"); put("rmN",String(S.n)); put("rmGraph",riemannSVG(doc,an));
+  const s=riemannSum(m,S.p,S.q,S.n,S.pos); put("rmSum",isNaN(s)?"–":fmt(s,5));
+  put("rmNote",`각 직사각형의 높이를 <b>${RM_POS.find(x=>x[0]===S.pos)[1]}</b>의 함숫값으로 정했어요. 곡선과 직사각형 사이의 틈을 살펴보세요.${isNum(S.p)&&isNum(S.q)&&isNaN(s)&&m.ok?" <b>구간 안에 점근선이 있어 넓이를 구할 수 없습니다. 구간을 바꾸세요.</b>":""} x축 아래 부분은 음수로 더해집니다.`);
+  put("rmTable",[4,10,50,100].map(n=>`<tr><td class="lab">${n}</td>${["left","right","mid"].map(ps=>`<td class="auto">${fmt(riemannSum(m,S.p,S.q,n,ps),5)}</td>`).join("")}</tr>`).join(""));
+  if(c.rmShow){ const ex=integ(m,S.p,S.q), g=parseNum((doc.ans||{}).s4_rp);
+    put("rmResult",isNaN(ex)?`<span class="sub">정적분 값을 구할 수 없습니다(구간이나 모델을 확인하세요).</span>`:`${tx(`도구로 구한 정적분 $\\displaystyle\\int_{${S.p}}^{${S.q}} f_${S.m}(x)\\,dx\\approx$`)} <b>${fmt(ex,5)}</b>${isNaN(g)?` · <span class="sub">예상값을 숫자로 쓰면 차이를 알려 줍니다.</span>`:` · 내 예상 ${fmt(g,5)} → 차이 <b>${fmt(g-ex,4)}</b>`}<div class="sub">${tx("$n$을 크게 하면 $S_n$이 이 값에 가까워집니다. 이것이 구분구적법과 정적분의 관계입니다.")}</div>`); }
+  else put("rmResult",""); }
+/** "$1.03$", "\\frac{3}{4}", "-2.5" 같은 칸 값 → 숫자 (아니면 NaN) */
+function parseNum(v){ let s=String(v??"").trim().replace(/^\$|\$$/g,"").replace(/\\left|\\right|\s/g,"").replace(/−/g,"-");
+  const f=s.match(/^(-?)\\d?frac\{(-?[\d.]+)\}\{(-?[\d.]+)\}$/); if(f) return (f[1]?-1:1)*f[2]/f[3];
+  return isNum(s)?+s:NaN; }
+
 /* ───────── 결과물 문서 (구글 문서 · PDF) ───────── */
 // 활동지(STAGES)와 학생 답을 "문서 명세"로 바꿔 서버에 보내면, 서버가 활동지 서식의 구글 문서로 그립니다.
-const DOC_HEADER=["2026학년도 2학기 전문 수학 · 수행평가① (40점)","삼각함수·미적분 수학적 모델링 탐구","학생 활동지 겸 탐구 보고서 · 4시간"];
+const DOC_HEADER=["2026학년도 2학기 전문 수학 · 수행평가①","삼각함수·미적분 수학적 모델링 탐구","학생 활동지 겸 탐구 보고서 · 4시간"];
 const DOC_INTRO="내가 고른 현상의 자료를 모아 삼각함수·역삼각함수 모델을 만들고, 미분과 적분으로 현상을 분석한 뒤 실제 자료와 비교합니다. 다 채운 활동지가 그대로 보고서가 됩니다.";
 const DOC_STD="관련 성취기준 [12전수01-02] 여러 가지 삼각함수의 그래프 · [12전수01-03] 역삼각함수 · [12전수01-04] 삼각함수·역삼각함수의 미분, 고계도함수 · [12전수01-05] 로피탈의 정리 · [12전수01-07] 여러 가지 적분 방법";
 const TOOL_TITLE={data:"측정 자료와 특성",model:"모델 맞추기와 모델 그래프"};
@@ -1426,11 +1584,13 @@ function buildSpec(doc,acct){
     case "rate": { const xs=c.x||[];
       return [auto([["$f_A(x)$ 모델 A",ftex(an.A)||"–"],["$f_B(x)$ 모델 B",ftex(an.B)||"–"]]),{t:"table",cols:["알아볼 순간","$a$","손 계산 $f'(a)$","도구 $f_A'(a)$","차이","$f_A(a)$","$f_A''(a)$","$f_B'(a)$"],fill:[1,2],
         rows:RATE_ROWS.map((r,i)=>{ const ok=isNum(xs[i]), d1=ok?fd1(an.A,+xs[i]):NaN, h=a["s4_r"+i];
-          return [r,String(xs[i]||""),String(h||""),ok?fmt(d1):"",ok&&isNum(h)&&!isNaN(d1)?fmt(+h-d1):"",ok?fmt(fval(an.A,+xs[i])):"",ok?fmt(fd2(an.A,+xs[i])):"",ok?fmt(fd1(an.B,+xs[i])):""]; })}]; }
-    case "integral": { const w=isNum(c.p)&&isNum(c.q)&&+c.q!==+c.p?(+c.q-+c.p):NaN;
-      return [auto([["적분 구간 $[p,q]$",isNum(c.p)&&isNum(c.q)?`[${c.p}, ${c.q}]`:""]]),{t:"table",cols:["정적분","값","평균값 = 값 $\\div(q-p)$"],rows:[["모델 A",an.iA],["모델 B",an.iB],["자료 (사다리꼴 어림)",an.tr]].map(([l,v])=>[l,fmt(v),fmt(v/w)])}]; }
+          return [r,String(xs[i]||""),String(h||""),ok?fmt(d1):"",ok&&!isNaN(parseNum(h))&&!isNaN(d1)?fmt(parseNum(h)-d1):"",ok?fmt(fval(an.A,+xs[i])):"",ok?fmt(fd2(an.A,+xs[i])):"",ok?fmt(fd1(an.B,+xs[i])):""]; })}]; }
+    case "riemann": { const S=rmState(doc), m=an[S.m], sm=riemannSum(m,S.p,S.q,S.n,S.pos), ex=integ(m,S.p,S.q);
+      return [auto([["고른 모델",`모델 ${S.m} ${ftex(m)}`],["적분 구간 $[p,q]$",isNum(S.p)&&isNum(S.q)?`[${S.p}, ${S.q}]`:""],["직사각형 개수 · 높이 위치",`${S.n}개 · ${RM_POS.find(x=>x[0]===S.pos)[1]}`],["직사각형 넓이의 합 $S_n$",fmt(sm,5)],["도구로 구한 정적분 값",fmt(ex,5)]]),
+        {t:"table",cols:["$n$","왼쪽 끝점","오른쪽 끝점","가운데 점"],rows:[4,10,50,100].map(n=>[String(n),...["left","right","mid"].map(ps=>fmt(riemannSum(m,S.p,S.q,n,ps),5))])},
+        img(riemannSVG(doc,an),"구분구적법: 직사각형 넓이의 합으로 곡선 아래 넓이 어림")]; }
     case "errTable": { const eA=an.eA, eB=an.eB, cell=(e,fn)=>e?fn(e):"–";
-      return [{t:"table",cols:["비교 항목","모델 A","모델 B"],rows:[["평균 오차율 (%)",e=>fmt(e.mean,2)],["가장 큰 오차율 (%)과 그때의 x",e=>`${fmt(e.max,2)} (x = ${fmt(e.maxX)})`],["RMSE (y 단위)",e=>fmt(e.rmse,3)],["평균 오차",e=>fmt(e.me,3)],["오차 (+) / (−) 개수",e=>`${e.pos} / ${e.neg}`]].map(([l,fn])=>[l,cell(eA,fn),cell(eB,fn)])}]; }
+      return [{t:"table",cols:["비교 항목","모델 A","모델 B"],rows:[["평균 오차율 (%)",e=>fmt(e.mean,2)],["가장 큰 오차율 (%)과 그때의 x",e=>`${fmt(e.max,2)} (x = ${fmt(e.maxX)})`],["RMSE: 평균적으로 빗나간 크기 (y 단위)",e=>fmt(e.rmse,3)],["평균 오차",e=>fmt(e.me,3)],["오차 (+) / (−) 개수",e=>`${e.pos} / ${e.neg}`]].map(([l,fn])=>[l,cell(eA,fn),cell(eB,fn)])}]; }
     case "errChart": return [img(chartSVG(an,{xl,residual:true,id:"p3"}),"오차 = 실측 − 모델 · 파란색: 모델 A · 주황색: 모델 B · 점선: ±1 기준선 (1 초과는 로그 눈금으로 줄임)")];
   } return []; };
   const fieldsBlock=b=>{ const blk={no:b.n||"",title:b.t||TOOL_TITLE[b.tool]||"",star:!!b.star,hint:b.hint||"",parts:[]};
@@ -1444,12 +1604,12 @@ function buildSpec(doc,acct){
       if(b.help||b.tool==="submit") return;
       if(b.check){ blocks.push({check:b.check,items:b.items.map(([k,t])=>[t,!!ck[k]])}); return; }
       const blk=fieldsBlock(b); if(blk.parts.length) blocks.push(blk); });
-    if(si===4){ const T=doc.tools||{}, used=TOOLS.filter(([k])=>T[k]).map(([,l])=>l).join(", ");   // [0 나의 수행]의 출처와 도구
+    if(si===4){ const T=doc.tools||{}, used=TOOLS.filter(([k])=>T[k]).map(([,l])=>l).join(", ");   // [나의 수행]의 출처와 도구
       blocks.push({no:"⑧",title:"출처와 도구",parts:[{t:"fields",rows:[[HOME_SRC.f[0][1],val("s5_src")],["사용한 도구",used],[HOME_SRC.f[1][1],val("s5_tool")]]}]}); }
-    return {name:`${si+1}단계 · ${s.name}`,meta:`${s.time} | 평가요소: ${s.el} (10점)`,goal:s.goal,blocks}; });
+    return {name:`${si+1}단계 · ${s.name}`,meta:`${s.time} | 평가요소: ${s.el}`,goal:s.goal,blocks}; });
   return {spec:{header:DOC_HEADER,intro:DOC_INTRO,standards:DOC_STD,info:{sid:info.sid||acct.sid||"",name:info.name||acct.name||"",title:info.title||""},stages},svgs}; }
 
-const SVG_CSS=".gl{stroke:#E7EEEC}.ax{stroke:#D5DEDC}text{fill:#5A6B6F;font-size:11px;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif}.lbl{font-size:12px}.pt{fill:#18272B}.ca{stroke:#0E6874;fill:none;stroke-width:2}.cb{stroke:#A65A16;fill:none;stroke-width:2;stroke-dasharray:6 4}.ra{fill:#0E6874}.rb{fill:#A65A16}.zero{stroke:#5A6B6F;stroke-dasharray:3 3}.lim{stroke:#B45309;stroke-width:1.5;stroke-dasharray:6 4}.limt{fill:#B45309;font-size:11px}.band{fill:#FEF3E2}";
+const SVG_CSS=".gl{stroke:#E7EEEC}.ax{stroke:#D5DEDC}text{fill:#5A6B6F;font-size:11px;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif}.lbl{font-size:12px}.pt{fill:#18272B}.ca{stroke:#0E6874;fill:none;stroke-width:2}.cb{stroke:#A65A16;fill:none;stroke-width:2;stroke-dasharray:6 4}.ra{fill:#0E6874}.rb{fill:#A65A16}.zero{stroke:#5A6B6F;stroke-dasharray:3 3}.rr{fill:#C7D2FE;stroke:#4F46E5;stroke-width:.8}.rn{fill:#FECACA;stroke:#DC2626;stroke-width:.8}.mk{stroke:#B45309;stroke-dasharray:3 4}.mkt{fill:#B45309;font-size:11px}.lim{stroke:#B45309;stroke-width:1.5;stroke-dasharray:6 4}.limt{fill:#B45309;font-size:11px}.band{fill:#FEF3E2}";
 function svgToPng(svg){ return new Promise(res=>{ if(!/^<svg/.test(svg)) return res("");
   const s=svg.replace('<svg class="chart"','<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640"').replace(">",`><style>${SVG_CSS}</style><rect width="640" height="320" fill="#fff"/>`);
   const im=new Image(); im.onload=()=>{ try{ const cv=document.createElement("canvas"); cv.width=1280; cv.height=640; cv.getContext("2d").drawImage(im,0,0,1280,640); res(cv.toDataURL("image/png").split(",")[1]); }catch(e){ res(""); } };
@@ -1486,7 +1646,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
-const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"아이디는 영문·숫자와 _ . - 로 3~20자입니다.",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"이미 쓰고 있는 아이디입니다. 다른 아이디를 정해 주세요.",
+const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"아이디(이름)는 한글·영문·숫자로 2~20자입니다.",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 사람이 있습니다. 이름 뒤에 학번 끝자리를 붙여 주세요 (예: 김하늘7).",
   WRONG_LOGIN:"아이디 또는 비밀번호가 맞지 않습니다. 잊었다면 선생님께 초기화를 요청하세요.",CLASS_CODE:"학급 코드가 맞지 않습니다. 선생님께 확인하세요.",TEACHER_CODE:"교사 가입 코드가 맞지 않습니다.",
   LOCKED:"선생님이 작성을 마감해서 저장할 수 없습니다.",FORBIDDEN:"교사만 할 수 있습니다.",NOT_FOUND:"그 계정을 찾지 못했습니다.",WRONG_PW:"지금 비밀번호가 맞지 않습니다.",
   NO_SETUP:"선생님이 아직 초기 설정(setup)을 하지 않았습니다.",NETWORK:"저장 서버에 연결하지 못했습니다. 잠시 뒤 다시 해 주세요.",SELF:"내 계정은 지울 수 없습니다.",
@@ -1520,14 +1680,14 @@ function renderAuth(msg){ document.getElementById("roleSeg").hidden=true; docume
     <div class="seg" role="tablist" style="align-self:flex-start"><button type="button" data-auth="login" aria-pressed="${!S}">로그인</button><button type="button" data-auth="signup" aria-pressed="${S}">처음이면 가입하기</button></div>
     ${cfg.notice?`<div class="banner info" style="margin:0">📢 ${esc(cfg.notice)}</div>`:""}
     <form id="authForm" class="authform" autocomplete="off" novalidate>
-      <label class="mini">아이디<input id="a_id" autocomplete="username" required></label>
+      <label class="mini">${S?"이름 (아이디로 씁니다)":"아이디 (가입할 때 쓴 이름)"}<input id="a_id" autocomplete="username" placeholder="${S?"예: 김하늘":""}" required></label>
       <label class="mini">비밀번호<input id="a_pw" type="password" autocomplete="${S?"new-password":"current-password"}" required></label>
       ${S?`<label class="mini">비밀번호 확인<input id="a_pw2" type="password" autocomplete="new-password"></label>
-      <div class="grid2" style="gap:8px"><label class="mini">학번<input id="a_sid" inputmode="numeric"></label><label class="mini">이름<input id="a_name"></label></div>
+      <label class="mini">학번<input id="a_sid" inputmode="numeric"></label>
       ${cfg.needClassCode?`<label class="mini">학급 코드 (선생님이 알려 준 코드)<input id="a_cc"></label>`:""}
       <details class="help"><summary>교사이신가요?</summary><label class="mini" style="margin-top:6px">교사 가입 코드 (스프레드시트 "설정" 시트에 있음)<input id="a_tc"></label>
         <label class="mini" style="margin-top:6px">구글 계정 이메일 (학생 결과물 폴더를 이 주소로 공유해 드립니다)<input id="a_em" type="email" inputmode="email" autocomplete="email"></label></details>
-      <p class="sub" style="margin:0">아이디는 영문·숫자로 3~20자, 비밀번호는 4자 이상입니다. 비밀번호를 잊으면 선생님이 초기화해 줄 수 있습니다.</p>`:""}
+      <p class="sub" style="margin:0">아이디는 <b>내 이름</b>으로 씁니다(한글 가능, 2~20자). 같은 이름이 이미 있으면 이름 뒤에 학번 끝자리를 붙이세요(예: 김하늘7). 비밀번호는 4자 이상입니다. 비밀번호를 잊으면 선생님이 초기화해 줄 수 있습니다.</p>`:""}
       <p class="autherr" id="authErr" role="alert">${esc(msg||"")}</p>
       <button class="btn pri" type="submit" id="authBtn">${S?"가입하고 시작하기":"로그인"}</button>
     </form></section>`;
@@ -1543,7 +1703,7 @@ app.addEventListener("submit",async e=>{ e.preventDefault(); const f=e.target, f
     const S=authMode==="signup";
     if(S&&v("a_pw")!==v("a_pw2")){ err.textContent="비밀번호 확인이 다릅니다."; return; }
     btn.disabled=true; err.textContent=S?"가입하는 중…":"로그인하는 중…";
-    try{ const r=await api(S?"signup":"login",S?{id:v("a_id"),pw:v("a_pw"),sid:v("a_sid"),name:v("a_name"),classCode:v("a_cc"),teacherCode:v("a_tc"),email:v("a_em")}:{id:v("a_id"),pw:v("a_pw")});
+    try{ const r=await api(S?"signup":"login",S?{id:v("a_id"),pw:v("a_pw"),sid:v("a_sid"),name:v("a_id"),classCode:v("a_cc"),teacherCode:v("a_tc"),email:v("a_em")}:{id:v("a_id"),pw:v("a_pw")});
       if(S&&r.user&&r.user.role==="teacher") pendingNote=r.shared?"가입했습니다. 학생 결과물 폴더를 내 구글 계정으로 공유했습니다.":"가입했습니다. 폴더 공유에는 실패했으니 '교사 공유·문서' 탭에서 이메일을 다시 넣어 주세요.";
       setToken(r.token); authMode="login"; await loadMe(); }
     catch(x){ err.textContent=errMsg(x); btn.disabled=false; }
@@ -1556,7 +1716,7 @@ app.addEventListener("submit",async e=>{ e.preventDefault(); const f=e.target, f
   } });
 async function loadMe(){ setSave("wait","불러오는 중");
   const r=await api("me"); ME=r.user; cfg=Object.assign(cfg,r.config||{}); myGrade=r.grade||null;
-  me=Object.assign(blankDoc(),r.doc||{}); me.info=Object.assign({},me.info||{},ME.role==="student"?{sid:ME.sid,name:ME.name}:{}); docAt=r.docAt||0;
+  me=Object.assign(blankDoc(),r.doc||{}); me.info=Object.assign({},me.info||{},ME.role==="student"?{sid:ME.sid,name:ME.name}:{}); if(!me.ans.s1_topic&&topicOf(me)) me.ans.s1_topic=topicOf(me); if(me.ans.s1_topic) me.info.title=me.ans.s1_topic; docAt=r.docAt||0;
   if(ME.mustChange) return renderPwChange(true);
   enterApp(); }
 function enterApp(note){ const ub=document.getElementById("userBox"); ub.hidden=false;
@@ -1607,12 +1767,12 @@ function renderStudent(){
   updateOutputs(app,me); updateDocSt();
   if(renderStudent.keepScroll){ renderStudent.keepScroll=false; window.scrollTo({top:y}); } }
 const SHORT=["설계","자료","모델","미분·적분","검증"];
-function homeProgress(doc){ const i=doc.info||{}, a=doc.ans||{}; const parts=[i.title,a.s1_card,a.s5_src,a.s5_tool].filter(v=>String(v||"").trim()).length; return parts/4; }
+function homeProgress(doc){ const i=doc.info||{}, a=doc.ans||{}; const parts=[topicOf(doc),a.s5_src,a.s5_tool].filter(v=>String(v||"").trim()).length; return parts/3; }
 function stepsHTML(p){ const hp=homeProgress(me);
-  return `<button role="tab" type="button" class="home ${hp>=.999?"done":hp>0?"part":""}" aria-selected="${stage<0}" data-stage="-1" title="0 나의 수행 · 기본 정보·대시보드·결과물·출처"><i></i>0 나의 수행</button>`+
+  return `<button role="tab" type="button" class="home ${hp>=.999?"done":hp>0?"part":""}" aria-selected="${stage<0}" data-stage="-1" title="나의 수행 · 기본 정보·대시보드·결과물·출처"><i></i>나의 수행</button>`+
     STAGES.map((s,k)=>`<button role="tab" type="button" class="${p[k]>=.999?"done":p[k]>0?"part":""}" aria-selected="${k===stage}" data-stage="${k}" title="${k+1}단계 ${esc(s.name)} · ${Math.round(p[k]*100)}%"><i></i>${k+1} ${SHORT[k]}</button>`).join(""); }
 function statusHTML(p){ const s=STAGES[stage], an=analyze(me), avg=Math.round(p.reduce((a,b)=>a+b,0)/5*100), A=me.act||{};
-  return `${stage<0?`<span><b>0 · 나의 수행</b></span><span>탐구 ${tmFmt(A.explore)} · 입력 ${tmFmt(A.input)}</span>`:`<span><b>${stage+1}단계 · ${esc(s.name)}</b></span><span>⏱ ${esc(s.time)}</span><span>평가요소 ${esc(s.el)} (10점)</span>`}<span class="sep"></span>
+  return `${stage<0?`<span><b>나의 수행</b></span><span>탐구 ${tmFmt(A.explore)} · 입력 ${tmFmt(A.input)}</span>`:`<span><b>${stage+1}단계 · ${esc(s.name)}</b></span><span>⏱ ${esc(s.time)}</span><span>평가요소 ${esc(s.el)}</span>`}<span class="sep"></span>
     <span>작성률 <span class="k">${avg}%</span></span><span>오차율 A <span class="k acc">${an.eA?fmt(an.eA.mean,2)+"%":"–"}</span></span><span>자료 <span class="k">${an.pts.length}</span></span>`; }
 function refreshTabs(){ const p=progress(me), st=document.getElementById("steps"), ls=document.getElementById("labStatus"); if(st) st.innerHTML=stepsHTML(p); if(ls) ls.innerHTML=statusHTML(p); }
 let lastField=null;
@@ -1635,13 +1795,14 @@ app.addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t) ret
   if(t.dataset.go!=null){ stage=Math.max(-1,Math.min(4,+t.dataset.go)); flush(); renderStudent(); window.scrollTo({top:0}); return; }
   if(t.dataset.sym!=null){ const f=lastField; if(!f||!document.body.contains(f)||locked()) return; const s=t.dataset.sym, a=f.selectionStart??f.value.length, b=f.selectionEnd??a;
     f.value=f.value.slice(0,a)+s+f.value.slice(b); f.focus(); f.selectionStart=f.selectionEnd=a+s.length; f.dispatchEvent(new Event("input",{bubbles:true})); return; }
-  if(t.dataset.fill){ if(locked()) return; const v=autoVal(me,t.dataset.src); if(!v) return; setP(me,"ans."+t.dataset.fill,v); const el=document.getElementById("f_"+t.dataset.fill); if(el) el.value=v; scheduleSave(); refreshTabs(); return; }
+  if(t.dataset.fill){ if(locked()) return; const v=autoVal(me,t.dataset.src); if(!v) return; setP(me,"ans."+t.dataset.fill,v); const el=document.getElementById("f_"+t.dataset.fill); if(el) el.value=v; updMShow(t.dataset.fill); scheduleSave(); refreshTabs(); return; }
   const act=t.dataset.act; if(!act) return;
-  if(act==="logTry"){ if(locked()) return; const an=analyze(me), m=me.models.A||{}; if(!an.A.ok) return;
-    const k=[1,2,3].find(i=>!String(me.ans["s3_t"+i+"p"]||"").trim()) || 3;
+  if(act==="logTry"){ if(locked()) return; const K=t.dataset.m==="B"?"B":"A", an=analyze(me), m=me.models[K]||{};
+    if(!an[K].ok){ setSave("wait",`모델 ${K}의 a, b, c, d를 먼저 넣으세요`); return; }
+    const k=[1,2,3].find(i=>!String(me.ans["s3_t"+i+"p"]||"").trim()) || 3, e=an["e"+K];
     const pv=["a","b","c","d","e","g"].filter(p=>isNum(m[p])).map(p=>`${p}=${m[p]}`).join(", ");
-    me.ans["s3_t"+k+"p"]=`${m.t}: ${pv}`; me.ans["s3_t"+k+"e"]=an.eA?fmt(an.eA.mean,2):"";
-    ["p","e"].forEach(s=>{ const el=document.getElementById("f_s3_t"+k+s); if(el) el.value=me.ans["s3_t"+k+s]; }); scheduleSave(); refreshTabs(); return; }
+    me.ans["s3_t"+k+"p"]=`모델 ${K} · ${m.t}: ${pv}`; me.ans["s3_t"+k+"e"]=e?fmt(e.mean,2):"";
+    ["p","e"].forEach(s=>{ const el=document.getElementById("f_s3_t"+k+s); if(el) el.value=me.ans["s3_t"+k+s]; }); scheduleSave(); refreshTabs(); setSave("ok",`모델 ${K} 값을 맞추기 기록 ${k}번에 넣었습니다`); return; }
   if(act==="pdf"){ downloadPdf(t); return; }
   if(act==="docNow"){ docDirty=true; syncDocNow(); return; }
   if(act==="submit1"){ confirmSubmit=true; updateOutputs(app,me); return; }
@@ -1735,11 +1896,14 @@ function loadPhotos(root,owner){ root.querySelectorAll("[data-fimg]").forEach(el
   api("getFile",{id,owner}).then(r=>{ fileCache[id]=`data:${r.mime};base64,${r.b64}`; show(); }).catch(()=>{ el.textContent="사진을 불러오지 못했습니다"; }); }); }
 app.addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t||!ME||view!=="student") return;
   if(t.dataset.photo){ if(!locked()) uploadPhoto(t.dataset.photo); return; }
+  if(t.dataset.topic){ const f=document.getElementById("f_s1_topic"); if(f&&!locked()){ f.value=t.dataset.topic; f.dispatchEvent(new Event("input",{bubbles:true})); const d=t.closest("details"); if(d) d.open=false; } return; }
   if(t.dataset.delphoto){ if(locked()) return; delete (me.photos||{})[t.dataset.delphoto]; scheduleSave(); renderStudent.keepScroll=true; renderStudent(); return; }
   if(t.dataset.aitag){ const f=document.getElementById("f_"+t.dataset.aitag); if(!f||locked()) return; const a=f.selectionStart??f.value.length, ins=(a&&!/\s$/.test(f.value.slice(0,a))?" ":"")+AI_TAG+" ";
     f.value=f.value.slice(0,a)+ins+f.value.slice(f.selectionEnd??a); f.focus(); f.selectionStart=f.selectionEnd=a+ins.length; f.dispatchEvent(new Event("input",{bubbles:true})); return; }
   const act=t.dataset.act; if(!act||locked()) return;
   if(act==="upData") return uploadData();
+  if(act==="rmSet"){ setP(me,"calc."+t.dataset.k,t.dataset.v); scheduleSave(); renderStudent.keepScroll=true; renderStudent(); return; }
+  if(act==="rmCheck"){ me.calc.rmShow=true; scheduleSave(); updateOutputs(app,me); return; }
   if(act==="dgFill"){ const g=me.data.grid||(me.data.grid=gridRows(me)); let last=-1; g.forEach((r,i)=>{ if(String(r[1]).trim()) last=i; });
     for(let i=0;i<=last;i++) if(!String(g[i][0]).trim()){ const p=predX(g,i); g[i][0]=p===""?String(i+1):p; }
     redrawGrid(); afterGrid(); setSave("ok","x 값을 채웠습니다"); return; }
@@ -1748,6 +1912,8 @@ app.addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t||!ME
     me.data.grid=[]; dgExtra=0; syncGrid(); redrawGrid(); afterGrid(); return; } });
 // 칸 이름 링크 미리보기
 app.addEventListener("input",e=>{ const t=e.target; if(!t.dataset||!t.dataset.p) return; const k=t.dataset.p.replace(/^ans\./,""), lk=app.querySelector(`[data-links="${k}"]`); if(lk) lk.innerHTML=linkify(t.value);
+  if(view==="student"&&t.dataset.p==="ans.s1_topic"){ me.info.title=t.value; app.querySelectorAll("[data-cardinfo]").forEach(e=>e.innerHTML=cardInfo(me)); }
+  if(t.type==="hidden"&&t.dataset.p.startsWith("ans.")) updMShow(k);
   if(t.tagName==="SELECT") t.classList.toggle("empty",!t.value); });
 app.addEventListener("change",e=>{ const t=e.target; if(t.tagName==="SELECT"&&t.classList.contains("fld")) t.classList.toggle("empty",!t.value);
   if(t.type==="checkbox"&&t.dataset.p&&t.dataset.p.startsWith("tools.")) updateOutputs(app,me); });
@@ -1765,6 +1931,12 @@ document.addEventListener("mouseover",e=>{ const el=e.target.closest&&e.target.c
 document.addEventListener("focusin",e=>{ const el=e.target.closest&&e.target.closest("[data-tip]"); if(el) showTip(el); });
 document.addEventListener("click",e=>{ const el=e.target.closest&&e.target.closest("[data-tip]"); if(el) showTip(el); else if(tipEl) hideTip(); });
 window.addEventListener("scroll",()=>{ if(tipEl) hideTip(); },{passive:true});
+
+/* 결과물 목록 이동 · 수식 칸 열기 */
+app.addEventListener("click",e=>{ if(!ME||view!=="student"||!e.target.closest) return;
+  const g=e.target.closest("[data-goto]"); if(g){ goTo(g.dataset.goto); return; }
+  const mf=e.target.closest("[data-mfield]"); if(mf){ openMathField(mf.dataset.mfield); return; } });
+app.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches("[data-mfield],[data-goto]")){ e.preventDefault(); e.target.click(); } });
 
 /* ───────── 교사 대시보드 ───────── */
 function rowInfo(id,s){ const doc=s.doc||blankDoc(), an=analyze(doc), p=progress(doc), g=grades[id]; const sc=g&&g.scores||{};
@@ -1818,7 +1990,7 @@ function renderDetail(full){ const box=document.getElementById("detailBox"); if(
   const left=`<div style="min-width:0"><div class="dhead"><h2>${esc(r.name)||"이름 없음"}</h2><span class="num sub">${esc(r.sid)} · ${esc(r.login)}</span><span>${esc(r.title)}</span>
     ${docs[sel]?`<a class="btn" style="text-decoration:none" href="${esc(docs[sel].url)}" target="_blank" rel="noopener">구글 문서 열기 ↗</a>`:""}<button class="btn" type="button" data-act="docOne">${docs[sel]?"구글 문서 다시 만들기":"구글 문서 만들기"}</button>
     ${doc.status==="submitted"?`<span class="pill sub">제출함 · ${ago(doc.submittedAt)}</span><button class="btn" type="button" data-act="reopen">다시 고치게 열기</button>`:`<span class="pill${r.live?" live":""}">${r.live?"작성 중":r.upd?"미제출":"시작 전"} · ${ago(r.upd)}</span>`}</div>
-    <div class="dtabs"><button type="button" data-dst="-1" aria-pressed="${selStage<0}">0. 나의 수행</button>${STAGES.map((st,k)=>`<button type="button" data-dst="${k}" aria-pressed="${k===selStage}">${k+1}. ${esc(st.name)} ${Math.round(r.p[k]*100)}%</button>`).join("")}</div>
+    <div class="dtabs"><button type="button" data-dst="-1" aria-pressed="${selStage<0}">나의 수행</button>${STAGES.map((st,k)=>`<button type="button" data-dst="${k}" aria-pressed="${k===selStage}">${k+1}. ${esc(st.name)} ${Math.round(r.p[k]*100)}%</button>`).join("")}</div>
     <div id="dStage">${selStage<0?homeHTML(doc,true,{sid:r.sid,name:r.name}):stageHTML(doc,selStage,true)}</div></div>`;
   if(full||!document.getElementById("gradeBox")) box.innerHTML=`<div class="detail">${left}<aside class="grade" id="gradeBox">${gradeForm()}</aside></div>`;
   else box.querySelector(".detail > div").outerHTML=left;

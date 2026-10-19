@@ -14,7 +14,7 @@
   const loaded = {};
   function loadScript(url) {
     if (!loaded[url]) loaded[url] = new Promise((ok, no) => {
-      const s = document.createElement("script"); s.src = url; s.async = true;
+      const s = document.createElement("script"); s.src = url; s.async = true; s.crossOrigin = "anonymous";
       s.onload = ok; s.onerror = () => { delete loaded[url]; no(new Error("수식 도구를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.")); };
       document.head.appendChild(s);
     });
@@ -187,12 +187,17 @@
 
   /* ───── 수식 입력 창 ───── */
   let dlg = null;
-  function close() { if (dlg) { dlg.cleanup(); dlg.el.remove(); dlg = null; } }
+  let sharedMF = null;
+  function close() { if (!dlg) return; const d = dlg; dlg = null; d.cleanup();
+    if (sharedMF && d.el.contains(sharedMF)) { try { sharedMF.blur(); } catch (e) {} let h = document.getElementById("mt-park"); if (!h) { h = document.createElement("div"); h.id = "mt-park"; h.hidden = true; document.body.appendChild(h); } h.appendChild(sharedMF); }
+    d.el.remove(); }
 
   async function open(field, opts) {
     opts = opts || {}; injectCss(); close();
     const text = field.value || "", pos = field.selectionStart ?? text.length;
-    const hit = tokens(text).find(t => pos >= t.start && pos <= t.end) || (opts.index != null ? tokens(text)[opts.index] : null);
+    // whole: 칸 전체가 수식 하나(수식 전용 칸) → 칸 전체를 고칩니다
+    const hit = opts.whole ? { start: 0, end: text.length, tex: (tokens(text)[0] || {}).tex ?? text.replace(/^\$|\$$/g, "").trim() }
+      : tokens(text).find(t => pos >= t.start && pos <= t.end) || (opts.index != null ? tokens(text)[opts.index] : null);
     const el = document.createElement("div"); el.className = "mt-dlg";
     el.innerHTML = `<div class="mt-box" role="dialog" aria-modal="true" aria-label="수식 입력기">
       <div class="mt-head"><b>수식 입력기</b><div class="mt-modes"><button type="button" data-mode="kb" aria-pressed="true">⌨ 키보드</button><button type="button" data-mode="hw" aria-pressed="false">✍ 기호 그리기</button></div><button type="button" class="mt-x" data-close aria-label="닫기">×</button></div>
@@ -230,8 +235,8 @@
       if (b.dataset.mode) { el.querySelectorAll("[data-mode]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); $("[data-kb]").hidden = b.dataset.mode !== "kb"; $("[data-hw]").hidden = b.dataset.mode !== "hw"; if (b.dataset.mode === "hw") pad.fit(); return; }
       if (b.dataset.cat) { cat = b.dataset.cat; el.querySelectorAll("[data-cat]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); drawKeys(); return; }
       if (!mf) return;
-      if (b.dataset.k != null) { mf.executeCommand(["insert", KEYS[cat][+b.dataset.k][1], { focus: true, selectionMode: "placeholder", format: "latex", mode: "math" }]); mf.focus(); return; }
-      if (b.dataset.cmd) { if (b.dataset.cmd === "clear") { mf.value = ""; sync(); } else mf.executeCommand(b.dataset.cmd); mf.focus(); return; }
+      if (b.dataset.k != null) { mf.executeCommand(["insert", KEYS[cat][+b.dataset.k][1], { focus: true, selectionMode: "placeholder", format: "latex", mode: "math" }]); focusMF(); return; }
+      if (b.dataset.cmd) { if (b.dataset.cmd === "clear") { mf.value = ""; sync(); } else mf.executeCommand(b.dataset.cmd); focusMF(); return; }
       if (b.hasAttribute("data-ok")) { insert(); return; }
       if (b.dataset.tool) { pad.mode = b.dataset.tool; el.querySelectorAll("[data-tool]").forEach(x => x.setAttribute("aria-pressed", String(x === b))); return; }
       if (b.hasAttribute("data-hwundo")) return pad.undo();
@@ -239,11 +244,13 @@
       if (b.dataset.cand != null) { const c = cands[+b.dataset.cand]; if (!c) return; mf.executeCommand(["insert", c[1], { focus: true, selectionMode: "placeholder", format: "latex", mode: "math" }]); pad.clear(); sync(); return; }
     });
 
+    function focusMF() { try { mf.focus(); } catch (e) { /* MathLive 내부 포커스 오류: 입력에는 영향 없음 */ } }
     function sync() { if (mf && document.activeElement !== src) src.value = mf.getValue("latex"); }
     src.addEventListener("input", () => { if (mf) mf.setValue(src.value, { silenceNotifications: true }); });
 
     function insert() {
-      const tex = (mf ? mf.getValue("latex") : src.value).trim();
+      // 비어 있는 빈칸(placeholder)은 빼고 저장합니다
+      const tex = (mf ? mf.getValue("latex-without-placeholders") : src.value).replace(/\\placeholder\{\}/g, "").trim();
       let v = field.value, a, b2;
       if (hit) { a = hit.start; b2 = hit.end; } else { a = field.selectionStart ?? v.length; b2 = field.selectionEnd ?? a; }
       const piece = tex ? `$${tex}$` : "";
@@ -269,17 +276,22 @@
     try {
       await loadMathLive();
       if (!el.isConnected) return;
-      mf = document.createElement("math-field");
-      mf.className = "mt-field";
-      mf.mathVirtualKeyboardPolicy = "manual";
-      mf.setAttribute("aria-label", "수식");
+      // 수식 칸은 한 번만 만들어 계속 다시 씁니다 (지웠다 새로 만들면 MathLive 내부 오류가 납니다)
+      if (!sharedMF) {
+        sharedMF = document.createElement("math-field");
+        sharedMF.className = "mt-field";
+        sharedMF.mathVirtualKeyboardPolicy = "manual";
+        sharedMF.setAttribute("aria-label", "수식");
+      }
+      mf = sharedMF;
       $("[data-mfbox]").appendChild(mf);
       try { mf.menuItems = []; } catch (e) {}
       mf.smartFence = true; mf.smartMode = false;
       mf.setValue(hit ? hit.tex : "");
-      mf.addEventListener("input", sync);
+      if (mf._mtSync) mf.removeEventListener("input", mf._mtSync);
+      mf._mtSync = sync; mf.addEventListener("input", sync);
       $("[data-load]").remove(); sync();
-      setTimeout(() => mf.focus(), 50);
+      setTimeout(() => focusMF(), 50);
     } catch (e) {
       $("[data-load]").textContent = e.message; $("[data-load]").className = "mt-msg err";
       src.value = hit ? hit.tex : ""; src.focus();

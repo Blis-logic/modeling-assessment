@@ -78,9 +78,9 @@ function api(action, payload, token) {
     if (pub[action]) return Object.assign({ ok: true }, pub[action](payload));
     const user = sessionUser_(token);
     if (!user) return { ok: false, error: 'SESSION' };
-    const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, recognize: apiRecognize_ };
+    const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_ };
     if (mine[action]) return Object.assign({ ok: true }, mine[action](user, payload, token));
-    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, setAiKey: apiSetAiKey_ };
+    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_ };
     if (teach[action]) {
       if (user.role !== 'teacher') return { ok: false, error: 'FORBIDDEN' };
       return Object.assign({ ok: true }, teach[action](user, payload));
@@ -104,7 +104,7 @@ function readConfig_() {
     notice: String(m['공지'] || '')
   };
 }
-function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, notice: c.notice, hw: !!PropertiesService.getScriptProperties().getProperty(AI_KEY_PROP) }; }
+function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, notice: c.notice }; }
 function apiConfig_() { return { config: publicConfig_() }; }
 function writeConfigValue_(label, value) {
   const sh = sheet_(SHEETS.cfg), col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(r => String(r[0]).trim());

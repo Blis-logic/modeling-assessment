@@ -7,38 +7,39 @@
 <script src="config.js"></script>
 <script src="mathtool.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Nanum+Myeongjo:wght@700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: graph-paper workbook. Top bar, stage tabs, one stage sheet at a time; teacher view = roster table + detail drawer. Yellow = where students write, as in the worksheet. */
+/* Layout: bento lab. Sticky stage bar (steps + one-line status), stage blocks as cards on a 12-column grid, formula dock at the bottom; teacher view = roster table + detail drawer. Calm indigo palette, soft 16px cards. */
 :root{
-  --bg:#F3F6F5; --paper:#FFFFFF; --ink:#18272B; --muted:#5A6B6F; --line:#D5DEDC; --grid:#E7EEEC;
-  --accent:#0E6874; --accent-ink:#FFFFFF; --accent-soft:#E1EFF0;
-  --modelB:#A65A16; --fill:#FFF7D1; --fill-line:#E3CF7A; --label:#EEF2F1;
-  --good:#2C7A4B; --warn:#A86A12; --bad:#AE3B2B; --good-soft:#E3F2E8; --warn-soft:#FBF0DC; --bad-soft:#F8E4E0;
+  --bg:#F7F8FA; --paper:#FFFFFF; --ink:#14181F; --muted:#6B7380; --line:#E6E8EC; --grid:#EEF0F3;
+  --accent:#4F46E5; --accent-ink:#FFFFFF; --accent-soft:#EEF0FF;
+  --modelB:#D97706; --fill:#FAFAFB; --fill-line:#E6E8EC; --label:#F4F5F8;
+  --good:#12A150; --warn:#B45309; --bad:#DC2626; --good-soft:#E7F6EE; --warn-soft:#FEF3E2; --bad-soft:#FDECEC;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
-  --f-display:"Nanum Myeongjo","AppleMyungjo","Batang",serif;
+  --f-display:var(--f-body);
   --f-mono:"IBM Plex Mono",ui-monospace,"Consolas",monospace;
-  --r:8px;
+  --r:16px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E1618; --paper:#152023; --ink:#E2EBE9; --muted:#97A8A6; --line:#2B3B3E; --grid:#1D2A2D;
-  --accent:#4DB0BC; --accent-ink:#0B1416; --accent-soft:#16333A;
-  --modelB:#E39A5C; --fill:#2A2513; --fill-line:#6A5A24; --label:#1B282B;
-  --good:#5CC48A; --warn:#E0A84C; --bad:#E57A68; --good-soft:#163024; --warn-soft:#30260F; --bad-soft:#341A16;
+  --bg:#0F1117; --paper:#171A22; --ink:#E7E9EE; --muted:#9AA1AE; --line:#2A2F3A; --grid:#1F232C;
+  --accent:#8B8CF8; --accent-ink:#0F1117; --accent-soft:#25274A;
+  --modelB:#F5A524; --fill:#1C2029; --fill-line:#2A2F3A; --label:#1F232C;
+  --good:#3DD68C; --warn:#F5A524; --bad:#F87171; --good-soft:#12301F; --warn-soft:#33260C; --bad-soft:#3A1717;
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0E1618; --paper:#152023; --ink:#E2EBE9; --muted:#97A8A6; --line:#2B3B3E; --grid:#1D2A2D;
-  --accent:#4DB0BC; --accent-ink:#0B1416; --accent-soft:#16333A;
-  --modelB:#E39A5C; --fill:#2A2513; --fill-line:#6A5A24; --label:#1B282B;
-  --good:#5CC48A; --warn:#E0A84C; --bad:#E57A68; --good-soft:#163024; --warn-soft:#30260F; --bad-soft:#341A16;
+  --bg:#0F1117; --paper:#171A22; --ink:#E7E9EE; --muted:#9AA1AE; --line:#2A2F3A; --grid:#1F232C;
+  --accent:#8B8CF8; --accent-ink:#0F1117; --accent-soft:#25274A;
+  --modelB:#F5A524; --fill:#1C2029; --fill-line:#2A2F3A; --label:#1F232C;
+  --good:#3DD68C; --warn:#F5A524; --bad:#F87171; --good-soft:#12301F; --warn-soft:#33260C; --bad-soft:#3A1717;
   color-scheme:dark}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 
 /* top bar */
@@ -234,6 +235,69 @@ a.btn{color:var(--ink)}
 .sharebox ul{margin:0;padding-left:18px;font-size:14px}
 .sharebox .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .sharebox input{border:1px solid var(--line);background:var(--fill);border-radius:6px;padding:6px 10px;min-width:0;flex:1 1 220px}
+
+/* ── 학생 화면: 단계 막대 + 한 줄 상황판 ── */
+.top{background:color-mix(in srgb,var(--paper) 82%,transparent);backdrop-filter:blur(12px)}
+.labbar{position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--toph,58px));z-index:4;margin:12px 0 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);padding:8px 0;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}
+.steps{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:4px;overflow-x:auto;scrollbar-width:none;flex:none;max-width:100%}
+.steps button{border:0;background:transparent;border-radius:8px;padding:6px 12px;font-size:13px;color:var(--muted);white-space:nowrap;display:flex;gap:6px;align-items:center}
+.steps button i{width:7px;height:7px;border-radius:50%;background:var(--line);flex:none}
+.steps button.part i{background:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.steps button.done i{background:var(--good)}
+.steps button[aria-selected="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.steps button[aria-selected="true"] i{background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.status{flex:1 1 320px;min-width:0;display:flex;align-items:center;gap:6px 14px;font-size:13px;color:var(--muted);white-space:nowrap;overflow-x:auto;scrollbar-width:none}
+.status b{color:var(--ink);font-weight:600}
+.status .k{font-family:var(--f-mono);font-size:14px;color:var(--ink)}
+.status .k.acc{color:var(--accent)}
+.status .sep{width:1px;height:14px;background:var(--line);flex:none}
+.metarow{margin-top:8px;display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:12px}
+.metarow .idcard,.metarow .docbar{margin-top:0}
+.idcard{border-radius:var(--r)}
+.docbar{border-radius:var(--r);background:var(--paper);border-color:var(--line)}
+@media (max-width:900px){.metarow{grid-template-columns:1fr}}
+
+/* ── 단계 본문: 12칸 카드 격자 ── */
+.stage{margin-top:14px}
+.stage-head{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;padding:4px 2px 10px}
+.stage-head h2{margin:0;font-size:24px;font-weight:700;letter-spacing:-.02em}
+.stage-head p{margin:0;color:var(--muted);font-size:14px}
+.bento{container-type:inline-size;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}
+.card{grid-column:span 12;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;min-width:0}
+.card.c7{grid-column:span 7}.card.c5{grid-column:span 5}
+.card.low{order:80}.card.last{order:90}
+@container (max-width:760px){.card.c7,.card.c5{grid-column:span 12}}
+.card .blk{border-top:0;padding-top:0}
+.card .blk .no{font-family:var(--f-body);font-size:15px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:8px;width:28px;height:28px;display:grid;place-items:center;line-height:1}
+.card .blk h3{font-size:17px;line-height:28px}
+.card>.tool{border:0;border-radius:0;margin:-18px -20px}
+.card>.tool .tool-h{background:transparent;border-bottom:1px solid var(--line);padding:14px 20px;font-size:15px}
+.card>.tool .tool-b{padding:16px 20px}
+.card>details.help{border:0;padding:0;background:transparent}
+.card.hint{background:linear-gradient(160deg,var(--accent-soft),var(--paper) 70%)}
+.card-h{font-size:15px;font-weight:700;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.card-h span{font-weight:400;font-size:12px;color:var(--muted)}
+.chartcard .sub-h{font-size:12px;color:var(--muted);margin:10px 0 4px}
+.chartcard .chart{border-radius:10px;background:var(--fill)}
+.chart .cd{stroke:var(--good);fill:none;stroke-width:2}
+.chart .mk{stroke:var(--warn);stroke-dasharray:3 4}
+.chart .tg{stroke:var(--warn);stroke-width:2}
+.chart .mkp{fill:var(--warn)}
+.chart .mkt{fill:var(--warn);font-family:var(--f-mono);font-size:11px}
+.stage .foot-nav{border:0;background:transparent;padding:16px 0 0}
+.row{border-radius:12px}
+.fld,.cell input,.cell textarea,.cell select{background:var(--fill)}
+.fld:focus,.cell input:focus,.cell textarea:focus,.cell select:focus{outline:0;background:var(--paper);box-shadow:inset 0 0 0 2px var(--accent)}
+.btn{border-radius:10px}
+.tbl-wrap{border-radius:12px}
+
+/* ── 아래 수식 키보드 ── */
+.dock{position:sticky;bottom:max(10px,env(safe-area-inset-bottom,0px));z-index:4;margin-top:16px;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(20,24,31,.12);padding:8px;display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.dock .lab{font-size:12px;color:var(--muted);padding:0 6px;white-space:nowrap}
+.dock button{flex:none;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;min-width:40px;height:38px;padding:0 9px;font:15px "KaTeX_Main","Times New Roman",serif}
+.dock button:hover{border-color:var(--accent);background:var(--accent-soft)}
+.dock button.big{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font:600 13px var(--f-body)}
+.dock button.big.alt{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 </style>
 
 </head>
@@ -302,8 +366,8 @@ const STAGES = [
   {help:["합성: a sin u + e cos u = R sin(u + φ), R = √(a² + e²), tan φ = e ÷ a. R은 변화 폭, φ는 시작이 앞당겨진 정도입니다.","배각·반각: sin 2u = 2 sin u cos u, cos 2u = 1 − 2 sin²u, sin²u = (1 − cos 2u) ÷ 2. 사인제곱형은 주기가 π ÷ b입니다.","곡선이 이상하게 촘촘하거나 비어 있으면 각이 라디안인지, b의 크기가 알맞은지 확인합니다.","점근선·끝점·가운데 점으로 c, d를 먼저 정하고, 자료의 점 하나를 대입해 a, b를 정합니다."]}
  ]},
  {name:"미분·적분 분석", el:"수학적 모델링", time:"3시간째 · 60분", goal:"내 모델을 미분하고 적분하여, 현상에 대해 새롭게 알아낸 사실을 숫자와 함께 씁니다.", blocks:[
-  {n:"①",t:"도함수 구하기 (손 계산)",f:[["s4_f","모델 f(x)","math",{auto:"formA"}],["s4_fd","도함수 f′(x)","math"],["s4_fw","풀이 과정","longmath"]]},
-  {n:"②",t:"변화율 표",hint:"x₀와 손으로 계산한 f′(x₀)를 넣으면 모델 A로 계산한 값과 차이가 나옵니다. 단위는 \"y 단위 ÷ x 단위\"입니다.",tool:"rate"},
+  {n:"①",t:"도함수 구하기 (손 계산)",chart:"deriv",f:[["s4_f","모델 f(x)","math",{auto:"formA"}],["s4_fd","도함수 f′(x)","math"],["s4_fw","풀이 과정","longmath"]]},
+  {n:"②",t:"변화율 표",last:1,hint:"x₀와 손으로 계산한 f′(x₀)를 넣으면 모델 A로 계산한 값과 차이가 나옵니다. 단위는 \"y 단위 ÷ x 단위\"입니다.",tool:"rate"},
   {n:"③",star:1,t:"미분으로 알아낸 사실",hint:"가장 빠르게 변하는 때, 변화가 멈추는 때(최대·최소), 점근선·끝점 근처의 변화율을 살펴봅니다.",f:[["s4_d1","분석한 사실 1 (근거 수치)","long"],["s4_d2","분석한 사실 2 (근거 수치)","long"],["s4_dm","현상에서의 의미","long"]]},
   {n:"④",t:"정적분 구하기 (손 계산)",tool:"integral",f:[["s4_iw","구간을 고른 이유"],["s4_ic","계산 과정","longmath"],["s4_iv","정적분 값 (단위)","math"],["s4_ia","평균값 (1 ÷ (q − p)) × ∫ f(x) dx","math"]]},
   {n:"⑤",star:1,t:"적분으로 알아낸 사실",hint:"구간 전체의 합(누적량)과 평균, 모델의 적분과 자료로 어림한 값의 차이를 살펴봅니다.",f:[["s4_j1","분석한 사실 1 (근거 수치)","long"],["s4_j2","분석한 사실 2: 모델과 자료의 차이","long"],["s4_jm","현상에서의 의미","long"]]},
@@ -483,7 +547,7 @@ function fieldHTML(doc,key,kind,ro,label){ const v=(doc.ans||{})[key]??""; const
 function updPrev(el){ const key=(el.dataset.p||"").replace(/^ans\./,""), pv=key&&app.querySelector(`[data-prev="${key}"]`); if(!pv) return;
   if(MathTool.hasMath(el.value)) MathTool.renderInto(pv,el.value); else pv.textContent=""; }
 function hwRecognize(image){ return api("recognize",{image}).then(r=>r.latex||"").catch(e=>{ throw {userMessage:errMsg(e)}; }); }
-function openMath(field,index){ if(!field||locked()) return; MathTool.open(field,{index,recognize:cfg.hw?hwRecognize:null}); }
+function openMath(field,index,mode){ if(!field||locked()) return; MathTool.open(field,{index,mode,recognize:cfg.hw?hwRecognize:null}); }
 function autoChip(key,auto,ro){ return `<div class="autochip">도구 값: <code data-auto="${auto}"></code>${ro?"":`<button class="linkbtn" data-fill="${key}" data-src="${auto}" type="button">이 값 넣기</button>`}</div>`; }
 function cardInfo(doc){ const c=CARDS.find(c=>c[0]===(doc.ans||{}).s1_card); return c?`<div class="sub">현상: ${esc(c[1])} · 자료 얻는 곳: ${esc(c[2])} · 함수 형태: <b>${esc(c[3])}</b></div>`:""; }
 
@@ -545,16 +609,49 @@ function updateOutputs(root,doc){ const an=analyze(doc), $=s=>root.querySelector
   const eA=an.eA, eB=an.eB, cell=(e,fn)=>e?fn(e):"–";
   put("errTable",[["평균 오차율 (%)",e=>fmt(e.mean,2)],["가장 큰 오차율 (%)과 그때의 x",e=>`${fmt(e.max,2)} (x = ${fmt(e.maxX)})`],["RMSE (y 단위)",e=>fmt(e.rmse,3)],["평균 오차",e=>fmt(e.me,3)],["오차 (+) / (−) 개수",e=>`${e.pos} / ${e.neg}`]].map(([l,fn])=>`<tr><td class="lab">${l}</td><td class="auto">${cell(eA,fn)}</td><td class="auto">${cell(eB,fn)}</td></tr>`).join(""));
   put("errChart",chartSVG(an,{xl,residual:true,id:"e1"}));
+  if($("derivF").length){ const [cf,cd]=derivCharts(doc,an); put("derivF",cf); put("derivD",cd); }
   root.querySelectorAll("[data-auto]").forEach(e=>{ const v=autoVal(doc,e.dataset.auto,an); e.textContent=v||"–"; });
   root.querySelectorAll("[data-cardinfo]").forEach(e=>e.innerHTML=cardInfo(doc));
   root.querySelectorAll("[data-mathro]").forEach(e=>{ if(!e.dataset.done){ e.dataset.done=1; MathTool.renderInto(e,e.textContent); } });
   root.querySelectorAll("[data-prev]").forEach(pv=>{ const f=document.getElementById("f_"+pv.dataset.prev); if(f&&!pv.dataset.done){ pv.dataset.done=1; updPrev(f); } });
   $("submit").forEach(e=>e.innerHTML=submitHTML(doc)); }
 
+// 블록 하나 = 카드 하나. chart가 있으면 오른쪽에 그래프 카드를 붙이고, last는 맨 아래, 도움말은 그 앞에 둡니다.
+function cardsHTML(doc,si,ro){ return STAGES[si].blocks.map((b,bi)=>{
+  const cls=["card"]; if(b.chart) cls.push("c7"); if(b.help) cls.push("low","hint"); if(b.last) cls.push("last");
+  let h=`<div class="${cls.join(" ")}">${blockHTML(doc,b,si,bi,ro)}</div>`;
+  if(b.chart==="deriv") h+=`<div class="card c5 chartcard"><div class="card-h">📈 그래프로 보는 변화 <span>모델 A · 주황 = 변화율 표의 x₀와 접선</span></div>
+    <div class="sub-h">f(x) 모델 A와 자료</div><div data-out="derivF"></div><div class="sub-h">f′(x) 도함수 (0보다 크면 증가, 작으면 감소)</div><div data-out="derivD"></div></div>`;
+  return h; }).join(""); }
 function stageHTML(doc,si,ro){ const s=STAGES[si];
-  return `<section class="sheet"><div class="sheet-head"><h2>${si+1}단계 · ${esc(s.name)}</h2><div class="meta"><span>⏱ ${esc(s.time)}</span><span>평가요소: ${esc(s.el)} (10점)</span></div><p class="goal">🎯 ${esc(s.goal)}</p></div>
-  <div class="blocks">${s.blocks.map((b,bi)=>blockHTML(doc,b,si,bi,ro)).join("")}</div>
+  return `<section class="stage"><div class="stage-head"><h2>${si+1}단계 · ${esc(s.name)}</h2><p>🎯 ${esc(s.goal)}</p>${ro?`<p>⏱ ${esc(s.time)} · 평가요소: ${esc(s.el)} (10점)</p>`:""}</div>
+  <div class="bento">${cardsHTML(doc,si,ro)}</div>
   ${ro?"":`<div class="foot-nav"><button class="btn" type="button" data-go="${si-1}"${si===0?" disabled":""}>← 이전 단계</button><button class="btn pri" type="button" data-go="${si+1}"${si===4?" disabled":""}>다음 단계 →</button></div>`}</section>`; }
+/** 도함수 카드용 작은 그래프. fn을 그리고 x₀ 표시(marks)와 접선(tangent)을 덧그립니다. */
+function plotSVG(o){ const W=520,H=190,L=46,R=10,Tp=10,B=26, x1=o.x1, x2=o.x2;
+  const n=300, xs=[...Array(n+1)].map((_,i)=>x1+(x2-x1)*i/n), vs=xs.map(o.fn);
+  let ys=vs.filter(v=>isFinite(v)).concat((o.pts||[]).map(p=>p.y)); if(!ys.length) return `<div class="empty-note">그릴 값이 없습니다.</div>`;
+  ys.sort((a,b)=>a-b); let y1=ys[Math.floor(ys.length*.03)], y2=ys[Math.ceil(ys.length*.97)-1];
+  if(o.zero){ y1=Math.min(y1,0); y2=Math.max(y2,0); } if(y1===y2){ y1-=1; y2+=1; } const yp=(y2-y1)*.12; y1-=yp; y2+=yp; const span=y2-y1;
+  const sx=x=>L+(x-x1)/(x2-x1)*(W-L-R), sy=y=>Tp+(y2-y)/(y2-y1)*(H-Tp-B);
+  let g=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label)}"><defs><clipPath id="cp${o.id}"><rect x="${L}" y="${Tp}" width="${W-L-R}" height="${H-Tp-B}"/></clipPath></defs>`;
+  ticks(x1,x2,6).forEach(v=>{ const X=sx(v); g+=`<line class="gl" x1="${X}" x2="${X}" y1="${Tp}" y2="${H-B}"/><text x="${X}" y="${H-B+14}" text-anchor="middle">${fmt(v,3)}</text>`; });
+  ticks(y1,y2,4).forEach(v=>{ const Y=sy(v); g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${Y}" y2="${Y}"/><text x="${L-6}" y="${Y+4}" text-anchor="end">${fmt(v,3)}</text>`; });
+  if(o.zero&&y1<0&&y2>0) g+=`<line class="zero" x1="${L}" x2="${W-R}" y1="${sy(0)}" y2="${sy(0)}"/>`;
+  let d="", prev=null; xs.forEach((x,i)=>{ const v=vs[i]; if(!isFinite(v)||Math.abs(v-(y1+y2)/2)>span*4||(prev!=null&&Math.abs(v-prev)>span*1.2)){ prev=isFinite(v)?v:null; if(isFinite(v)) d+=`M${sx(x).toFixed(1)},${sy(v).toFixed(1)}`; return; }
+    d+=(prev==null?"M":"L")+sx(x).toFixed(1)+","+sy(v).toFixed(1); prev=v; });
+  g+=`<path class="${o.cls}" d="${d}" clip-path="url(#cp${o.id})"/>`;
+  (o.pts||[]).forEach(p=>{ g+=`<circle class="pt" cx="${sx(p.x).toFixed(1)}" cy="${sy(p.y).toFixed(1)}" r="2.6" clip-path="url(#cp${o.id})"/>`; });
+  (o.marks||[]).forEach(m=>{ if(!isFinite(m.y)) return; const X=sx(m.x);
+    g+=`<line class="mk" x1="${X}" x2="${X}" y1="${Tp}" y2="${H-B}"/>`;
+    if(o.tangent&&isFinite(m.s)){ const dx=(x2-x1)*.09; g+=`<line class="tg" x1="${sx(m.x-dx)}" y1="${sy(m.y-m.s*dx)}" x2="${sx(m.x+dx)}" y2="${sy(m.y+m.s*dx)}" clip-path="url(#cp${o.id})"/>`; }
+    g+=`<circle class="mkp" cx="${X}" cy="${sy(m.y)}" r="4" clip-path="url(#cp${o.id})"/><text class="mkt" x="${X+4}" y="${Tp+11}">x₀=${fmt(m.x,3)}</text>`; });
+  return g+`</svg>`; }
+function derivCharts(doc,an){ const A=an.A; if(!A.ok) return ["",`<div class="empty-note">3단계에서 모델 A의 a, b, c, d를 정하면 f(x)와 f′(x) 그래프가 나타납니다.</div>`];
+  let x1,x2; if(an.pts.length){ x1=Math.min(...an.pts.map(p=>p.x)); x2=Math.max(...an.pts.map(p=>p.x)); } else { x1=0; x2=12; } if(x1===x2){ x1-=1; x2+=1; }
+  const xs=((doc.calc||{}).x||[]).filter(isNum).map(Number);
+  return [plotSVG({id:"df",label:"모델 A 그래프",x1,x2,fn:x=>fval(A,x),cls:"ca",pts:an.pts,tangent:true,marks:xs.map(x=>({x,y:fval(A,x),s:fd1(A,x)}))}),
+          plotSVG({id:"dd",label:"도함수 그래프",x1,x2,fn:x=>fd1(A,x),cls:"cd",zero:true,marks:xs.map(x=>({x,y:fd1(A,x)}))})]; }
 
 /* ───────── 결과물 문서 (구글 문서 · PDF) ───────── */
 // 활동지(STAGES)와 학생 답을 "문서 명세"로 바꿔 서버에 보내면, 서버가 활동지 서식의 구글 문서로 그립니다.
@@ -749,19 +846,24 @@ function bannersHTML(){ let b=""; if(cfg.locked) b+=`<div class="banner warn">�
 function renderTopBits(){ const t=document.getElementById("topBits"); if(t) t.innerHTML=bannersHTML(); }
 function renderStudent(){
   const i=me.info||{}, p=progress(me), ro=locked();
-  app.innerHTML = `<div id="topBits">${bannersHTML()}</div>
-  <section class="idcard">
+  app.innerHTML = `<div class="labbar"><nav class="steps" role="tablist" id="steps">${stepsHTML(p)}</nav><div class="status" id="labStatus">${statusHTML(p)}</div></div>
+  <div id="topBits">${bannersHTML()}</div>
+  <div class="metarow"><section class="idcard">
     <label>학번<input class="fld num" id="i_sid" data-p="info.sid" value="${esc(i.sid||"")}" inputmode="numeric" autocomplete="off"${ro?" disabled":""}></label>
     <label>이름<input class="fld" id="i_name" data-p="info.name" value="${esc(i.name||"")}" autocomplete="off"${ro?" disabled":""}></label>
     <label class="title">탐구 제목<input class="fld" id="i_title" data-p="info.title" value="${esc(i.title||"")}" autocomplete="off"${ro?" disabled":""}></label>
   </section>
-  ${ME.role==="student"?`<section class="docbar"><div class="grow"><b>내 결과물 (활동지 서식)</b><small id="docSt"></small></div><button class="btn" type="button" data-act="docNow">지금 문서에 반영</button><button class="btn pri" type="button" data-act="pdf">PDF로 받기</button></section>`:""}
-  <nav class="tabs" role="tablist">${STAGES.map((s,k)=>`<button class="tab" role="tab" type="button" aria-selected="${k===stage}" data-stage="${k}"><small>${k+1}단계 · ${esc(s.time.split(" · ")[0])}</small><strong>${esc(s.name)}</strong><span class="bar"><i style="width:${Math.round(p[k]*100)}%"></i></span></button>`).join("")}</nav>
-  ${ro?"":`<div class="syms" id="syms"><button type="button" class="symtool" data-mtlast>∑ 수식 입력기</button><span>기호 넣기</span>${SYMS.map(s=>`<button type="button" data-sym="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}
-  <div id="stageBox">${stageHTML(me,stage,false)}</div>`;
+  ${ME.role==="student"?`<section class="docbar"><div class="grow"><b>내 결과물 (활동지 서식)</b><small id="docSt"></small></div><button class="btn" type="button" data-act="docNow">지금 문서에 반영</button><button class="btn pri" type="button" data-act="pdf">PDF로 받기</button></section>`:""}</div>
+  <div id="stageBox">${stageHTML(me,stage,false)}</div>
+  ${ro?"":`<div class="dock" aria-label="수식 키보드"><button type="button" class="big" data-mtlast>⌨ 수식 입력기</button><button type="button" class="big alt" data-mtlast data-mode="hw">✍ 손글씨</button><span class="lab">기호 넣기</span>${SYMS.map(s=>`<button type="button" data-sym="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}`;
   if(ro) app.querySelectorAll("#stageBox [data-p]").forEach(e=>e.disabled=true);
   updateOutputs(app,me); updateDocSt(); }
-function refreshTabs(){ const p=progress(me); app.querySelectorAll(".tab .bar i").forEach((e,k)=>e.style.width=Math.round(p[k]*100)+"%"); }
+const SHORT=["설계","자료","모델","미분·적분","검증"];
+function stepsHTML(p){ return STAGES.map((s,k)=>`<button role="tab" type="button" class="${p[k]>=.999?"done":p[k]>0?"part":""}" aria-selected="${k===stage}" data-stage="${k}" title="${k+1}단계 ${esc(s.name)} · ${Math.round(p[k]*100)}%"><i></i>${k+1} ${SHORT[k]}</button>`).join(""); }
+function statusHTML(p){ const s=STAGES[stage], an=analyze(me), avg=Math.round(p.reduce((a,b)=>a+b,0)/5*100);
+  return `<span><b>${stage+1}단계 · ${esc(s.name)}</b></span><span>⏱ ${esc(s.time)}</span><span>평가요소 ${esc(s.el)} (10점)</span><span class="sep"></span>
+    <span>작성률 <span class="k">${avg}%</span></span><span>오차율 A <span class="k acc">${an.eA?fmt(an.eA.mean,2)+"%":"–"}</span></span><span>자료 <span class="k">${an.pts.length}</span></span>`; }
+function refreshTabs(){ const p=progress(me), st=document.getElementById("steps"), ls=document.getElementById("labStatus"); if(st) st.innerHTML=stepsHTML(p); if(ls) ls.innerHTML=statusHTML(p); }
 let lastField=null;
 app.addEventListener("focusin",e=>{ const t=e.target; if(t.matches("textarea[data-p],input.fld[data-p],.cell input[data-p]")) lastField=t; });
 app.addEventListener("input",e=>{ const t=e.target; if(view!=="student"||!ME||!t.dataset.p||t.type==="checkbox") return; if(locked()) return;
@@ -777,7 +879,7 @@ app.addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t) ret
   if(view==="teacher") return teacherClick(t,e);
   if(t.dataset.mtOpen){ openMath(document.getElementById("f_"+t.dataset.mtOpen)); return; }
   if(t.hasAttribute("data-mtlast")){ const f=lastField&&document.body.contains(lastField)&&/^f_/.test(lastField.id)?lastField:null;
-    if(f) openMath(f); else setSave("wait","수식을 넣을 칸을 먼저 누른 뒤 [수식 입력기]를 누르세요"); return; }
+    if(f) openMath(f,undefined,t.dataset.mode); else setSave("wait","수식을 넣을 칸을 먼저 누른 뒤 [수식 입력기]를 누르세요"); return; }
   if(t.dataset.stage!=null){ stage=+t.dataset.stage; flush(); renderStudent(); return; }
   if(t.dataset.go!=null){ stage=Math.max(0,Math.min(4,+t.dataset.go)); flush(); renderStudent(); window.scrollTo({top:0}); return; }
   if(t.dataset.sym!=null){ const f=lastField; if(!f||!document.body.contains(f)||locked()) return; const s=t.dataset.sym, a=f.selectionStart??f.value.length, b=f.selectionEnd??a;

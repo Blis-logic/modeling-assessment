@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>학생 화면 시안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Gowun+Dodum&family=Jua&family=Noto+Serif+KR:wght@700;900&display=swap">
+<style>
+/* 시안 3가지를 한 파일에서 탭으로 비교합니다. 내용은 4단계(미분·적분 분석) 화면으로 같고, 디자인만 다릅니다. */
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{font-family:"IBM Plex Sans KR",system-ui,sans-serif;background:#E9ECEB;color:#1B2427}
+.switch{position:sticky;top:0;z-index:100;background:#101718;color:#fff;display:flex;gap:8px;align-items:center;padding:10px 16px;flex-wrap:wrap}
+.switch b{font-size:14px;margin-right:auto}
+.switch button{border:1px solid #3A4648;background:transparent;color:#CFD8D7;border-radius:999px;padding:6px 14px;font:500 13px/1 inherit;cursor:pointer}
+.switch button[aria-pressed="true"]{background:#fff;color:#101718;border-color:#fff}
+.note{max-width:1180px;margin:14px auto 0;padding:0 16px;font-size:13px;color:#4A5759;line-height:1.6}
+.note b{color:#1B2427}
+.frame{max-width:1180px;margin:12px auto 40px;padding:0 16px}
+.screen{border-radius:18px;overflow:hidden;box-shadow:0 20px 50px rgba(16,23,24,.18)}
+.m{font-family:"KaTeX_Main","Times New Roman",serif;font-style:italic;white-space:nowrap}
+.m .r{font-style:normal}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.85em;line-height:1.1;margin:0 2px}
+.frac>span:first-child{border-bottom:1px solid currentColor;padding:0 2px}
+
+/* ════════════ 시안 A · 차분한 집중 (Calm Focus) ════════════ */
+.A{--bg:#F7F8FA;--card:#FFFFFF;--ink:#14181F;--mut:#6B7380;--line:#E6E8EC;--acc:#4F46E5;--acc2:#EEF0FF;--ok:#12A150;--fill:#FAFAFB;
+  background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans KR",sans-serif;display:grid;grid-template-columns:248px minmax(0,1fr);min-height:860px}
+.A aside{background:var(--card);border-right:1px solid var(--line);padding:20px 16px;display:flex;flex-direction:column;gap:18px}
+.A .logo{display:flex;gap:10px;align-items:center}
+.A .logo i{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#6366F1,#4F46E5);display:grid;place-items:center;color:#fff;font-style:normal;font-weight:700}
+.A .logo b{font-size:15px;line-height:1.2}.A .logo small{display:block;color:var(--mut);font-size:11px;font-weight:400}
+.A .ring{display:flex;gap:12px;align-items:center;background:var(--bg);border-radius:14px;padding:12px}
+.A .ring svg{flex:none}
+.A .ring b{font-size:14px}.A .ring small{display:block;font-size:12px;color:var(--mut)}
+.A ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.A ol li{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:10px;font-size:14px;color:var(--mut)}
+.A ol li .d{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:11px;flex:none}
+.A ol li.done .d{background:var(--ok);border-color:var(--ok);color:#fff}
+.A ol li.on{background:var(--acc2);color:var(--acc);font-weight:600}
+.A ol li.on .d{border-color:var(--acc);color:var(--acc)}
+.A ol li small{margin-left:auto;font-size:11px}
+.A .who{margin-top:auto;font-size:12px;color:var(--mut);border-top:1px solid var(--line);padding-top:12px}
+.A main{min-width:0;display:flex;flex-direction:column}
+.A .bar{position:sticky;top:0;display:flex;align-items:center;gap:12px;padding:14px 28px;background:rgba(247,248,250,.78);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);z-index:2}
+.A .crumb{font-size:13px;color:var(--mut)}.A .crumb b{color:var(--ink)}
+.A .save{margin-left:auto;font-size:12px;color:var(--ok);display:flex;gap:6px;align-items:center}
+.A .save::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.A .pill{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:6px 12px;font-size:12px}
+.A .content{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;padding:28px}
+.A h1{font-size:30px;letter-spacing:-.02em;margin:0;line-height:1.25}
+.A .lead{color:var(--mut);margin:8px 0 0;font-size:15px}
+.A .tags{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.A .tags span{font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--mut)}
+.A .q{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-top:16px}
+.A .q h3{margin:0;font-size:17px;display:flex;gap:10px;align-items:center}
+.A .q h3 em{font-style:normal;font-size:12px;color:var(--acc);background:var(--acc2);border-radius:6px;padding:2px 8px}
+.A .q p.h{margin:6px 0 0;color:var(--mut);font-size:13px}
+.A .f{margin-top:14px}
+.A .f label{font-size:12px;font-weight:600;color:var(--mut);display:block;margin-bottom:6px}
+.A .in{display:flex;align-items:stretch;border:1.5px solid var(--line);border-radius:12px;background:var(--fill);overflow:hidden}
+.A .in:focus-within,.A .in.focus{border-color:var(--acc);box-shadow:0 0 0 4px var(--acc2);background:#fff}
+.A .in .v{flex:1;padding:12px 14px;font-size:15px;min-height:46px}
+.A .in .v.ph{color:#A3A9B3}
+.A .in button{border:0;border-left:1px solid var(--line);background:transparent;color:var(--acc);font:600 13px inherit;padding:0 14px;cursor:pointer}
+.A .prev{margin-top:6px;font-size:17px;padding:8px 12px;border-radius:10px;background:var(--acc2);color:#2A2580}
+.A .auto{font-size:12px;color:var(--mut);margin-top:6px}.A .auto code{background:var(--bg);border-radius:6px;padding:1px 6px;color:var(--ink)}
+.A .side{display:flex;flex-direction:column;gap:14px;position:sticky;top:76px;align-self:start}
+.A .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.A .card h4{margin:0 0 10px;font-size:13px;color:var(--mut);font-weight:600}
+.A .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:13px}
+.A .kv dt{color:var(--mut)}.A .kv dd{margin:0;text-align:right;font-family:"IBM Plex Mono",monospace}
+.A .check{display:flex;gap:8px;font-size:13px;align-items:flex-start;margin-top:8px}
+.A .check i{width:16px;height:16px;border-radius:5px;border:1.5px solid var(--line);flex:none;margin-top:2px}
+.A .check.ok i{background:var(--ok);border-color:var(--ok)}
+.A .nav{display:flex;justify-content:space-between;margin-top:20px}
+.A .btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 16px;font:600 14px inherit;cursor:pointer;color:var(--ink)}
+.A .btn.p{background:var(--acc);border-color:var(--acc);color:#fff}
+@media (max-width:980px){.A .content{grid-template-columns:1fr}.A .side{position:static}}
+@media (max-width:760px){.A{grid-template-columns:1fr}.A aside{border-right:0;border-bottom:1px solid var(--line)}.A ol{flex-direction:row;overflow-x:auto}.A ol li small,.A .who,.A .ring{display:none}.A ol li{white-space:nowrap}.A .content,.A .bar{padding-inline:16px}.A h1{font-size:24px}}
+
+/* ════════════ 시안 B · 데이터 벤토 (Bento Data Lab, 다크) ════════════ */
+.B{--bg:#0B0F14;--card:#121821;--card2:#17202B;--ink:#E6EDF3;--mut:#8B98A8;--line:#223040;--cy:#38E1C6;--vi:#8B7CFF;--am:#FFB547;--rd:#FF6B6B;
+  background:radial-gradient(1200px 500px at 85% -10%,rgba(139,124,255,.18),transparent 60%),radial-gradient(900px 400px at -10% 10%,rgba(56,225,198,.12),transparent 60%),var(--bg);
+  color:var(--ink);padding:18px;min-height:860px;font-family:"IBM Plex Sans KR",sans-serif}
+.B header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.B .brand{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px}
+.B .brand i{width:10px;height:10px;border-radius:3px;background:var(--cy);box-shadow:0 0 12px var(--cy)}
+.B .steps{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px;margin-left:12px;overflow-x:auto}
+.B .steps span{font-size:12px;padding:6px 12px;border-radius:8px;color:var(--mut);white-space:nowrap;display:flex;gap:6px;align-items:center}
+.B .steps span i{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.B .steps span.done i{background:var(--cy)}
+.B .steps span.on{background:var(--card2);color:var(--ink);box-shadow:inset 0 0 0 1px #2F4155}
+.B .steps span.on i{background:var(--am);box-shadow:0 0 8px var(--am)}
+.B .st{margin-left:auto;font:500 12px "IBM Plex Mono",monospace;color:var(--cy)}
+.B .grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;margin-top:16px}
+.B .c{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
+.B .c h3{margin:0;font-size:12px;letter-spacing:.06em;color:var(--mut);font-weight:600;display:flex;gap:8px;align-items:center;text-transform:uppercase}
+.B .c h3 b{color:var(--ink);letter-spacing:0;font-size:15px;text-transform:none}
+.B .hero{grid-column:span 5;display:flex;flex-direction:column;gap:10px}
+.B .hero h1{margin:4px 0 0;font-size:28px;line-height:1.2;letter-spacing:-.02em}
+.B .hero p{margin:0;color:var(--mut);font-size:14px}
+.B .meter{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:auto}
+.B .meter div{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px}
+.B .meter small{color:var(--mut);font-size:11px;display:block}
+.B .meter b{font:500 22px "IBM Plex Mono",monospace}
+.B .chart{grid-column:span 7}
+.B .chart svg{width:100%;height:auto;display:block;margin-top:8px}
+.B .fx{grid-column:span 7}
+.B .row{display:grid;grid-template-columns:130px minmax(0,1fr);gap:10px;align-items:center;margin-top:10px}
+.B .row label{font-size:12px;color:var(--mut)}
+.B .in{display:flex;align-items:center;background:#0E141C;border:1px solid var(--line);border-radius:10px;min-height:44px;overflow:hidden}
+.B .in.focus{border-color:var(--cy);box-shadow:0 0 0 3px rgba(56,225,198,.15)}
+.B .in .v{flex:1;padding:10px 12px;font-size:16px}
+.B .in .v.ph{color:#4D5B6B;font-size:14px}
+.B .in button{align-self:stretch;border:0;border-left:1px solid var(--line);background:rgba(56,225,198,.08);color:var(--cy);padding:0 12px;font:600 12px inherit;cursor:pointer}
+.B .chip{font:500 12px "IBM Plex Mono",monospace;color:var(--mut);margin:6px 0 0 140px}
+.B .chip b{color:var(--am)}
+.B .rate{grid-column:span 5}
+.B table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+.B th{color:var(--mut);font-weight:500;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:11px}
+.B td{padding:8px;border-bottom:1px solid #1A2531;font-family:"IBM Plex Mono",monospace}
+.B td.in2{color:var(--cy)}
+.B td.bad{color:var(--rd)}
+.B .write{grid-column:span 8}
+.B textarea{width:100%;min-height:96px;background:#0E141C;border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:12px;font:15px/1.6 "IBM Plex Sans KR",sans-serif;resize:vertical;margin-top:10px}
+.B .hint{grid-column:span 4;background:linear-gradient(160deg,rgba(139,124,255,.18),rgba(18,24,33,.9));border-color:#33305E}
+.B .hint ul{margin:10px 0 0;padding-left:18px;font-size:13px;color:#C9D1F5;line-height:1.7}
+.B .kbd{grid-column:span 12;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.B .kbd span{font-size:12px;color:var(--mut);margin-right:6px}
+.B .kbd button{border:1px solid var(--line);background:var(--card2);color:var(--ink);border-radius:8px;min-width:40px;height:36px;font:16px "Times New Roman",serif;cursor:pointer}
+.B .kbd button.big{background:var(--cy);color:#04211C;border-color:var(--cy);font:700 13px "IBM Plex Sans KR",sans-serif;padding:0 14px}
+@media (max-width:980px){.B .hero,.B .chart,.B .fx,.B .rate,.B .write,.B .hint{grid-column:span 12}}
+@media (max-width:560px){.B .row{grid-template-columns:1fr}.B .chip{margin-left:0}.B .steps{margin-left:0;width:100%}}
+
+/* ════════════ 시안 C · 손에 잡히는 노트 (Tactile Notebook) ════════════ */
+.C{--bg:#FFF6EA;--paper:#FFFDF8;--ink:#2B2A33;--mut:#7A7486;--mint:#7FD8BE;--mintD:#2E9C7E;--peach:#FFB4A2;--lav:#B8B5FF;--sun:#FFD166;--line:#EADFCF;
+  background:var(--bg);color:var(--ink);font-family:"Gowun Dodum","IBM Plex Sans KR",sans-serif;min-height:860px;padding:20px 20px 110px;position:relative}
+.C .top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.C .hi{font-family:"Jua",sans-serif;font-size:22px}
+.C .hi span{background:linear-gradient(transparent 60%,var(--sun) 60%);padding:0 4px}
+.C .badge{margin-left:auto;display:flex;gap:8px}
+.C .badge span{background:var(--paper);border-radius:999px;padding:6px 12px;font-size:13px;box-shadow:0 3px 0 var(--line)}
+.C .path{margin-top:18px;display:flex;align-items:center;gap:0;overflow-x:auto;padding:6px 4px 14px}
+.C .node{flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;width:96px;font-size:13px;text-align:center}
+.C .node i{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font:normal 22px "Jua",sans-serif;background:#fff;box-shadow:0 5px 0 var(--line),inset 0 -4px 0 rgba(0,0,0,.05);color:var(--mut)}
+.C .node.done i{background:var(--mint);color:#fff;box-shadow:0 5px 0 var(--mintD)}
+.C .node.on i{background:var(--sun);color:var(--ink);box-shadow:0 5px 0 #D9A92F;transform:scale(1.12)}
+.C .link{flex:1;min-width:24px;height:6px;border-radius:3px;background:var(--line);margin-bottom:24px}
+.C .link.done{background:var(--mint)}
+.C .wrap{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;margin-top:6px}
+.C .sheet{background:var(--paper);border-radius:24px;padding:22px;box-shadow:0 8px 0 var(--line);
+  background-image:linear-gradient(#F3EADB 1px,transparent 1px),linear-gradient(90deg,#F3EADB 1px,transparent 1px);background-size:22px 22px}
+.C h1{font-family:"Jua",sans-serif;font-weight:400;font-size:28px;margin:0}
+.C .goal{display:inline-block;margin-top:8px;background:#fff;border-radius:14px;padding:8px 14px;font-size:14px;box-shadow:0 3px 0 var(--line)}
+.C .task{margin-top:18px;background:#fff;border-radius:20px;padding:16px 18px;box-shadow:0 5px 0 var(--line)}
+.C .task h3{margin:0;font-family:"Jua",sans-serif;font-weight:400;font-size:19px;display:flex;align-items:center;gap:10px}
+.C .task h3 .n{width:30px;height:30px;border-radius:10px;background:var(--lav);display:grid;place-items:center;color:#fff;font-size:16px}
+.C .task h3 .s{margin-left:auto;font-size:12px;font-family:"Gowun Dodum",sans-serif;background:#FFF1C9;border-radius:999px;padding:3px 10px}
+.C .lab{font-size:14px;color:var(--mut);margin:14px 0 6px}
+.C .in{display:flex;gap:8px;align-items:stretch}
+.C .in .v{flex:1;background:#FFF8E1;border:2px solid #F3E2B3;border-radius:16px;padding:12px 14px;font-size:17px;min-height:52px}
+.C .in .v.ph{color:#B8AE98;font-size:15px}
+.C .in.focus .v{border-color:var(--mintD);background:#fff}
+.C .tool{border:0;border-radius:16px;padding:0 16px;font:400 15px "Jua",sans-serif;cursor:pointer;color:#fff;background:var(--mintD);box-shadow:0 4px 0 #1F6E59;min-width:64px}
+.C .tool.pen{background:#9C8CFF;box-shadow:0 4px 0 #6E5FD6}
+.C .tool:active{transform:translateY(3px);box-shadow:0 1px 0 #1F6E59}
+.C .prev{margin-top:8px;background:#EFFBF6;border-radius:12px;padding:8px 12px;font-size:18px;display:flex;gap:8px;align-items:center}
+.C .prev small{font-size:12px;color:var(--mintD);font-family:"Gowun Dodum",sans-serif}
+.C .side{display:flex;flex-direction:column;gap:14px}
+.C .sticker{background:#fff;border-radius:20px;padding:16px;box-shadow:0 5px 0 var(--line);position:relative}
+.C .sticker.y{background:#FFF1C9;transform:rotate(-1.2deg)}
+.C .sticker.p{background:#FFE4DC;transform:rotate(1deg)}
+.C .sticker h4{margin:0 0 8px;font-family:"Jua",sans-serif;font-weight:400;font-size:17px}
+.C .sticker ul{margin:0;padding-left:18px;font-size:14px;line-height:1.7}
+.C .mini{width:100%;height:auto;display:block}
+.C .dock{position:absolute;left:20px;right:20px;bottom:18px;background:#2B2A33;color:#fff;border-radius:22px;padding:10px;display:flex;gap:8px;align-items:center;box-shadow:0 10px 30px rgba(43,42,51,.3);overflow-x:auto}
+.C .dock span{font-size:13px;color:#C9C4D6;padding:0 6px;white-space:nowrap}
+.C .dock button{flex:none;border:0;border-radius:12px;min-width:46px;height:44px;background:#3D3B48;color:#fff;font:18px "Times New Roman",serif;cursor:pointer;box-shadow:0 3px 0 #18171D}
+.C .dock button.go{background:var(--sun);color:var(--ink);font:400 15px "Jua",sans-serif;padding:0 16px;margin-left:auto}
+@media (max-width:900px){.C .wrap{grid-template-columns:1fr}}
+@media (max-width:560px){.C{padding:14px 14px 110px}.C .dock{left:14px;right:14px}.C h1{font-size:23px}.C .in{flex-wrap:wrap}.C .in .v{flex-basis:100%}}
+</style>
+</head>
+<body>
+<div class="switch" role="tablist" aria-label="시안 고르기">
+  <b>학생 활동 화면 시안 · 4단계 미분·적분 분석</b>
+  <button type="button" data-v="A" aria-pressed="true">A · 차분한 집중</button>
+  <button type="button" data-v="B" aria-pressed="false">B · 데이터 벤토 (다크)</button>
+  <button type="button" data-v="C" aria-pressed="false">C · 손에 잡히는 노트</button>
+</div>
+
+<p class="note" data-n="A"><b>A · 차분한 집중 (Calm Focus)</b> — 2026 흐름인 “차분하고 부드러운 화면(큰 글자·넓은 여백·둥근 모서리)”과 Notion·Linear식 익숙한 구조. 왼쪽 단계 목록과 진행률 링, 가운데 한 줄 작성 흐름, 오른쪽에 모델 요약·점검 카드를 고정합니다. 노트북·크롬북 수업에 가장 무난하고, 지금 앱에서 옮겨 가기 쉽습니다.</p>
+<p class="note" data-n="B" hidden><b>B · 데이터 벤토 (Bento Data Lab)</b> — “정보 밀도 높은 실용 화면”과 벤토 그리드, 어두운 바탕에 빛나는 강조색(이러닝 대시보드 경향). 그래프·식·변화율 표·힌트를 한 화면에 카드로 모아 숫자를 보며 쓰게 합니다. 모델링·검증 단계에 강하고, 키보드 바가 늘 아래에 있습니다. 밝은 테마도 함께 만들 수 있습니다.</p>
+<p class="note" data-n="C" hidden><b>C · 손에 잡히는 노트 (Tactile Notebook)</b> — 교육 제품에 쓰이는 “부드러운 입체감(클레이)”과 Duolingo식 진행 길, 스티커 메모. 큰 터치 버튼과 아래 수식 독(dock), [손글씨] 버튼을 앞에 둬 태블릿·펜 수업에 맞춥니다. 수학 부담이 큰 학생에게 친근하지만, 화면 밀도는 가장 낮습니다.</p>
+
+<div class="frame">
+<!-- ═════ A ═════ -->
+<section class="screen A" data-s="A" aria-label="시안 A">
+  <aside>
+    <div class="logo"><i>∫</i><b>모델링 탐구<small>전문 수학 수행평가 · 40점</small></b></div>
+    <div class="ring"><svg width="46" height="46" viewBox="0 0 46 46" aria-hidden="true"><circle cx="23" cy="23" r="19" fill="none" stroke="#E6E8EC" stroke-width="5"/><circle cx="23" cy="23" r="19" fill="none" stroke="#4F46E5" stroke-width="5" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="44" transform="rotate(-90 23 23)"/><text x="23" y="27" text-anchor="middle" font-size="11" font-weight="700" fill="#14181F">63%</text></svg><div><b>전체 작성률</b><small>제출까지 2단계 남음</small></div></div>
+    <ol>
+      <li class="done"><span class="d">✓</span>주제·탐구 설계<small>1시간</small></li>
+      <li class="done"><span class="d">✓</span>자료·그래프<small>2시간</small></li>
+      <li class="done"><span class="d">✓</span>모델 만들기<small>2시간</small></li>
+      <li class="on"><span class="d">4</span>미분·적분 분석<small>3시간</small></li>
+      <li><span class="d">5</span>검증·결론<small>4시간</small></li>
+    </ol>
+    <div class="who">20314 김하늘 · 카드 A 그림자 길이</div>
+  </aside>
+  <main>
+    <div class="bar"><span class="crumb">4단계 / <b>미분·적분 분석</b></span><span class="pill">∑ 수식 입력기</span><span class="pill">📄 PDF</span><span class="save">저장됨 10:42</span></div>
+    <div class="content">
+      <div>
+        <h1>내 모델을 미분하고 적분해<br>새로 알게 된 사실을 씁니다</h1>
+        <p class="lead">숫자와 함께, 그 숫자가 내 현상에서 무엇을 뜻하는지 쓰세요.</p>
+        <div class="tags"><span>⏱ 3시간째 · 60분</span><span>평가요소 · 수학적 모델링 10점</span></div>
+        <div class="q"><h3>① 도함수 구하기 <em>손 계산</em></h3><p class="h">u = b(x − c)로 두면 du/dx = b 입니다.</p>
+          <div class="f"><label>모델 f(x)</label><div class="in"><div class="v"><span class="m">f</span>(<span class="m">x</span>) = 2.4 <span class="r">sec</span>(0.26(<span class="m">x</span> − 12.5)) − 1.1</div><button type="button">∑ 수식</button></div><div class="auto">도구 값 <code>y = 2.4 sec(0.26(x − 12.5)) − 1.1</code> · 이 값 넣기</div></div>
+          <div class="f"><label>도함수 f′(x)</label><div class="in focus"><div class="v">$f'(x)=0.624\sec u\tan u$</div><button type="button">∑ 수식</button></div>
+            <div class="prev"><span class="m">f′</span>(<span class="m">x</span>) = 0.624 <span class="r">sec</span> <span class="m">u</span> <span class="r">tan</span> <span class="m">u</span></div></div>
+          <div class="f"><label>풀이 과정</label><div class="in"><div class="v ph">미분 공식을 어떻게 썼는지 차례대로 쓰세요. [∑ 수식]에서 손글씨로도 쓸 수 있어요.</div><button type="button">∑ 수식</button></div></div>
+        </div>
+        <div class="q"><h3>③ 미분으로 알아낸 사실 <em>★ 핵심</em></h3><p class="h">가장 빠르게 변하는 때, 변화가 멈추는 때를 살펴봅니다.</p>
+          <div class="f"><label>분석한 사실 1 (근거 수치)</label><div class="in"><div class="v">오후 4시(x = 16)에 그림자가 시간당 <span class="m">f′</span>(16) ≈ 1.03 m씩 가장 빠르게 길어진다.</div></div></div>
+        </div>
+        <div class="nav"><button class="btn" type="button">← 모델 만들기</button><button class="btn p" type="button">검증·결론 →</button></div>
+      </div>
+      <div class="side">
+        <div class="card"><h4>내 모델 A</h4><svg viewBox="0 0 260 120" width="100%" aria-hidden="true"><path d="M10 100 C 70 98, 110 90, 130 70 S 190 20, 250 8" fill="none" stroke="#4F46E5" stroke-width="2.5"/><g fill="#14181F"><circle cx="20" cy="99" r="3"/><circle cx="60" cy="96" r="3"/><circle cx="100" cy="88" r="3"/><circle cx="130" cy="72" r="3"/><circle cx="160" cy="52" r="3"/><circle cx="190" cy="34" r="3"/><circle cx="220" cy="20" r="3"/></g></svg>
+          <dl class="kv"><dt>평균 오차율</dt><dd>3.42%</dd><dt>RMSE</dt><dd>0.118</dd><dt>f′(16)</dt><dd>1.031</dd></dl></div>
+        <div class="card"><h4>이 단계 점검</h4><div class="check ok"><i></i>도함수를 손으로 구했다</div><div class="check ok"><i></i>변화율 표에 x₀ 4개를 넣었다</div><div class="check"><i></i>적분 구간과 이유를 썼다</div><div class="check"><i></i>현상에서의 의미를 숫자와 썼다</div></div>
+        <div class="card" style="background:#14181F;color:#fff;border:0"><h4 style="color:#A5AEC0">💡 막히면</h4><p style="margin:0;font-size:13px;line-height:1.6">(a sec u)′ = ab sec u tan u<br>∫ a sec u dx = (a/b) ln|sec u + tan u| + C</p></div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- ═════ B ═════ -->
+<section class="screen B" data-s="B" aria-label="시안 B" hidden>
+  <header>
+    <div class="brand"><i></i>MODEL LAB</div>
+    <div class="steps"><span class="done"><i></i>1 설계</span><span class="done"><i></i>2 자료</span><span class="done"><i></i>3 모델</span><span class="on"><i></i>4 미분·적분</span><span><i></i>5 검증</span></div>
+    <span class="st">● SAVED 10:42 · DOC SYNC ✓</span>
+  </header>
+  <div class="grid">
+    <div class="c hero"><h3>STAGE 04 · 3교시 60분</h3><h1>모델을 미분·적분해<br>현상을 숫자로 말하기</h1><p>평가요소 수학적 모델링 (10점) · 카드 A 막대 그림자 길이</p>
+      <div class="meter"><div><small>작성률</small><b>63%</b></div><div><small>오차율 A</small><b style="color:var(--cy)">3.42</b></div><div><small>자료</small><b>14</b></div></div></div>
+    <div class="c chart"><h3>MODEL A vs DATA <b>y = 2.4 sec(0.26(x − 12.5)) − 1.1</b></h3>
+      <svg viewBox="0 0 520 190" aria-hidden="true"><g stroke="#1C2836"><line x1="30" y1="20" x2="510" y2="20"/><line x1="30" y1="65" x2="510" y2="65"/><line x1="30" y1="110" x2="510" y2="110"/><line x1="30" y1="155" x2="510" y2="155"/></g>
+        <path d="M30 160 C 150 158, 230 150, 280 125 S 410 50, 510 18" fill="none" stroke="#38E1C6" stroke-width="2.5" style="filter:drop-shadow(0 0 6px rgba(56,225,198,.6))"/>
+        <path d="M30 150 C 160 150, 240 140, 290 118 S 420 60, 510 30" fill="none" stroke="#8B7CFF" stroke-width="2" stroke-dasharray="6 5"/>
+        <g fill="#E6EDF3"><circle cx="50" cy="159" r="3.5"/><circle cx="110" cy="157" r="3.5"/><circle cx="170" cy="153" r="3.5"/><circle cx="230" cy="145" r="3.5"/><circle cx="280" cy="128" r="3.5"/><circle cx="330" cy="104" r="3.5"/><circle cx="380" cy="78" r="3.5"/><circle cx="430" cy="56" r="3.5"/><circle cx="480" cy="32" r="3.5"/></g>
+        <line x1="430" y1="20" x2="430" y2="170" stroke="#FFB547" stroke-dasharray="3 4"/><text x="436" y="182" fill="#FFB547" font-size="11" font-family="IBM Plex Mono">x₀ = 16 · f′ = 1.031</text></svg></div>
+    <div class="c fx"><h3>① 도함수 · 손 계산</h3>
+      <div class="row"><label>모델 f(x)</label><div class="in"><div class="v"><span class="m">f</span>(<span class="m">x</span>) = 2.4 <span class="r">sec</span>(0.26(<span class="m">x</span> − 12.5)) − 1.1</div><button type="button">∑</button></div></div>
+      <div class="row"><label>도함수 f′(x)</label><div class="in focus"><div class="v"><span class="m">f′</span>(<span class="m">x</span>) = 0.624 <span class="r">sec</span> <span class="m">u</span> <span class="r">tan</span> <span class="m">u</span></div><button type="button">∑ 수식</button></div></div>
+      <div class="chip">도구 확인: f′_A(16) = <b>1.031</b> · 내 계산과 차이 0.004</div>
+      <div class="row"><label>풀이 과정</label><div class="in"><div class="v ph">u = b(x − c), du/dx = b 를 써서 차례대로…</div><button type="button">✍ 손글씨</button></div></div></div>
+    <div class="c rate"><h3>② 변화율 표</h3>
+      <table><thead><tr><th>순간</th><th>x₀</th><th>손 계산</th><th>도구</th><th>차이</th></tr></thead>
+      <tbody><tr><td>가장 빠른 증가</td><td class="in2">16</td><td class="in2">1.035</td><td>1.031</td><td>0.004</td></tr><tr><td>가장 느린 때</td><td class="in2">12.5</td><td class="in2">0</td><td>0.000</td><td>0</td></tr><tr><td>f′ = 0</td><td class="in2">12.5</td><td class="in2">0</td><td>0.000</td><td>0</td></tr><tr><td>궁금한 x₀</td><td class="in2">9</td><td class="in2">−0.52</td><td>−0.482</td><td class="bad">0.038</td></tr></tbody></table></div>
+    <div class="c write"><h3>③ ★ 미분으로 알아낸 사실</h3><textarea aria-label="분석한 사실">오후 4시(x = 16)에 그림자가 시간당 약 1.03 m씩 가장 빠르게 길어진다. 정오 무렵(x = 12.5)에는 f′ = 0 으로 그림자 길이가 거의 변하지 않는다.</textarea></div>
+    <div class="c hint"><h3>HINT · 감점 없음</h3><ul><li>(a sec u)′ = ab sec u tan u</li><li>가장 빠른 때는 f″(x) = 0 근처를 살펴봅니다</li><li>단위는 “y 단위 ÷ x 단위”</li></ul></div>
+    <div class="c kbd"><span>수식 키보드</span><button type="button">π</button><button type="button">√</button><button type="button"><span class="frac"><span>a</span><span>b</span></span></button><button type="button">x²</button><button type="button">sec</button><button type="button">tan</button><button type="button">∫</button><button type="button">lim</button><button type="button">′</button><button type="button">≈</button><button type="button" class="big">⌨ 전체 키보드</button><button type="button" class="big" style="background:var(--vi);border-color:var(--vi);color:#fff">✍ 손글씨</button></div>
+  </div>
+</section>
+
+<!-- ═════ C ═════ -->
+<section class="screen C" data-s="C" aria-label="시안 C" hidden>
+  <div class="top"><div class="hi">하늘님, 오늘은 <span>미분·적분</span> 차례예요!</div><div class="badge"><span>🔥 3일째 이어 쓰는 중</span><span>✅ 저장됨</span></div></div>
+  <div class="path" aria-label="단계 진행">
+    <div class="node done"><i>1</i>탐구 설계</div><div class="link done"></div>
+    <div class="node done"><i>2</i>자료·그래프</div><div class="link done"></div>
+    <div class="node done"><i>3</i>모델 만들기</div><div class="link done"></div>
+    <div class="node on"><i>4</i>미분·적분</div><div class="link"></div>
+    <div class="node"><i>5</i>검증·결론</div><div class="link"></div>
+    <div class="node"><i>🏁</i>제출</div>
+  </div>
+  <div class="wrap">
+    <div class="sheet">
+      <h1>내 모델을 미분하고 적분해 봐요</h1>
+      <div class="goal">🎯 숫자와 함께, 그 숫자가 내 현상에서 무슨 뜻인지 쓰기</div>
+      <div class="task"><h3><span class="n">1</span>도함수 구하기 <span class="s">손 계산</span></h3>
+        <div class="lab">내 모델 f(x)</div><div class="in"><div class="v"><span class="m">f</span>(<span class="m">x</span>) = 2.4 <span class="r">sec</span>(0.26(<span class="m">x</span> − 12.5)) − 1.1</div><button class="tool" type="button">∑ 수식</button><button class="tool pen" type="button">✍ 손글씨</button></div>
+        <div class="lab">도함수 f′(x)</div><div class="in focus"><div class="v">$f'(x)=0.624\sec u\tan u$</div><button class="tool" type="button">∑ 수식</button><button class="tool pen" type="button">✍ 손글씨</button></div>
+        <div class="prev"><small>이렇게 보여요 →</small><span class="m">f′</span>(<span class="m">x</span>) = 0.624 <span class="r">sec</span> <span class="m">u</span> <span class="r">tan</span> <span class="m">u</span></div>
+        <div class="lab">풀이 과정</div><div class="in"><div class="v ph">펜으로 써도 돼요. [✍ 손글씨]를 누르면 수식으로 바꿔 줘요.</div><button class="tool pen" type="button">✍ 손글씨</button></div>
+      </div>
+      <div class="task"><h3><span class="n" style="background:var(--peach)">3</span>미분으로 알아낸 사실 <span class="s">★ 핵심</span></h3>
+        <div class="lab">알아낸 사실 1 (근거가 되는 숫자)</div><div class="in"><div class="v">오후 4시에 그림자가 시간당 약 1.03 m씩 가장 빠르게 길어진다.</div></div></div>
+    </div>
+    <div class="side">
+      <div class="sticker"><h4>📈 내 모델</h4><svg class="mini" viewBox="0 0 240 110" aria-hidden="true"><path d="M8 95 C 70 93, 105 84, 125 66 S 180 18, 232 8" fill="none" stroke="#2E9C7E" stroke-width="3" stroke-linecap="round"/><g fill="#FF8A75"><circle cx="20" cy="94" r="4"/><circle cx="60" cy="91" r="4"/><circle cx="100" cy="83" r="4"/><circle cx="125" cy="68" r="4"/><circle cx="155" cy="48" r="4"/><circle cx="185" cy="31" r="4"/><circle cx="215" cy="17" r="4"/></g></svg><p style="margin:6px 0 0;font-size:14px">평균 오차율 <b>3.42%</b> · 아주 잘 맞아요!</p></div>
+      <div class="sticker y"><h4>💡 막히면 보세요</h4><ul><li>(a sec u)′ = ab sec u tan u</li><li>u = b(x − c) → du/dx = b</li></ul></div>
+      <div class="sticker p"><h4>✅ 오늘 할 일</h4><ul><li>도함수 손으로 구하기 ✔</li><li>변화율 표 4칸 채우기</li><li>적분 구간 고르고 이유 쓰기</li></ul></div>
+    </div>
+  </div>
+  <div class="dock" aria-label="수식 독"><span>자주 쓰는 기호</span><button type="button">π</button><button type="button">√</button><button type="button"><span class="frac"><span>a</span><span>b</span></span></button><button type="button">x²</button><button type="button">sec</button><button type="button">tan</button><button type="button">∫</button><button type="button">′</button><button type="button" class="go">다음 단계로 →</button></div>
+</section>
+</div>
+
+<script>
+document.querySelector(".switch").addEventListener("click",e=>{ const b=e.target.closest("button[data-v]"); if(!b) return; const v=b.dataset.v;
+  document.querySelectorAll(".switch button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  document.querySelectorAll("[data-s]").forEach(s=>s.hidden=s.dataset.s!==v);
+  document.querySelectorAll("[data-n]").forEach(s=>s.hidden=s.dataset.n!==v);
+  try{ history.replaceState(null,"","#"+v); }catch(err){} });
+const h=(location.hash||"").slice(1); if("ABC".includes(h)&&h) document.querySelector(`.switch button[data-v="${h}"]`).click();
+</script>
+</body>
+</html>

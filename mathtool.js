@@ -125,7 +125,6 @@
   const CSS = `
 .mt-btn{flex:none;align-self:stretch;display:inline-flex;align-items:center;justify-content:center;gap:4px;border:0;border-left:1px solid var(--line);background:var(--paper);color:var(--accent);font:600 13px/1 var(--f-body);padding:0 10px;cursor:pointer;min-width:44px}
 .mt-btn:hover{background:var(--accent-soft)}
-.mt-btn svg{width:16px;height:16px}
 .mt-wrap{display:flex;align-items:stretch;min-width:0}
 .mt-wrap>.fld,.mt-wrap>input,.mt-wrap>textarea{flex:1 1 auto;min-width:0}
 .mt-prev{padding:6px 10px;border-top:1px dashed var(--fill-line);background:var(--paper);font-size:15px;line-height:1.9;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
@@ -170,7 +169,7 @@
 @media (max-width:480px){.mt-keys{grid-template-columns:repeat(4,minmax(0,1fr))}.mt-keys .w3{grid-column:span 4}.mt-field{font-size:20px}}
 `;
   function injectCss() { if (document.getElementById("mt-css")) return; const s = document.createElement("style"); s.id = "mt-css"; s.textContent = CSS; document.head.appendChild(s); }
-  const ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h9l-5 7 5 7H4"/><path d="M15 10l5 5M20 10l-5 5"/></svg>`;
+  const ICON = `<b aria-hidden="true" style="font:700 16px/1 KaTeX_Main,Times New Roman,serif">∑</b>`;
   const buttonHTML = key => `<button type="button" class="mt-btn" data-mt-open="${esc(key)}" title="수식 입력기 (키보드·손글씨)" aria-label="수식 입력기 열기">${ICON}<span>수식</span></button>`;
 
   /* ───── 수식 입력 창 ───── */
@@ -255,6 +254,7 @@
     }
 
     const pad = makePad($(".mt-pad"), $("[data-ph]"));
+    if (opts.mode === "hw") $('[data-mode="hw"]').click();
 
     try {
       await loadMathLive();
@@ -289,7 +289,7 @@
       cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, cv.width, cv.height);
       cx.lineCap = "round"; cx.lineJoin = "round"; cx.strokeStyle = "#111"; cx.lineWidth = 3;
       strokes.forEach(s => { cx.beginPath(); s.forEach(([x, y], i) => i ? cx.lineTo(x, y) : cx.moveTo(x, y)); if (s.length === 1) cx.lineTo(s[0][0] + .1, s[0][1]); cx.stroke(); });
-      ph.hidden = strokes.length > 0;
+      ph.style.display = strokes.length ? "none" : "";
     }
     const at = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
     function eraseAt(p) { const before = strokes.length; strokes = strokes.filter(s => !s.some(([x, y]) => Math.hypot(x - p[0], y - p[1]) < 12)); if (strokes.length !== before) draw(); }

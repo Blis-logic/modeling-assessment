@@ -334,8 +334,9 @@ const SYMS = ["π","√","²","³","⁻¹","′","″","θ","φ","°","×","÷",
 const isNum = v => v!=="" && v!=null && isFinite(+v);
 const N = (v,def) => isNum(v) ? +v : def;
 function parseYs(s){ if(!s) return []; return String(s).split(/[\n,\t;]+/).map(t=>t.trim()).filter((t,i,a)=>t!==""||false).map(t=>isNum(t)?+t:null); }
-function points(doc){ const d=doc.data||{}; const ys=parseYs(d.ys); const x0=N(d.x0,1), dx=N(d.dx,1);
-  const out=[]; ys.forEach((y,i)=>{ if(y!=null) out.push({x:Math.round((x0+i*dx)*1e6)/1e6,y}); }); return out; }
+function points(doc){ const d=doc.data||{}; const ys=parseYs(d.ys), xs=parseYs(d.xs), x0=N(d.x0,1), dx=N(d.dx,1);
+  const out=[]; ys.forEach((y,i)=>{ const x=xs.length?xs[i]:x0+i*dx; if(y!=null&&x!=null&&isFinite(x)) out.push({x:Math.round(x*1e6)/1e6,y}); });
+  return xs.length?out.sort((p,q)=>p.x-q.x):out; }
 function model(doc,k){ const m=(doc.models||{})[k]||{}; return {t:m.t||"", a:N(m.a,NaN), b:N(m.b,NaN), c:N(m.c,NaN), d:N(m.d,NaN), e:N(m.e,0), g:N(m.g,0), ok:!!m.t&&[m.a,m.b,m.c,m.d].every(isNum)}; }
 function fval(m,x){ if(!m.ok) return NaN; const {a,b,c,d,e,g}=m, u=b*(x-c); let v;
   switch(m.t){
@@ -502,6 +503,7 @@ function toolHTML(doc,tool,ro){ const d=doc.data||{}, M=doc.models||{}, c=doc.ca
   case "data": return `<div class="tool"><div class="tool-h">📊 자료 입력과 그래프 <span>시트 1_자료입력 · 2_그래프와모델을 대신합니다</span></div><div class="tool-b">
     <div class="grid2"><div style="display:grid;gap:8px;align-content:start">
       <div class="grid2" style="gap:8px">${inp("data.x0",d.x0,"x 시작값 (비우면 1)",'inputmode="decimal"')}${inp("data.dx",d.dx,"x 간격 (비우면 1)",'inputmode="decimal"')}</div>
+      <label class="mini">x 값 (간격이 일정하지 않을 때만. 한 줄에 하나, y 값과 같은 순서·같은 개수. 비워 두면 위의 시작값·간격으로 자동)<textarea id="t_data_xs" data-p="data.xs"${dis} rows="4">${esc(d.xs||"")}</textarea></label>
       <label class="mini">y 값 (한 줄에 하나, 또는 쉼표로 구분. 엑셀 열을 그대로 붙여 넣어도 됩니다)<textarea id="t_data_ys" data-p="data.ys"${dis} rows="8">${esc(d.ys||"")}</textarea></label>
       ${inp("models.T",M.T,"주기 T (오르내림이 반복될 때만)",'inputmode="decimal"')}
     </div><div style="min-width:0;display:grid;gap:8px;align-content:start"><div data-out="chartData"></div><dl class="kv" data-out="feat"></dl></div></div></div></div>`;

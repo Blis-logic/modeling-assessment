@@ -4,8 +4,11 @@
  * 처음 한 번: 편집기에서 setup 을 실행해 시트를 만들고 권한을 허용합니다.
  * 그다음 배포 → 새 배포 → 웹 앱(실행: 나, 액세스: 모든 사용자) → /exec 주소를 config.js 에 넣습니다.
  */
-const SHEETS = { cfg: '설정', acc: '계정', rec: '기록', grd: '채점' };
-const ACC_HEAD = ['아이디', '역할', '학번', '이름', 'salt', 'hash', '가입 시각', '최근 로그인', '비밀번호 바꾸기 필요'];
+const SHEETS = { cfg: '설정', acc: '계정', rec: '기록', grd: '채점', doc: '문서' };
+const ACC_HEAD = ['아이디', '역할', '학번', '이름', 'salt', 'hash', '가입 시각', '최근 로그인', '비밀번호 바꾸기 필요', '이메일'];
+const DOC_HEAD = ['아이디', '학번', '이름', '문서 ID', '문서 주소', '최근 반영', '내용 해시'];
+const FOLDER_NAME = '모델링탐구_학생결과물';
+const PAGE_W = 515;                     // A4 본문 너비(pt), 좌우 여백 40pt
 const REC_HEAD = ['아이디', '학번', '이름', '탐구 제목', '상태', '최근 저장', '제출 시각', '작성률(%)', '자료 수', '모델 A 식', '모델 A 평균 오차율(%)', '데이터'];
 const GRD_HEAD = ['아이디', '학번', '이름', '실험 설계 및 자료 수집', '자료 처리 및 수학적 표현', '수학적 모델링', '결과 분석·검증 및 성찰', '총점', '학생 공개', '종합 피드백', '최근 채점', '데이터'];
 const REC_DATA_COL = REC_HEAD.length;   // 12번째 열부터 JSON 조각
@@ -46,11 +49,15 @@ function setup() {
     ]);
     cfg.setColumnWidth(3, 520);
   }
-  make(SHEETS.acc, ACC_HEAD).hideColumns(5, 2);  // salt·hash 열 숨김
+  const acc = make(SHEETS.acc, ACC_HEAD);
+  if (!acc.getRange(1, ACC_HEAD.length).getValue()) acc.getRange(1, ACC_HEAD.length).setValue(ACC_HEAD[ACC_HEAD.length - 1]).setFontWeight('bold').setBackground('#E1EFF0');
+  acc.hideColumns(5, 2);  // salt·hash 열 숨김
   make(SHEETS.rec, REC_HEAD);
   make(SHEETS.grd, GRD_HEAD);
+  make(SHEETS.doc, DOC_HEAD);
+  const folder = rootFolder_();  // 학생 결과물 문서가 쌓일 폴더를 만들고, 이미 가입한 교사에게 공유합니다
   const code = cfg.getRange(2, 2).getValue();
-  try { SpreadsheetApp.getUi().alert('설정을 마쳤습니다.\n\n교사 가입 코드: ' + code + '\n\n이 코드는 "설정" 시트에서 언제든 바꿀 수 있습니다.'); } catch (e) { Logger.log('교사 가입 코드: ' + code); }
+  try { SpreadsheetApp.getUi().alert('설정을 마쳤습니다.\n\n교사 가입 코드: ' + code + '\n\n이 코드는 "설정" 시트에서 언제든 바꿀 수 있습니다.\n\n학생 결과물 폴더: ' + folder.getUrl()); } catch (e) { Logger.log('교사 가입 코드: ' + code + ' / 폴더: ' + folder.getUrl()); }
 }
 
 /* ───── 하나의 입구: 화면이 POST {action, payload, token} 으로 부릅니다 ───── */
@@ -61,9 +68,9 @@ function api(action, payload, token) {
     if (pub[action]) return Object.assign({ ok: true }, pub[action](payload));
     const user = sessionUser_(token);
     if (!user) return { ok: false, error: 'SESSION' };
-    const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_ };
+    const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, recognize: apiRecognize_ };
     if (mine[action]) return Object.assign({ ok: true }, mine[action](user, payload, token));
-    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_ };
+    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, setAiKey: apiSetAiKey_ };
     if (teach[action]) {
       if (user.role !== 'teacher') return { ok: false, error: 'FORBIDDEN' };
       return Object.assign({ ok: true }, teach[action](user, payload));
@@ -87,7 +94,7 @@ function readConfig_() {
     notice: String(m['공지'] || '')
   };
 }
-function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, notice: c.notice }; }
+function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, notice: c.notice, hw: !!PropertiesService.getScriptProperties().getProperty(AI_KEY_PROP) }; }
 function apiConfig_() { return { config: publicConfig_() }; }
 function writeConfigValue_(label, value) {
   const sh = sheet_(SHEETS.cfg), col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(r => String(r[0]).trim());
@@ -104,15 +111,22 @@ function apiSignup_(p) {
   let role = 'student';
   if (p.teacherCode) { if (!cfg.teacherCode || String(p.teacherCode).trim() !== cfg.teacherCode) fail_('TEACHER_CODE'); role = 'teacher'; }
   else if (cfg.classCode && String(p.classCode || '').trim() !== cfg.classCode) fail_('CLASS_CODE');
-  return withLock_(() => {
+  const email = String(p.email || '').trim().toLowerCase();
+  if (role === 'teacher' && !validEmail_(email)) fail_('BAD_EMAIL');
+  const res = withLock_(() => {
     const sh = sheet_(SHEETS.acc);
     if (findRow_(sh, id) > 0) fail_('DUP_ID');
     const salt = makeCode_(16), now = new Date();
-    sh.appendRow([id, role, String(p.sid || '').trim(), String(p.name || '').trim(), salt, hash_(salt, pw), now, now, false]);
+    sh.appendRow([id, role, String(p.sid || '').trim(), String(p.name || '').trim(), salt, hash_(salt, pw), now, now, false, role === 'teacher' ? email : '']);
     const token = newSession_(id);
-    return { token: token, user: { id: id, role: role, sid: String(p.sid || '').trim(), name: String(p.name || '').trim(), mustChange: false } };
+    return { token: token, user: { id: id, role: role, sid: String(p.sid || '').trim(), name: String(p.name || '').trim(), mustChange: false, email: role === 'teacher' ? email : '' } };
   });
+  if (role === 'teacher') {  // 교사로 가입하면 학생 결과물 폴더를 바로 공유받습니다
+    try { rootFolder_().addEditor(email); res.shared = true; } catch (e) { res.shared = false; }
+  }
+  return res;
 }
+function validEmail_(e) { return /^[^s@]+@[^s@]+.[^s@]+$/.test(e) && e.length <= 100; }
 function apiLogin_(p) {
   const id = String(p.id || '').trim(), sh = sheet_(SHEETS.acc), row = findRow_(sh, id);
   if (row < 0) fail_('WRONG_LOGIN');
@@ -134,7 +148,7 @@ function apiChangePw_(user, p) {
   });
 }
 function apiLogout_(user, p, token) { CacheService.getScriptCache().remove('s_' + token); return {}; }
-function userFromRow_(r) { return { id: String(r[0]), role: String(r[1]) === 'teacher' ? 'teacher' : 'student', sid: String(r[2]), name: String(r[3]), mustChange: r[8] === true || String(r[8]).toUpperCase() === 'TRUE' }; }
+function userFromRow_(r) { return { id: String(r[0]), role: String(r[1]) === 'teacher' ? 'teacher' : 'student', sid: String(r[2]), name: String(r[3]), mustChange: r[8] === true || String(r[8]).toUpperCase() === 'TRUE', email: String(r[9] || '') }; }
 
 /* ───── 세션 ───── */
 function newSession_(id) { const t = Utilities.getUuid() + makeCode_(8); CacheService.getScriptCache().put('s_' + t, id, SESSION_SEC); return t; }
@@ -150,7 +164,8 @@ function sessionUser_(token) {
 
 /* ───── 학생 기록 ───── */
 function apiMe_(user) {
-  return { user: user, doc: readJson_(SHEETS.rec, user.id, REC_DATA_COL), grade: releasedGrade_(user.id), config: publicConfig_() };
+  const d = docRecord_(user.id);
+  return { user: user, doc: readJson_(SHEETS.rec, user.id, REC_DATA_COL), grade: releasedGrade_(user.id), config: publicConfig_(), docAt: d ? d.at : 0 };
 }
 function apiStatus_(user) {
   const doc = readJson_(SHEETS.rec, user.id, REC_DATA_COL) || {};
@@ -182,7 +197,7 @@ function apiRoster_(user, p) {
     const id = String(r[0]), doc = recs[id] || null, upd = doc && doc.updatedAt || 0;
     return { id: id, sid: String(r[2]), name: String(r[3]), lastLogin: r[7] ? new Date(r[7]).getTime() : 0, updatedAt: upd, doc: upd > since ? doc : undefined };
   });
-  return { students: students, grades: grades, config: publicConfig_(), sheetUrl: SpreadsheetApp.getActive().getUrl(), serverTime: Date.now() };
+  return { students: students, grades: grades, config: publicConfig_(), sheetUrl: SpreadsheetApp.getActive().getUrl(), docs: docMap_(), folderUrl: PropertiesService.getScriptProperties().getProperty('FOLDER_URL') || '', serverTime: Date.now() };
 }
 function apiSaveGrade_(user, p) {
   const id = String(p.id || ''), g = p.grade || {};
@@ -191,7 +206,7 @@ function apiSaveGrade_(user, p) {
     if (row < 0) fail_('NOT_FOUND');
     const a = acc.getRange(row, 1, 1, 4).getValues()[0], doc = readJson_(SHEETS.rec, id, REC_DATA_COL) || {}, info = doc.info || {};
     const sc = g.scores || {}, nums = [1, 2, 3, 4].map(i => (sc['s' + i] === '' || sc['s' + i] == null) ? '' : Number(sc['s' + i]));
-    g.updatedAt = Date.now();
+    g.updatedAt = Date.now(); g.by = user.name || user.id;
     writeJson_(SHEETS.grd, id, GRD_DATA_COL, g, [id, info.sid || a[2], info.name || a[3], nums[0], nums[1], nums[2], nums[3],
       nums.reduce((s, v) => s + (v === '' ? 0 : v), 0), g.released ? '공개' : '', g.overall || '', new Date(g.updatedAt)]);
     return { updatedAt: g.updatedAt };
@@ -235,13 +250,22 @@ function apiDeleteAccount_(user, p) {
   const id = String(p.id || '');
   if (id === user.id) fail_('SELF');
   return withLock_(() => {
-    [SHEETS.acc, SHEETS.rec, SHEETS.grd].forEach(n => { const sh = sheet_(n), row = findRow_(sh, id); if (row > 0) sh.deleteRow(row); });
+    const dr = docRecord_(id);
+    if (dr && dr.docId) { try { DriveApp.getFileById(dr.docId).setTrashed(true); } catch (e) {} }  // 휴지통으로 보냅니다
+    [SHEETS.acc, SHEETS.rec, SHEETS.grd, SHEETS.doc].forEach(n => { const sh = sheet_(n), row = findRow_(sh, id); if (row > 0) sh.deleteRow(row); });
     return {};
   });
 }
 
 /* ───── 시트 도우미 ───── */
-function sheet_(name) { const sh = SpreadsheetApp.getActive().getSheetByName(name); if (!sh) fail_('NO_SETUP'); return sh; }
+function sheet_(name) {
+  let sh = SpreadsheetApp.getActive().getSheetByName(name);
+  if (!sh && name === SHEETS.doc) {  // 문서 시트는 예전 설정에는 없으므로 필요할 때 만듭니다
+    sh = SpreadsheetApp.getActive().insertSheet(name); sh.appendRow(DOC_HEAD); sh.setFrozenRows(1); sh.getRange(1, 1, 1, DOC_HEAD.length).setFontWeight('bold').setBackground('#E1EFF0');
+  }
+  if (!sh) fail_('NO_SETUP');
+  return sh;
+}
 function findRow_(sh, id) {
   const n = sh.getLastRow(); if (n < 2) return -1;
   const ids = sh.getRange(2, 1, n - 1, 1).getValues();

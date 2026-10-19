@@ -124,7 +124,7 @@
 
   /* ───── 화면 스타일 ───── */
   const CSS = `
-.mt-btn{flex:none;align-self:stretch;display:inline-flex;align-items:center;justify-content:center;gap:4px;border:0;border-left:1px solid var(--line);background:var(--paper);color:var(--accent);font:600 13px/1 var(--f-body);padding:0 10px;cursor:pointer;min-width:44px}
+.mt-btn{flex:none;align-self:stretch;display:inline-flex;align-items:center;justify-content:center;gap:4px;border:0;border-right:1px solid var(--line);background:var(--paper);color:var(--accent);font:600 13px/1 var(--f-body);padding:0 10px;cursor:pointer;min-width:44px}
 .mt-btn:hover{background:var(--accent-soft)}
 .mt-wrap{display:flex;align-items:stretch;min-width:0;container-type:inline-size}
 .mt-ico,.mt-btn svg{width:20px;height:20px;flex:none}
@@ -182,7 +182,8 @@
 `;
   function injectCss() { if (document.getElementById("mt-css")) return; const s = document.createElement("style"); s.id = "mt-css"; s.textContent = CSS; document.head.appendChild(s); }
   // 근호 안에 x: "수식을 쓴다"는 뜻이 바로 보이는 아이콘
-  const ICON = `<svg class="mt-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 13h2.5l3 7L12 4h10"/><path d="M14 9.5l5 6M19 9.5l-5 6"/></svg>`;
+  // 계산기 아이콘: "수식을 입력하는 곳"이라는 뜻
+  const ICON = `<svg class="mt-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="2.5" width="14" height="19" rx="2.5"/><rect x="8" y="5.5" width="8" height="4" rx="1"/><path d="M8.5 13h.01M12 13h.01M15.5 13h.01M8.5 16.5h.01M12 16.5h.01M15.5 16.5h.01"/></svg>`;
   const buttonHTML = key => `<button type="button" class="mt-btn" data-mt-open="${esc(key)}" title="수식 입력기 (키보드·손글씨)" aria-label="수식 입력기 열기">${ICON}<span>수식</span></button>`;
 
   /* ───── 수식 입력 창 ───── */

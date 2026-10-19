@@ -86,7 +86,7 @@ function buildDoc_(id, spec, images) {
   const info = spec.info || {};
   const name = (String(info.sid || '') + ' ' + String(info.name || id) + ' 모델링 탐구 보고서').trim().slice(0, 120);
   const hash = md5_(JSON.stringify(spec) + '|' + images.map(md5_).join(','));
-  const folder = rootFolder_();
+  const folder = studentFolder_(id);   // [학번_이름] 폴더
   const rec = withLock_(() => {
     const sh = sheet_(SHEETS.doc); let row = findRow_(sh, id);
     if (row > 0) {
@@ -100,6 +100,7 @@ function buildDoc_(id, spec, images) {
     if (row > 0) sh.getRange(row, 1, 1, vals.length).setValues([vals]); else sh.appendRow(vals);
     return { docId: doc.getId(), url: doc.getUrl(), at: 0, hash: '' };
   });
+  try { const f = DriveApp.getFileById(rec.docId); if (!inFolder_(f, folder)) f.moveTo(folder); } catch (e) {}  // 예전 문서도 학생 폴더로
   if (rec.hash === hash) return { docId: rec.docId, url: rec.url, at: rec.at, skipped: true };
   const doc = DocumentApp.openById(rec.docId);
   if (doc.getName() !== name) doc.setName(name);

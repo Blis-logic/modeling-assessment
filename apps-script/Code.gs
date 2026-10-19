@@ -80,7 +80,7 @@ function api(action, payload, token) {
     if (!user) return { ok: false, error: 'SESSION' };
     const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, upload: apiUpload_, getFile: apiGetFile_ };
     if (mine[action]) return Object.assign({ ok: true }, mine[action](user, payload, token));
-    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_ };
+    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, organize: apiOrganize_ };
     if (teach[action]) {
       if (user.role !== 'teacher') return { ok: false, error: 'FORBIDDEN' };
       return Object.assign({ ok: true }, teach[action](user, payload));
@@ -213,7 +213,7 @@ function apiRoster_(user, p) {
 }
 function apiSaveGrade_(user, p) {
   const id = String(p.id || ''), g = p.grade || {};
-  return withLock_(() => {
+  const res = withLock_(() => {
     const acc = sheet_(SHEETS.acc), row = findRow_(acc, id);
     if (row < 0) fail_('NOT_FOUND');
     const a = acc.getRange(row, 1, 1, 4).getValues()[0], doc = readJson_(SHEETS.rec, id, REC_DATA_COL) || {}, info = doc.info || {};
@@ -223,6 +223,8 @@ function apiSaveGrade_(user, p) {
       nums.reduce((s, v) => s + (v === '' ? 0 : v), 0), g.released ? '공개' : '', g.overall || '', new Date(g.updatedAt)]);
     return { updatedAt: g.updatedAt };
   });
+  try { writeGradeDoc_(id, g); } catch (e) { res.gradeDocError = String(e && e.message || e); }  // 학생 폴더의 평가결과 문서
+  return res;
 }
 function apiSetConfig_(user, p) {
   return withLock_(() => {
@@ -261,6 +263,8 @@ function apiResetPw_(user, p) {
 function apiDeleteAccount_(user, p) {
   const id = String(p.id || '');
   if (id === user.id) fail_('SELF');
+  const props = PropertiesService.getScriptProperties();
+  ['SF_', 'GD_'].forEach(k => { const fid = props.getProperty(k + id); if (fid) { try { (k === 'SF_' ? DriveApp.getFolderById(fid) : DriveApp.getFileById(fid)).setTrashed(true); } catch (e) {} props.deleteProperty(k + id); } });
   return withLock_(() => {
     const dr = docRecord_(id);
     if (dr && dr.docId) { try { DriveApp.getFileById(dr.docId).setTrashed(true); } catch (e) {} }  // 휴지통으로 보냅니다

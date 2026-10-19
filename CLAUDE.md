@@ -12,7 +12,7 @@
 | `index.html` | 화면 전체. GitHub Pages로 배포: https://blis-logic.github.io/modeling-assessment/ (main 브랜치 / root, 커밋 후 1~2분 뒤 반영) |
 | `config.js` | `apiUrl` = Apps Script 웹 앱 주소(끝이 `/exec`) |
 | `apps-script/Code.gs` | 저장 서버. `doPost`로 JSON API 제공. 저장소는 컨테이너 스프레드시트의 시트 `설정`·`계정`·`기록`·`채점`·`문서` |
-| `apps-script/Files.gs` | 학생 파일 올리기: 2단계 원본 자료(`탐구자료_학번_이름`), 풀이 사진(화면에서 50KB 이하 JPEG로 압축). 공유 폴더 안 `탐구자료` 폴더(스크립트 속성 `UP_FOLDER_ID`). 파일 설명에 `학생아이디|종류|칸`을 적고 `ownFile_`로 주인 확인 |
+| `apps-script/Files.gs` | **학생별 폴더** `[학번_이름]`(공유 폴더 안, 스크립트 속성 `SF_<아이디>`): 보고서 문서·원본 자료(`탐구자료_학번_이름`)·풀이 사진(50KB 이하 JPEG)·평가 결과 문서(`평가결과_학번_이름`, 채점 저장 때마다 갱신, 속성 `GD_<아이디>`). 파일 설명 `학생아이디|종류|칸`으로 주인 확인(`ownFile_`). 예전 `탐구자료` 폴더(`UP_FOLDER_ID`)도 읽고, 교사 탭 [학생별 폴더로 정리](`apiOrganize_`)로 옮긴다 |
 | `apps-script/Docs.gs` | 학생 결과물 구글 문서 생성·PDF 내보내기·교사 공유 폴더. 화면이 보낸 "문서 명세(spec)"를 활동지 서식으로 그리기만 하므로 문항이 바뀌어도 고칠 필요 없음 |
 | `apps-script/app.html` | **자동 생성**(`node tools/build-gas.js`): `index.html`+`config.js`+`mathtool.js`를 합친 화면. `/exec`를 그냥 열면 이 화면이 뜬다 |
 | `tools/build-gas.js` | `app.html` 생성기. `index.html`·`config.js`·`mathtool.js`를 고친 뒤 `clasp push` 전에 실행 |
@@ -103,6 +103,7 @@
 - 4단계 ④는 구분구적법 탐구(`riemannHTML`, 참고: 넓이 탐험대 '자유 탐구' 구성): 모델 A/B, 구간 p·q(`calc.p/q`), 직사각형 개수 1~100(`calc.n`), 높이 위치 왼쪽·오른쪽·가운데(`calc.pos`), 넓이의 합 `riemannSum`, [예상 확인하기](`calc.rmShow`)로 정적분(`integ`)과 비교. 평균값·사다리꼴 어림은 화면·보고서에서 뺐다(엔진 함수는 남김).
 - 구글 문서에 글자를 넣을 때 빈 글자(`setText('')`, `appendText('')`, `appendParagraph('')`)는 '빈 텍스트 요소는 삽입할 수 없습니다' 오류가 난다. 문단은 요소를 하나씩 지우고(`removeChild`), 빈 문단은 `' '`로 만든다. 서버 오류(SERVER)는 메시지에 파일·줄 위치를 붙여 돌려준다.
 - 변화율 표는 도함수 구하기 바로 밑(열: x=a 값 · 손 계산 f′(a) · f_A(a) · f_A′(a) · f_B(a) · f_B′(a)). 구분구적법 그래프의 가로축은 학생이 정한 [p, q]만. 정적분 손 계산 칸은 없앴다.
+- 4차(2026-10-19): [나의 수행]은 기본 정보 위·대시보드 아래 한 줄씩. 수식 칸 아이콘은 계산기(칸 앞). 모델 입력은 한 줄, 제목 옆 빨간 식(`liveTex`: 넣은 값으로 바꾸고 빈 문자는 그대로). 풀이 칸(`longmath`)은 `.row.long`(제목 아래 [수식]·[사진], 칸 전체 너비). 변화율 표에는 손 계산 열 없음. RMSE는 화면·보고서에서 '평균 제곱근 오차'와 식 $sqrt{rac1nsum(y_i-f(x_i))^2}$로 표기(계산은 RMSE 그대로).
 - 학생 화면·보고서에는 배점(10점·40점)을 쓰지 않는다. 교사 채점 칸과 교사가 공개한 점수만 점수를 보여 준다.
 
 ## 접속 경로 두 가지 (github.io가 막힌 학교망 대비)

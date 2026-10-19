@@ -10,7 +10,8 @@ function hasMath_(s) { MATH_RE.lastIndex = 0; return MATH_RE.test(String(s || ''
 
 /** par(문단)의 내용을 text로 바꿉니다. $수식$ 은 그림으로, 나머지는 attrs 서식의 글자로 넣습니다. */
 function fillRich_(par, text, attrs, math, images, size) {
-  par.setText('');
+  // 빈 글자(setText('')·appendText('')·appendParagraph(''))는 '빈 텍스트 요소' 오류가 나므로 요소를 하나씩 지웁니다
+  while (par.getNumChildren()) par.removeChild(par.getChild(0));
   const s = String(text == null ? '' : text), k = (size || 10) / 10;
   const addText = t => { if (t) par.appendText(t).setAttributes(attrs); };
   let last = 0, m;
@@ -36,5 +37,5 @@ function fillRichCell_(cell, text, attrs, math, images, size) {
   const lines = String(text == null ? '' : text).split('\n');
   const first = cell.getChild(0).asParagraph();
   while (cell.getNumChildren() > 1) cell.removeChild(cell.getChild(1));
-  lines.forEach((line, i) => fillRich_(i === 0 ? first : cell.appendParagraph(''), line, attrs, math, images, size));
+  lines.forEach((line, i) => fillRich_(i === 0 ? first : cell.appendParagraph(' '), line, attrs, math, images, size));
 }

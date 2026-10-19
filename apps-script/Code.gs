@@ -88,7 +88,7 @@ function api(action, payload, token) {
     return { ok: false, error: 'UNKNOWN_ACTION' };
   } catch (e) {
     if (e && e.code) return { ok: false, error: e.code };
-    return { ok: false, error: 'SERVER', message: String(e && e.message || e) };
+    return { ok: false, error: 'SERVER', message: String(e && e.message || e) + (e && e.stack ? ' @ ' + String(e.stack).split('\n').slice(1, 4).map(s => s.trim()).join(' | ') : '') };  // 어느 파일 몇째 줄인지 함께 알려 줍니다
   }
 }
 function fail_(code) { const e = new Error(code); e.code = code; throw e; }

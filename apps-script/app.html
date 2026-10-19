@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>삼각함수·미적분 수학적 모델링 탐구</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%234F46E5%22/%3E%3Cpath d=%22M2.5 14c2.2-6.5 4.4-6.5 6.6 0s4.4 6.5 6.6 0M19.5 4.5c-1.4-.5-2.4.3-2.4 2v11c0 1.7-1 2.5-2.4 2%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%234F46E5%22/%3E%3Cpath d=%22M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
 <script>
 // 구글 Apps Script 웹 앱 주소를 넣습니다. 배포 → 배포 관리 → 웹 앱 URL (끝이 /exec)
 window.APP_CONFIG = {
@@ -926,13 +926,15 @@ ul.files li.go:hover{border-color:var(--accent);background:var(--accent-soft)}
 .chart .rr{fill:color-mix(in srgb,var(--accent) 22%,transparent);stroke:var(--accent);stroke-width:.8}
 .chart .rn{fill:color-mix(in srgb,var(--bad) 18%,transparent);stroke:var(--bad);stroke-width:.8}
 .rrsw{background:color-mix(in srgb,var(--accent) 35%,transparent)!important;height:10px!important;width:14px!important;border:1px solid var(--accent)}
+.xyinfo{display:grid;gap:4px;font-size:13.5px;background:var(--accent-soft);border-radius:12px;padding:9px 12px}
+.xyk{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;background:var(--accent);color:#fff;font:700 12px var(--f-mono);margin-right:4px}.xyk.y{background:var(--modelB)}
 </style>
 
 </head>
 <body>
 <header class="top" id="top">
   <div class="wrap">
-    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 14c2.2-6.5 4.4-6.5 6.6 0s4.4 6.5 6.6 0"/><path d="M19.5 4.5c-1.4-.5-2.4.3-2.4 2v11c0 1.7-1 2.5-2.4 2"/></svg></span><span class="bt"><b>삼각함수·미적분 수학적 모델링 탐구</b><span>전문 수학 수행평가</span></span></div>
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0" stroke-width="2.3"/><path d="M2 17.5c1.7-2.6 3.3-2.6 5 0s3.3 2.6 5 0 3.3-2.6 5 0 3.3 2.6 5 0" stroke-width="1.4" opacity=".55"/></svg></span><span class="bt"><b>삼각함수·미적분 수학적 모델링 탐구</b><span>전문 수학 수행평가</span></span></div>
     <div class="seg" id="roleSeg" hidden>
       <button id="roleT" type="button" aria-pressed="true">교사 대시보드</button>
       <button id="roleS" type="button" aria-pressed="false">학생 화면 미리보기</button>
@@ -996,9 +998,9 @@ const STAGES = [
  ]},
  {name:"미분·적분 분석", el:"수학적 모델링", time:"3시간째 · 60분", goal:"내 모델을 미분하고 적분하여, 현상에 대해 새롭게 알아낸 사실을 숫자와 함께 씁니다.", blocks:[
   {n:"①",t:"도함수 구하기 (손 계산)",chart:"deriv",f:[["s4_f","모델 $f(x)$","math",{auto:"formA"}],["s4_fd","도함수 $f'(x)$","math"],["s4_fw","풀이 과정","longmath"]]},
-  {n:"②",t:"변화율 표",last:1,hint:"알아볼 $x=a$ 값과 손으로 계산한 $f'(a)$를 넣으면 모델 A로 계산한 값과 차이가 나옵니다. 단위는 $\\dfrac{(y\\text{ 단위})}{(x\\text{ 단위})}$입니다.",tool:"rate"},
+  {n:"②",t:"변화율 표",hint:"알아볼 순간의 $x=a$ 값과 손으로 계산한 $f'(a)$를 쓰면, 모델 A·B로 계산한 함숫값과 순간변화율이 나옵니다. 손 계산 값을 $f_A'(a)$와 비교해 보세요.",tool:"rate"},
   {n:"③",star:1,t:"미분으로 알아낸 사실",hint:"가장 빠르게 변하는 때, 변화가 멈추는 때(최대·최소), 점근선·끝점 근처의 변화율을 살펴봅니다.",f:[["s4_d1","분석한 사실 1 (근거 수치)","long"],["s4_d2","분석한 사실 2 (근거 수치)","long"],["s4_dm","현상에서의 의미","long"]]},
-  {n:"④",t:"정적분 구하기 (구분구적법 탐구)",tool:"riemann",f:[["s4_rp","예상하는 넓이"],["s4_rn","탐험 노트: 직사각형 개수와 높이 위치를 바꿀 때 넓이의 합이 어떻게 변했나요?","long"],["s4_iw","구간을 고른 이유"],["s4_ic","정적분 손 계산 과정","longmath"],["s4_iv","정적분 값 (단위)","math"]]},
+  {n:"④",t:"정적분 구하기 (구분구적법 탐구)",tool:"riemann",f:[["s4_rp","예상하는 넓이"],["s4_rn","탐험 노트: 직사각형 개수와 높이 위치를 바꿀 때 넓이의 합이 어떻게 변했나요?","long"],["s4_iw","구간을 고른 이유"],["s4_iv","정적분 값 (단위)","math"]]},
   {n:"⑤",star:1,t:"적분으로 알아낸 사실",hint:"구간 전체의 누적량, 직사각형 개수를 늘릴 때 넓이의 합이 정적분 값에 가까워지는 모습을 살펴봅니다.",f:[["s4_j1","분석한 사실 1 (근거 수치)","long"],["s4_j2","분석한 사실 2 (근거 수치)","long"],["s4_jm","현상에서의 의미","long"]]},
   {n:"⑥",t:"미분·적분 분석 종합",f:[["s4_sd","미분이 알려 준 것","long"],["s4_si","적분이 알려 준 것","long"]]},
   {n:"+",t:"(선택) 이계도함수 $f''(x)$의 뜻 또는 로피탈의 정리를 쓴 극한",opt:1,f:[["s4_opt","선택 과제","longmath"]]},
@@ -1319,6 +1321,7 @@ function toolHTML(doc,tool,ro){ const d=doc.data||{}, M=doc.models||{}, c=doc.ca
   switch(tool){
   case "data": return `<div class="tool"><div class="tool-h">📊 자료 입력표와 그래프 <span>엑셀처럼 입력 · 붙여 넣기 · 자동 채우기</span></div><div class="tool-b">
     <div class="grid2"><div style="display:grid;gap:8px;align-content:start;min-width:0">
+      <div class="xyinfo" data-out="xyInfo"></div>
       ${gridHTML(doc,ro)}
       ${inp("models.T",M.T,"주기 $T$ (오르내림이 반복될 때만)",'inputmode="decimal"')}
       <div class="upbox"><div><b>📎 원본 자료 파일</b><span class="sub"> 엑셀·CSV·PDF·사진 (10MB 이하) · 선생님 폴더에 '탐구자료_학번_이름'으로 저장됩니다</span></div><div data-out="upData"></div>${ro?"":`<div><button class="btn" type="button" data-act="upData">파일 올리기</button></div>`}</div>
@@ -1334,8 +1337,8 @@ function toolHTML(doc,tool,ro){ const d=doc.data||{}, M=doc.models||{}, c=doc.ca
     ${EG_HELP}
     ${ro?"":`<div class="logbtns"><button class="btn btnA" type="button" data-act="logTry" data-m="A">모델 A 값을 기록에 넣기</button><button class="btn btnB" type="button" data-act="logTry" data-m="B">모델 B 값을 기록에 넣기</button></div>`}
     <dl class="kv" data-out="cands"></dl></div></div>`;
-  case "rate": { const xs=c.x||[]; return `<div class="ratedefs" data-out="rateDefs"></div><div class="tbl-wrap"><table class="t"><thead><tr><th>알아볼 순간</th><th>${tx("$x=a$ 의 $a$")}</th><th>${tx("손 계산 $f'(a)$ (단위)")}</th><th>${tx("도구 $f_A'(a)$")}</th><th>차이</th><th>${tx("$f_A(a)$")}</th><th>${tx("$f_A''(a)$")}</th><th>${tx("$f_B'(a)$")}</th></tr></thead><tbody>
-    ${RATE_ROWS.map((r,i)=>`<tr><td class="lab"${tipAttr("s4_r"+i)}>${tx(r)}</td><td><div class="cell">${ro?`<div class="ro num">${esc(xs[i]||"")}</div>`:`<input class="num" id="t_calc_x_${i}" data-p="calc.x.${i}" value="${esc(xs[i]||"")}" placeholder=" " inputmode="decimal" aria-label="a 값">`}</div></td><td><div class="cell">${fieldHTML(doc,"s4_r"+i,"math",ro,"손 계산")}</div></td><td class="auto" data-out="r${i}d"></td><td class="auto" data-out="r${i}diff"></td><td class="auto" data-out="r${i}f"></td><td class="auto" data-out="r${i}dd"></td><td class="auto" data-out="r${i}b"></td></tr>`).join("")}
+  case "rate": { const xs=c.x||[]; return `<div class="ratedefs" data-out="rateDefs"></div><div class="tbl-wrap"><table class="t"><thead><tr><th>알아볼 순간</th><th>${tx("$x=a$ 값")}</th><th>${tx("손 계산 $f'(a)$")}</th><th>${tx("$f_A(a)$")}</th><th>${tx("$f_A'(a)$")}</th><th>${tx("$f_B(a)$")}</th><th>${tx("$f_B'(a)$")}</th></tr></thead><tbody>
+    ${RATE_ROWS.map((r,i)=>`<tr><td class="lab"${tipAttr("s4_r"+i)}>${tx(r)}</td><td><div class="cell">${ro?`<div class="ro num">${esc(xs[i]||"")}</div>`:`<input class="num" id="t_calc_x_${i}" data-p="calc.x.${i}" value="${esc(xs[i]||"")}" placeholder=" " inputmode="decimal" aria-label="a 값">`}</div></td><td><div class="cell">${fieldHTML(doc,"s4_r"+i,"math",ro,"손 계산")}</div></td><td class="auto" data-out="r${i}f"></td><td class="auto" data-out="r${i}d"></td><td class="auto" data-out="r${i}bf"></td><td class="auto" data-out="r${i}b"></td></tr>`).join("")}
     </tbody></table></div>`; }
   case "riemann": return riemannHTML(doc,ro);
   case "errTable": return `<div class="tbl-wrap"><table class="t"><thead><tr><th>비교 항목</th><th>모델 A</th><th>모델 B</th></tr></thead><tbody data-out="errTable"></tbody></table></div><p class="rmse-ex">💡 ${esc(GLOSS.rmse)}</p>`;
@@ -1354,8 +1357,7 @@ function updateOutputs(root,doc,owner){ const an=analyze(doc), $=s=>root.querySe
   const fx=(m,nm)=>m.ok?tx(`$${formulaTex(m).replace(/^y=/,nm+"(x)=")}$`):'<span class="sub">(아직 정하지 않음)</span>';
   put("rateDefs",`<div>${tx("$f_A(x)$")} <b>모델 A</b> · 3단계에서 정한 모델: ${fx(an.A,"f_A")}</div><div>${tx("$f_B(x)$")} <b>모델 B</b> · 비교용 다른 후보 또는 5단계에서 고친 모델: ${fx(an.B,"f_B")}</div><div class="sub">${tx("$f'$은 도함수(순간변화율), $f''$은 이계도함수입니다. $a$는 알아볼 순간의 $x$ 값입니다.")}</div>`);
   const xs=(doc.calc||{}).x||[];
-  for(let i=0;i<4;i++){ const x=xs[i], ok=isNum(x); const d1=ok?fd1(an.A,+x):NaN; put(`r${i}d`,ok?fmt(d1):""); put(`r${i}f`,ok?fmt(fval(an.A,+x)):""); put(`r${i}dd`,ok?fmt(fd2(an.A,+x)):""); put(`r${i}b`,ok?fmt(fd1(an.B,+x)):"");
-    const hv=parseNum((doc.ans||{})["s4_r"+i]); put(`r${i}diff`, ok&&!isNaN(hv)&&!isNaN(d1)?fmt(hv-d1):""); }
+  for(let i=0;i<4;i++){ const x=xs[i], ok=isNum(x); put(`r${i}f`,ok?fmt(fval(an.A,+x)):""); put(`r${i}d`,ok?fmt(fd1(an.A,+x)):""); put(`r${i}bf`,ok?fmt(fval(an.B,+x)):""); put(`r${i}b`,ok?fmt(fd1(an.B,+x)):""); }
   if($("rmGraph").length) riemannOutputs(root,doc,an,put);
   const eA=an.eA, eB=an.eB, cell=(e,fn)=>e?fn(e):"–";
   put("errTable",[[term("mape","평균 오차율")+" (%)",e=>fmt(e.mean,2)],["가장 큰 오차율 (%)과 그때의 x",e=>`${fmt(e.max,2)} (x = ${fmt(e.maxX)})`],[term("rmse","RMSE")+" · 평균적으로 빗나간 크기 (y 단위)",e=>fmt(e.rmse,3)],["평균 오차",e=>fmt(e.me,3)],["오차 (+) / (−) 개수",e=>`${e.pos} / ${e.neg}`]].map(([l,fn])=>`<tr><td class="lab">${l}</td><td class="auto">${cell(eA,fn)}</td><td class="auto">${cell(eB,fn)}</td></tr>`).join(""));
@@ -1366,6 +1368,8 @@ function updateOutputs(root,doc,owner){ const an=analyze(doc), $=s=>root.querySe
   root.querySelectorAll("[data-autoval]").forEach(e=>{ const k=e.dataset.autoval, v=autoVal(doc,AUTO_SRC[k],an); e.textContent=v||"–";
     if(editing&&(doc.ans[k]||"")!==v){ doc.ans[k]=v; autoChanged=true; } });
   if(autoChanged) scheduleSave();
+  { const a=doc.ans||{}, v=(n,u,w)=>`<b>${esc(n||"(1단계에서 아직 정하지 않음)")}</b>${u?` <span class="sub">단위: ${esc(u)}</span>`:""}`;
+    put("xyInfo",`<div><span class="xyk">x</span> 가로축 · 독립변인: ${v(a.s1_xn,a.s1_xu)}</div><div><span class="xyk y">y</span> 세로축 · 종속변인: ${v(a.s1_yn,a.s1_yu)}</div><div class="sub">1단계 ② 변인 정하기에서 쓴 내용이 연결됩니다. ${editing?`<button type="button" class="linkbtn" data-goto="vars">1단계에서 바꾸기 →</button>`:""}</div>`); }
   put("dgCount",`자료 <b class="${an.pts.length>=DATA_GOAL?"ok":"warn"}">${an.pts.length}</b>개 / 목표 ${DATA_GOAL}개 이상`);
   const F=(doc.files||{}).data; put("upData",F?`<div class="sub">✔ ${esc(F.name)} · ${kb(F.size)} · ${ago(F.at)}${ME&&ME.role==="teacher"&&F.url?` · <a href="${esc(F.url)}" target="_blank" rel="noopener">열기 ↗</a>`:""}</div>`:`<div class="sub">아직 올린 파일이 없습니다.</div>`);
   put("dash",dashHTML(doc)); put("files",filesHTML(doc));
@@ -1494,7 +1498,7 @@ const GLOSS={rmse:"RMSE(평균 제곱근 오차): 모델이 실제 자료에서 
   mape:"평균 오차율: 각 점에서 빗나간 정도를 실측값에 대한 백분율(%)로 나타내 평균 낸 값입니다. 예: 5%면 실제 값의 5%쯤 빗나갑니다."};
 const term=(k,label)=>`<span class="term" data-tip="${esc(GLOSS[k])}" tabindex="0">${label}</span>`;
 /* ── 이동: 결과물 목록에서 빠진 항목을 누르면 그 칸으로 ── */
-function goTo(where){ stage=where==="data"?1:3; renderStudent(); const el=app.querySelector(where==="data"?".upbox":"[data-photo]");
+function goTo(where){ stage=where==="data"?1:where==="vars"?0:3; renderStudent(); const el=app.querySelector(where==="data"?".upbox":where==="vars"?"#f_s1_xn":"[data-photo]");
   if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),2400); } }
 
 /* ── 4단계 ④ 구분구적법 탐구: 모델 A/B 아래 넓이를 직사각형 n개로 ── */
@@ -1507,7 +1511,7 @@ function riemannSVG(doc,an){ const S=rmState(doc), m=an[S.m];
   if(!m.ok) return `<div class="empty-note">3단계에서 모델 ${S.m}의 a, b, c, d를 정하면 그래프가 나타납니다.</div>`;
   if(!isNum(S.p)||!isNum(S.q)||+S.q<=+S.p) return `<div class="empty-note">구간 시작 p와 끝 q를 넣으세요 (p &lt; q).</div>`;
   const p=+S.p, q=+S.q, W=640,H=330,L=52,R=14,Tp=14,B=36;
-  let x1=Math.min(p,...an.pts.map(t=>t.x)), x2=Math.max(q,...an.pts.map(t=>t.x)); if(!an.pts.length){ x1=p-(q-p)*.2; x2=q+(q-p)*.2; } const xp=(x2-x1)*.04; x1-=xp; x2+=xp;
+  const x1=p, x2=q;   // 가로축은 학생이 정한 구간만 보여 줍니다
   const dx=(q-p)/S.n, off=S.pos==="right"?1:S.pos==="mid"?.5:0, hs=[...Array(S.n)].map((_,i)=>fval(m,p+(i+off)*dx));
   const vs=[]; for(let i=0;i<=300;i++){ const v=fval(m,x1+(x2-x1)*i/300); if(isFinite(v)) vs.push(v); }
   let ys=vs.concat(hs.filter(isFinite),[0]).sort((a,b)=>a-b); let y1=ys[Math.floor(ys.length*.02)], y2=ys[Math.ceil(ys.length*.98)-1]; y1=Math.min(y1,0); y2=Math.max(y2,0); if(y1===y2) y2+=1; const yp=(y2-y1)*.1; y1-=yp; y2+=yp; const span=y2-y1;
@@ -1582,9 +1586,9 @@ function buildSpec(doc,acct){
         rows.push([`모델 ${k} 오차`,e?`평균 오차율 ${fmt(e.mean,2)}% · RMSE ${fmt(e.rmse,3)}`:"–"]); });
       return [auto(rows),img(chartSVG(an,{xl,yl,models:true,id:"p2"}),"검은 점: 자료 · 파란 실선: 모델 A · 주황 점선: 모델 B")]; }
     case "rate": { const xs=c.x||[];
-      return [auto([["$f_A(x)$ 모델 A",ftex(an.A)||"–"],["$f_B(x)$ 모델 B",ftex(an.B)||"–"]]),{t:"table",cols:["알아볼 순간","$a$","손 계산 $f'(a)$","도구 $f_A'(a)$","차이","$f_A(a)$","$f_A''(a)$","$f_B'(a)$"],fill:[1,2],
-        rows:RATE_ROWS.map((r,i)=>{ const ok=isNum(xs[i]), d1=ok?fd1(an.A,+xs[i]):NaN, h=a["s4_r"+i];
-          return [r,String(xs[i]||""),String(h||""),ok?fmt(d1):"",ok&&!isNaN(parseNum(h))&&!isNaN(d1)?fmt(parseNum(h)-d1):"",ok?fmt(fval(an.A,+xs[i])):"",ok?fmt(fd2(an.A,+xs[i])):"",ok?fmt(fd1(an.B,+xs[i])):""]; })}]; }
+      return [auto([["$f_A(x)$ 모델 A",ftex(an.A)||"–"],["$f_B(x)$ 모델 B",ftex(an.B)||"–"]]),{t:"table",cols:["알아볼 순간","$x=a$ 값","손 계산 $f'(a)$","$f_A(a)$","$f_A'(a)$","$f_B(a)$","$f_B'(a)$"],fill:[1,2],
+        rows:RATE_ROWS.map((r,i)=>{ const ok=isNum(xs[i]), x=+xs[i];
+          return [r,String(xs[i]||""),String(a["s4_r"+i]||""),ok?fmt(fval(an.A,x)):"",ok?fmt(fd1(an.A,x)):"",ok?fmt(fval(an.B,x)):"",ok?fmt(fd1(an.B,x)):""]; })}]; }
     case "riemann": { const S=rmState(doc), m=an[S.m], sm=riemannSum(m,S.p,S.q,S.n,S.pos), ex=integ(m,S.p,S.q);
       return [auto([["고른 모델",`모델 ${S.m} ${ftex(m)}`],["적분 구간 $[p,q]$",isNum(S.p)&&isNum(S.q)?`[${S.p}, ${S.q}]`:""],["직사각형 개수 · 높이 위치",`${S.n}개 · ${RM_POS.find(x=>x[0]===S.pos)[1]}`],["직사각형 넓이의 합 $S_n$",fmt(sm,5)],["도구로 구한 정적분 값",fmt(ex,5)]]),
         {t:"table",cols:["$n$","왼쪽 끝점","오른쪽 끝점","가운데 점"],rows:[4,10,50,100].map(n=>[String(n),...["left","right","mid"].map(ps=>fmt(riemannSum(m,S.p,S.q,n,ps),5))])},

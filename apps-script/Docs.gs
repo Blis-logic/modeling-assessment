@@ -187,7 +187,7 @@ function renderSpec_(doc, spec, images, ownerId) {
           grid(rows, widths(n, w0), (r, c) => r === 0 ? { bg: C_LABEL, bold: true, size: 9 } : c === 0 ? { bg: C_LABEL, bold: true, size: 9 } : { bg: fill.has(c) ? C_FILL : '#FFFFFF', size: n > 5 ? 8.5 : 10 }, pt.fill && pt.fill.length ? 22 : 0);
         } else if (pt.t === 'photo') {  // 학생이 올린 풀이 사진 (탐구자료 폴더, 주인 확인)
           try {
-            const blob = ownFile_(pt.id, ownerId).getBlob(), p = body.appendParagraph('');
+            const blob = ownFile_(pt.id, ownerId).getBlob(), p = body.appendParagraph(' ');
             p.setAlignment(DocumentApp.HorizontalAlignment.CENTER).setSpacingAfter(2);
             const img = p.appendInlineImage(blob), k = Math.min(1, 420 / img.getWidth(), 360 / img.getHeight());
             img.setWidth(Math.round(img.getWidth() * k)).setHeight(Math.round(img.getHeight() * k));
@@ -196,7 +196,7 @@ function renderSpec_(doc, spec, images, ownerId) {
         } else if (pt.t === 'image') {
           const b64 = images[pt.i];
           if (b64) {
-            const p = body.appendParagraph(''); p.setAlignment(DocumentApp.HorizontalAlignment.CENTER).setSpacingAfter(2);
+            const p = body.appendParagraph(' '); p.setAlignment(DocumentApp.HorizontalAlignment.CENTER).setSpacingAfter(2);
             const img = p.appendInlineImage(Utilities.newBlob(Utilities.base64Decode(b64), 'image/png', 'graph.png'));
             img.setWidth(440).setHeight(220);
             if (pt.caption) { const c = para(pt.caption, { size: 8.5, color: C_MUTED, after: 4 }); c.setAlignment(DocumentApp.HorizontalAlignment.CENTER); }

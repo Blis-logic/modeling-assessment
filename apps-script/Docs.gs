@@ -103,7 +103,7 @@ function buildDoc_(id, spec, images) {
   if (rec.hash === hash) return { docId: rec.docId, url: rec.url, at: rec.at, skipped: true };
   const doc = DocumentApp.openById(rec.docId);
   if (doc.getName() !== name) doc.setName(name);
-  renderSpec_(doc, spec, images);
+  renderSpec_(doc, spec, images, id);
   doc.saveAndClose();
   const at = Date.now();
   withLock_(() => {
@@ -114,7 +114,7 @@ function buildDoc_(id, spec, images) {
 }
 
 /* ───── 활동지 서식으로 그리기 ───── */
-function renderSpec_(doc, spec, images) {
+function renderSpec_(doc, spec, images, ownerId) {
   const A = DocumentApp.Attribute, body = doc.getBody(), math = spec.math || {};
   body.clear();
   body.setPageWidth(595).setPageHeight(842).setMarginTop(40).setMarginBottom(40).setMarginLeft(40).setMarginRight(40);
@@ -185,6 +185,14 @@ function renderSpec_(doc, spec, images) {
           const rows = [pt.cols].concat(pt.rows), n = pt.cols.length, w0 = n <= 3 ? 150 : n <= 5 ? 110 : 90;
           const fill = new Set(pt.fill || []);
           grid(rows, widths(n, w0), (r, c) => r === 0 ? { bg: C_LABEL, bold: true, size: 9 } : c === 0 ? { bg: C_LABEL, bold: true, size: 9 } : { bg: fill.has(c) ? C_FILL : '#FFFFFF', size: n > 5 ? 8.5 : 10 }, pt.fill && pt.fill.length ? 22 : 0);
+        } else if (pt.t === 'photo') {  // 학생이 올린 풀이 사진 (탐구자료 폴더, 주인 확인)
+          try {
+            const blob = ownFile_(pt.id, ownerId).getBlob(), p = body.appendParagraph('');
+            p.setAlignment(DocumentApp.HorizontalAlignment.CENTER).setSpacingAfter(2);
+            const img = p.appendInlineImage(blob), k = Math.min(1, 420 / img.getWidth(), 360 / img.getHeight());
+            img.setWidth(Math.round(img.getWidth() * k)).setHeight(Math.round(img.getHeight() * k));
+            if (pt.caption) { const c = para(pt.caption, { size: 8.5, color: C_MUTED, after: 4 }); c.setAlignment(DocumentApp.HorizontalAlignment.CENTER); }
+          } catch (e) { para('(풀이 사진을 불러오지 못했습니다)', { size: 9, color: C_MUTED, after: 4 }); }
         } else if (pt.t === 'image') {
           const b64 = images[pt.i];
           if (b64) {

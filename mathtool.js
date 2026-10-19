@@ -126,7 +126,11 @@
   const CSS = `
 .mt-btn{flex:none;align-self:stretch;display:inline-flex;align-items:center;justify-content:center;gap:4px;border:0;border-left:1px solid var(--line);background:var(--paper);color:var(--accent);font:600 13px/1 var(--f-body);padding:0 10px;cursor:pointer;min-width:44px}
 .mt-btn:hover{background:var(--accent-soft)}
-.mt-wrap{display:flex;align-items:stretch;min-width:0}
+.mt-wrap{display:flex;align-items:stretch;min-width:0;container-type:inline-size}
+.mt-ico,.mt-btn svg{width:20px;height:20px;flex:none}
+/* 칸이 좁으면(표 안, 휴대폰) 글자를 숨기고 아이콘만 */
+@container (max-width:330px){.mt-btn span{display:none}.mt-btn{min-width:40px;padding:0 8px}}
+@media (pointer:coarse){.mt-btn{min-width:46px}}
 .mt-wrap>.fld,.mt-wrap>input,.mt-wrap>textarea{flex:1 1 auto;min-width:0}
 .mt-prev{padding:6px 10px;border-top:1px dashed var(--fill-line);background:var(--paper);font-size:15px;line-height:1.9;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
 .mt-prev:empty{display:none}
@@ -177,7 +181,8 @@
 @media (max-width:480px){.mt-keys{grid-template-columns:repeat(4,minmax(0,1fr))}.mt-keys .w3{grid-column:span 4}.mt-field{font-size:20px}}
 `;
   function injectCss() { if (document.getElementById("mt-css")) return; const s = document.createElement("style"); s.id = "mt-css"; s.textContent = CSS; document.head.appendChild(s); }
-  const ICON = `<b aria-hidden="true" style="font:700 16px/1 KaTeX_Main,Times New Roman,serif">∑</b>`;
+  // 근호 안에 x: "수식을 쓴다"는 뜻이 바로 보이는 아이콘
+  const ICON = `<svg class="mt-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 13h2.5l3 7L12 4h10"/><path d="M14 9.5l5 6M19 9.5l-5 6"/></svg>`;
   const buttonHTML = key => `<button type="button" class="mt-btn" data-mt-open="${esc(key)}" title="수식 입력기 (키보드·손글씨)" aria-label="수식 입력기 열기">${ICON}<span>수식</span></button>`;
 
   /* ───── 수식 입력 창 ───── */
@@ -438,5 +443,5 @@
   }
 
   injectCss();
-  window.MathTool = { symbolMatch, open, close, render, renderInto, toImages, tokens, hasMath, buttonHTML, injectCss, preload: () => loadMathLive().catch(() => {}) };
+  window.MathTool = { iconSVG: ICON, symbolMatch, open, close, render, renderInto, toImages, tokens, hasMath, buttonHTML, injectCss, preload: () => loadMathLive().catch(() => {}) };
 })();

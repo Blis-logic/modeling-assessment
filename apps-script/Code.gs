@@ -78,7 +78,7 @@ function api(action, payload, token) {
     if (pub[action]) return Object.assign({ ok: true }, pub[action](payload));
     const user = sessionUser_(token);
     if (!user) return { ok: false, error: 'SESSION' };
-    const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_ };
+    const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, upload: apiUpload_, getFile: apiGetFile_ };
     if (mine[action]) return Object.assign({ ok: true }, mine[action](user, payload, token));
     const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_ };
     if (teach[action]) {
@@ -190,6 +190,7 @@ function apiSave_(user, p) {
     const prev = readJson_(SHEETS.rec, user.id, REC_DATA_COL);
     if (prev && prev.reopenAt && prev.reopenAt !== doc.reopenAt) { doc.reopenAt = prev.reopenAt; }  // 교사가 다시 연 기록은 유지
     doc.updatedAt = Date.now();
+    if (user.role === 'student') doc.info = Object.assign({}, doc.info || {}, { sid: user.sid, name: user.name });  // 학번·이름은 가입 정보로 고정
     const s = p.summary || {};
     const info = doc.info || {};
     writeJson_(SHEETS.rec, user.id, REC_DATA_COL, doc, [user.id, info.sid || user.sid, info.name || user.name, info.title || '', doc.status === 'submitted' ? '제출' : '작성 중',

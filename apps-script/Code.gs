@@ -42,6 +42,7 @@ function onOpen() {
 /** 시트와 머리글을 만들고, 교사 가입 코드가 비어 있으면 새로 정합니다. */
 function setup() {
   const ss = SpreadsheetApp.getActive();
+  ss.setSpreadsheetTimeZone(Session.getScriptTimeZone());  // 시트의 시각과 서버 시각이 어긋나 "반영됨" 시각이 틀리게 보이던 문제
   const make = (name, head) => {
     let sh = ss.getSheetByName(name);
     if (!sh) sh = ss.insertSheet(name);

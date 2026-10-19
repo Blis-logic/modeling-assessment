@@ -937,6 +937,8 @@ ul.files li.go:hover{border-color:var(--accent);background:var(--accent-soft)}
 .labbtns .mt-btn{border:1px solid var(--line);border-radius:9px;min-height:34px;padding:0 12px;background:var(--paper);font-size:13px}
 .labbtns .mt-btn:hover{border-color:var(--accent);background:var(--accent-soft)}
 .row.long textarea.fld{min-height:220px;font-size:15px}
+.btn.submit-btn{border:2px solid var(--bad);color:var(--bad);background:var(--paper);font-weight:700;padding:8px 18px}
+.btn.submit-btn:hover:not(:disabled){background:var(--bad-soft)}
 </style>
 
 </head>
@@ -1671,7 +1673,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
-const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"아이디(이름)는 한글·영문·숫자로 2~20자입니다.",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 사람이 있습니다. 이름 뒤에 학번 끝자리를 붙여 주세요 (예: 김하늘7).",
+const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
   WRONG_LOGIN:"아이디 또는 비밀번호가 맞지 않습니다. 잊었다면 선생님께 초기화를 요청하세요.",CLASS_CODE:"학급 코드가 맞지 않습니다. 선생님께 확인하세요.",TEACHER_CODE:"교사 가입 코드가 맞지 않습니다.",
   LOCKED:"선생님이 작성을 마감해서 저장할 수 없습니다.",FORBIDDEN:"교사만 할 수 있습니다.",NOT_FOUND:"그 계정을 찾지 못했습니다.",WRONG_PW:"지금 비밀번호가 맞지 않습니다.",
   NO_SETUP:"선생님이 아직 초기 설정(setup)을 하지 않았습니다.",NETWORK:"저장 서버에 연결하지 못했습니다. 잠시 뒤 다시 해 주세요.",SELF:"내 계정은 지울 수 없습니다.",
@@ -1705,14 +1707,14 @@ function renderAuth(msg){ document.getElementById("roleSeg").hidden=true; docume
     <div class="seg" role="tablist" style="align-self:flex-start"><button type="button" data-auth="login" aria-pressed="${!S}">로그인</button><button type="button" data-auth="signup" aria-pressed="${S}">처음이면 가입하기</button></div>
     ${cfg.notice?`<div class="banner info" style="margin:0">📢 ${esc(cfg.notice)}</div>`:""}
     <form id="authForm" class="authform" autocomplete="off" novalidate>
-      <label class="mini">${S?"이름 (아이디로 씁니다)":"아이디 (가입할 때 쓴 이름)"}<input id="a_id" autocomplete="username" placeholder="${S?"예: 김하늘":""}" required></label>
+      <label class="mini">${S?"이름 (아이디로 씁니다 · 학생은 한글만)":"아이디 (학생은 가입한 한글 이름)"}<input id="a_id" autocomplete="username" placeholder="${S?"예: 김하늘":""}" required></label>
       <label class="mini">비밀번호<input id="a_pw" type="password" autocomplete="${S?"new-password":"current-password"}" required></label>
       ${S?`<label class="mini">비밀번호 확인<input id="a_pw2" type="password" autocomplete="new-password"></label>
-      <label class="mini">학번<input id="a_sid" inputmode="numeric"></label>
+      <label class="mini">학번 (숫자 5자리)<input id="a_sid" inputmode="numeric" maxlength="5" placeholder="예: 20421"></label>
       ${cfg.needClassCode?`<label class="mini">학급 코드 (선생님이 알려 준 코드)<input id="a_cc"></label>`:""}
       <details class="help"><summary>교사이신가요?</summary><label class="mini" style="margin-top:6px">교사 가입 코드 (스프레드시트 "설정" 시트에 있음)<input id="a_tc"></label>
         <label class="mini" style="margin-top:6px">구글 계정 이메일 (학생 결과물 폴더를 이 주소로 공유해 드립니다)<input id="a_em" type="email" inputmode="email" autocomplete="email"></label></details>
-      <p class="sub" style="margin:0">아이디는 <b>내 이름</b>으로 씁니다(한글 가능, 2~20자). 같은 이름이 이미 있으면 이름 뒤에 학번 끝자리를 붙이세요(예: 김하늘7). 비밀번호는 4자 이상입니다. 비밀번호를 잊으면 선생님이 초기화해 줄 수 있습니다.</p>`:""}
+      <p class="sub" style="margin:0"><b>학생</b>: 아이디는 <b>한글 이름</b>(2~10자), 학번은 <b>숫자 5자리</b>입니다. <b>교사</b>: 교사 가입 코드를 넣으면 영문·숫자 아이디도 쓸 수 있습니다. 비밀번호는 4자 이상입니다. 비밀번호를 잊으면 선생님이 초기화해 줄 수 있습니다.</p>`:""}
       <p class="autherr" id="authErr" role="alert">${esc(msg||"")}</p>
       <button class="btn pri" type="submit" id="authBtn">${S?"가입하고 시작하기":"로그인"}</button>
     </form></section>`;
@@ -1727,6 +1729,9 @@ app.addEventListener("submit",async e=>{ e.preventDefault(); const f=e.target, f
   if(fid==="authForm"){
     const S=authMode==="signup";
     if(S&&v("a_pw")!==v("a_pw2")){ err.textContent="비밀번호 확인이 다릅니다."; return; }
+    if(S){ const T=v("a_tc").trim()!=="", id=v("a_id").trim(), sid=v("a_sid").trim();   // 서버와 같은 규칙으로 미리 검사
+      if(T?!/^[가-힣A-Za-z0-9_.-]{2,20}$/.test(id):!/^[가-힣]{2,10}$/.test(id)){ err.textContent=ERR[T?"BAD_ID_T":"BAD_ID"]; return; }
+      if(!T&&!/^\d{5}$/.test(sid)){ err.textContent=ERR.BAD_SID; return; } }
     btn.disabled=true; err.textContent=S?"가입하는 중…":"로그인하는 중…";
     try{ const r=await api(S?"signup":"login",S?{id:v("a_id"),pw:v("a_pw"),sid:v("a_sid"),name:v("a_id"),classCode:v("a_cc"),teacherCode:v("a_tc"),email:v("a_em")}:{id:v("a_id"),pw:v("a_pw")});
       if(S&&r.user&&r.user.role==="teacher") pendingNote=r.shared?"가입했습니다. 학생 결과물 폴더를 내 구글 계정으로 공유했습니다.":"가입했습니다. 폴더 공유에는 실패했으니 '교사 공유·문서' 탭에서 이메일을 다시 넣어 주세요.";
@@ -1775,8 +1780,8 @@ async function pollStatus(){ if(!ME||document.visibilityState!=="visible") retur
 /* ───────── 학생 화면 ───────── */
 function submitHTML(doc){ const p=progress(doc), avg=Math.round(p.reduce((a,b)=>a+b,0)/5*100);
   if(doc.status==="submitted") return `<b>제출했습니다</b><span class="sub">${doc.submittedAt?ago(doc.submittedAt):""} 제출 · 선생님이 바로 볼 수 있습니다.</span>${cfg.locked?"":`<div><button class="btn" type="button" data-act="unsubmit">제출 취소하고 고치기</button></div>`}`;
-  if(confirmSubmit) return `<b>정말 제출할까요?</b><span class="sub">제출하면 고칠 수 없게 잠깁니다. 선생님이 마감하기 전까지는 제출을 취소하고 다시 고칠 수 있습니다.</span><div style="display:flex;gap:8px"><button class="btn pri" type="button" data-act="submit2">제출하기</button><button class="btn" type="button" data-act="cancelSubmit">돌아가기</button></div>`;
-  return `<b>보고서 제출</b><span class="sub">전체 작성률 ${avg}% · 쓰는 내용은 제출 전에도 자동 저장되어 선생님 화면에 보입니다.</span><div><button class="btn pri" type="button" data-act="submit1"${locked()?" disabled":""}>제출하기</button></div>`; }
+  if(confirmSubmit) return `<b>정말 제출할까요?</b><span class="sub">제출하면 고칠 수 없게 잠깁니다. 선생님이 마감하기 전까지는 제출을 취소하고 다시 고칠 수 있습니다.</span><div style="display:flex;gap:8px"><button class="btn submit-btn" type="button" data-act="submit2">제출하기</button><button class="btn" type="button" data-act="cancelSubmit">돌아가기</button></div>`;
+  return `<b>보고서 제출</b><span class="sub">전체 작성률 ${avg}% · 쓰는 내용은 제출 전에도 자동 저장되어 선생님 화면에 보입니다.</span><div><button class="btn submit-btn" type="button" data-act="submit1"${locked()?" disabled":""}>제출하기</button></div>`; }
 function feedbackHTML(){ const g=myGrade; if(!g||!g.released) return ""; const sc=g.scores||{}, tot=[1,2,3,4].reduce((s,i)=>s+(isNum(sc["s"+i])?+sc["s"+i]:0),0);
   return `<section class="fb"><h3>선생님 피드백 · ${tot} / 40점</h3><div class="fbgrid">${ELEMENTS.map((e,i)=>`<div>${esc(e[0])}<b>${isNum(sc["s"+(i+1)])?sc["s"+(i+1)]:"–"} / 10</b>${(g.notes||{})["s"+(i+1)]?`<span class="sub">${esc(g.notes["s"+(i+1)])}</span>`:""}</div>`).join("")}</div>${g.overall?`<p style="margin:8px 0 0;white-space:pre-wrap">${esc(g.overall)}</p>`:""}</section>`; }
 function bannersHTML(){ let b=""; if(cfg.locked) b+=`<div class="banner warn">선생님이 작성을 마감했습니다. 지금은 읽기만 할 수 있습니다.</div>`;

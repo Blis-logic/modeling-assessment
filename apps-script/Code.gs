@@ -114,30 +114,32 @@ function writeConfigValue_(label, value) {
 
 /* ───── 계정 ───── */
 function apiSignup_(p) {
-  const id = String(p.id || '').trim(), pw = String(p.pw || '');
-  if (!/^[가-힣A-Za-z0-9_.-]{2,20}$/.test(id)) fail_('BAD_ID');  // 학생은 이름을 아이디로 씁니다
-  const name = String(p.name || '').trim() || id;
-  if (pw.length < 4 || pw.length > 64) fail_('BAD_PW');
+  const id = String(p.id || '').trim(), pw = String(p.pw || ''), sid = String(p.sid || '').trim();
   const cfg = readConfig_();
   let role = 'student';
   if (p.teacherCode) { if (!cfg.teacherCode || String(p.teacherCode).trim() !== cfg.teacherCode) fail_('TEACHER_CODE'); role = 'teacher'; }
   else if (cfg.classCode && String(p.classCode || '').trim() !== cfg.classCode) fail_('CLASS_CODE');
+  // 학생: 아이디는 한글 이름(2~10자), 학번은 숫자 5자리 / 교사(가입 코드 있음): 한글·영문·숫자 아이디
+  if (role === 'teacher') { if (!/^[가-힣A-Za-z0-9_.-]{2,20}$/.test(id)) fail_('BAD_ID_T'); }
+  else { if (!/^[가-힣]{2,10}$/.test(id)) fail_('BAD_ID'); if (!/^\d{5}$/.test(sid)) fail_('BAD_SID'); }
+  const name = String(p.name || '').trim() || id;
+  if (pw.length < 4 || pw.length > 64) fail_('BAD_PW');
   const email = String(p.email || '').trim().toLowerCase();
   if (role === 'teacher' && !validEmail_(email)) fail_('BAD_EMAIL');
   const res = withLock_(() => {
     const sh = sheet_(SHEETS.acc);
     if (findRow_(sh, id) > 0) fail_('DUP_ID');
     const salt = makeCode_(16), now = new Date();
-    sh.appendRow([id, role, String(p.sid || '').trim(), name, salt, hash_(salt, pw), now, now, false, role === 'teacher' ? email : '']);
+    sh.appendRow([id, role, sid, name, salt, hash_(salt, pw), now, now, false, role === 'teacher' ? email : '']);
     const token = newSession_(id);
-    return { token: token, user: { id: id, role: role, sid: String(p.sid || '').trim(), name: name, mustChange: false, email: role === 'teacher' ? email : '' } };
+    return { token: token, user: { id: id, role: role, sid: sid, name: name, mustChange: false, email: role === 'teacher' ? email : '' } };
   });
   if (role === 'teacher') {  // 교사로 가입하면 학생 결과물 폴더를 바로 공유받습니다
     try { rootFolder_().addEditor(email); res.shared = true; } catch (e) { res.shared = false; }
   }
   return res;
 }
-function validEmail_(e) { return /^[^s@]+@[^s@]+.[^s@]+$/.test(e) && e.length <= 100; }
+function validEmail_(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 100; }
 function apiLogin_(p) {
   const id = String(p.id || '').trim(), sh = sheet_(SHEETS.acc), row = findRow_(sh, id);
   if (row < 0) fail_('WRONG_LOGIN');

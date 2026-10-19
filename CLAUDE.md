@@ -13,6 +13,8 @@
 | `config.js` | `apiUrl` = Apps Script 웹 앱 주소(끝이 `/exec`) |
 | `apps-script/Code.gs` | 저장 서버. `doPost`로 JSON API 제공. 저장소는 컨테이너 스프레드시트의 시트 `설정`·`계정`·`기록`·`채점`·`문서` |
 | `apps-script/Docs.gs` | 학생 결과물 구글 문서 생성·PDF 내보내기·교사 공유 폴더. 화면이 보낸 "문서 명세(spec)"를 활동지 서식으로 그리기만 하므로 문항이 바뀌어도 고칠 필요 없음 |
+| `apps-script/app.html` | **자동 생성**(`node tools/build-gas.js`): `index.html`+`config.js`+`mathtool.js`를 합친 화면. `/exec`를 그냥 열면 이 화면이 뜬다 |
+| `tools/build-gas.js` | `app.html` 생성기. `index.html`·`config.js`·`mathtool.js`를 고친 뒤 `clasp push` 전에 실행 |
 | `apps-script/appsscript.json` | Apps Script 매니페스트(웹 앱: 실행 계정 나, 액세스 ANYONE_ANONYMOUS) |
 | `.clasp.json` | clasp가 만드는 scriptId 기록. 커밋해도 됨. 자격 증명(`~/.clasprc.json`)은 홈 폴더에 있으며 절대 커밋하지 않음 |
 
@@ -38,6 +40,14 @@
 - `script.external_request` 권한이 늘었다 → 배포 전 `setup`을 다시 실행해 권한을 허용한다.
 - 디자인 시안: `design/student-mockups.html` (A 차분한 집중 · B 데이터 벤토 · C 손에 잡히는 노트). **적용안 = B 배치 + A 색·폰트**: 상단 고정 막대(단계 버튼 + 한 줄 상황판), 블록마다 카드(12칸 격자, `chart:"deriv"`는 오른쪽에 f·f′ 그래프 카드, `last:1`은 맨 아래), 아래 고정 수식 독. 색은 남색 `#4F46E5` 계열, 글꼴은 IBM Plex Sans KR.
 
+## 접속 경로 두 가지 (github.io가 막힌 학교망 대비)
+
+- 기본: https://blis-logic.github.io/modeling-assessment/ (GitHub Pages)
+- 예비: `https://script.google.com/macros/s/<배포ID>/exec` 를 그냥 열면 같은 화면이 뜬다(`doGet`이 `app.html`을 보여 줌). 서버 상태 확인은 `/exec?ping=1`.
+- 학교 와이파이가 `github.io`를 막은 적이 있다(`script.google.com`은 열림). 학생에게는 예비 주소도 함께 알려 준다.
+- 예비 경로는 구글이 iframe 안에서 보여 주므로 `localStorage`가 막힐 수 있다(로그인이 새로고침 때 풀림). PDF 내려받기가 막히면 [내려받기가 시작되지 않으면 여기를 누르세요] 링크를 쓴다.
+- 화면을 고친 뒤 순서: `node tools/build-gas.js` → 커밋·`git push`(GitHub Pages) → `clasp push` → `clasp deploy -i <배포ID>`(예비 경로).
+
 ## 저장 서버 배포 (clasp)
 
 1. `npm i -g @google/clasp`
@@ -48,7 +58,7 @@
 5. `clasp push`
 6. `clasp open-script`로 편집기를 열고 사용자가 **setup**을 한 번 실행해 권한을 허용한다(구글 정책상 직접 해야 함). `설정` 시트에 교사 가입 코드가 생긴다.
 7. `clasp deploy` → 배포 ID로 만든 `https://script.google.com/macros/s/<배포ID>/exec` 주소를 얻는다.
-8. 시크릿 창에서 `/exec` 주소가 `{"ok":true,"service":"모델링 탐구 수행평가 API",...}`를 돌려주는지 확인한다.
+8. 시크릿 창에서 `/exec?ping=1` 주소가 `{"ok":true,"service":"모델링 탐구 수행평가 API",...}`를 돌려주는지 확인한다.
 9. `config.js`의 `apiUrl`에 넣고 커밋·`git push` 한다.
 
 서버 코드를 고친 뒤에는 `clasp push` 후 **기존 배포를 새 버전으로 갱신**한다(`clasp deploy -i <배포ID>`). 새 배포를 만들면 주소가 바뀐다.

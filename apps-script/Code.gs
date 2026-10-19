@@ -18,7 +18,16 @@ const SESSION_SEC = 21600;              // 6시간
 const HASH_ROUNDS = 200;
 
 /* ───── 웹 앱 진입: 화면은 GitHub Pages, 여기는 저장 서버(API)만 맡습니다 ───── */
-function doGet() { return json_({ ok: true, service: '모델링 탐구 수행평가 API', time: Date.now() }); }
+/** 주소를 그냥 열면 화면(app.html)을, ?ping=1 이면 서버 상태(JSON)를 돌려줍니다. 화면은 github.io 가 막힌 학교망용 예비 통로입니다. */
+function doGet(e) {
+  if (!(e && e.parameter && e.parameter.ping)) {
+    try {
+      return HtmlService.createHtmlOutputFromFile('app').setTitle('모델링 탐구 수행평가')
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    } catch (x) { /* app.html 이 없으면 아래 상태 응답 */ }
+  }
+  return json_({ ok: true, service: '모델링 탐구 수행평가 API', time: Date.now() });
+}
 function doPost(e) {
   let body = {};
   try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}'); } catch (x) { return json_({ ok: false, error: 'BAD_REQUEST' }); }

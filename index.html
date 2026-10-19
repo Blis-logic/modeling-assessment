@@ -708,7 +708,8 @@ async function makeDoc(doc,id,pdf,acct){ const {spec,svgs}=buildSpec(doc,acct), 
   if(texs.length){ try{ const m=await MathTool.toImages(texs); spec.math={}; Object.keys(m).forEach(tex=>{ spec.math[tex]={i:images.length,w:m[tex].w,h:m[tex].h}; images.push(m[tex].b64); }); }catch(e){} }
   const p={spec,images}; if(id) p.id=id; return api(pdf?"pdf":"syncDoc",p); }
 function saveB64(b64,name,type){ const bin=atob(b64), u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
-  const url=URL.createObjectURL(new Blob([u],{type})), a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000); }
+  const url=URL.createObjectURL(new Blob([u],{type})), a=document.createElement("a"); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),600000);
+  const pl=document.getElementById("pdfLink"); if(pl) pl.innerHTML=`<a href="${url}" download="${esc(name)}" target="_blank" rel="noopener">내려받기가 시작되지 않으면 여기를 누르세요</a>`; }
 
 let docErr="";
 function updateDocSt(){ const e=document.getElementById("docSt"); if(!e) return;
@@ -853,7 +854,7 @@ function renderStudent(){
     <label>이름<input class="fld" id="i_name" data-p="info.name" value="${esc(i.name||"")}" autocomplete="off"${ro?" disabled":""}></label>
     <label class="title">탐구 제목<input class="fld" id="i_title" data-p="info.title" value="${esc(i.title||"")}" autocomplete="off"${ro?" disabled":""}></label>
   </section>
-  ${ME.role==="student"?`<section class="docbar"><div class="grow"><b>내 결과물 (활동지 서식)</b><small id="docSt"></small></div><button class="btn" type="button" data-act="docNow">지금 문서에 반영</button><button class="btn pri" type="button" data-act="pdf">PDF로 받기</button></section>`:""}</div>
+  ${ME.role==="student"?`<section class="docbar"><div class="grow"><b>내 결과물 (활동지 서식)</b><small id="docSt"></small><small id="pdfLink"></small></div><button class="btn" type="button" data-act="docNow">지금 문서에 반영</button><button class="btn pri" type="button" data-act="pdf">PDF로 받기</button></section>`:""}</div>
   <div id="stageBox">${stageHTML(me,stage,false)}</div>
   ${ro?"":`<div class="dock" aria-label="수식 키보드"><button type="button" class="big" data-mtlast>⌨ 수식 입력기</button><button type="button" class="big alt" data-mtlast data-mode="hw">✍ 손글씨</button><span class="lab">기호 넣기</span>${SYMS.map(s=>`<button type="button" data-sym="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}`;
   if(ro) app.querySelectorAll("#stageBox [data-p]").forEach(e=>e.disabled=true);

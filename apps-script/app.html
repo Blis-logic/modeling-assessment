@@ -529,6 +529,10 @@ button{cursor:pointer}
 .banner.warn{background:var(--warn-soft);border-color:transparent}
 .banner.bad{background:var(--bad-soft);border-color:transparent}
 .banner.info{background:var(--accent-soft);border-color:transparent}
+#sysBar{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:300;width:min(680px,calc(100% - 32px));display:flex;flex-direction:column;gap:8px}
+#sysBar[hidden]{display:none}
+#sysBar .banner{margin:0;display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;box-shadow:0 6px 24px rgba(15,23,42,.18);border:1px solid var(--line)}
+#sysBar .banner>span{flex:1 1 260px}
 
 /* student header card */
 .idcard{margin-top:16px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px}
@@ -1671,6 +1675,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
+const APP_VER="202610210851"; // build:edf7d401  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -1679,6 +1684,7 @@ const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.
   NO_SETUP:"선생님이 아직 초기 설정(setup)을 하지 않았습니다.",NETWORK:"저장 서버에 연결하지 못했습니다. 잠시 뒤 다시 해 주세요.",SELF:"내 계정은 지울 수 없습니다.",
   BAD_EMAIL:"구글 계정 이메일 주소를 정확히 써 주세요.",SHARE:"폴더를 공유하지 못했습니다. 구글 계정 이메일이 맞는지 확인해 주세요.",BAD_DOC:"문서를 만들 수 없는 내용입니다. 잠시 뒤 다시 시도해 주세요.",
   BAD_FILE:"올릴 수 없는 파일입니다. 다른 파일을 골라 주세요.",BIG_FILE:"파일이 너무 큽니다 (원본 자료 10MB, 풀이 사진 50KB 이하).",
+  CORRUPT:"저장된 기록을 읽지 못했습니다. 기록을 지키려고 화면을 열지 않았습니다. 선생님께 알려 주세요.",CONFLICT:"다른 창이나 기기에서 더 최근에 저장했습니다.",UNKNOWN_ACTION:"앱이 새 버전으로 바뀌었습니다. 새로고침(F5)해 주세요.",
   NO_API:"config.js에 구글 Apps Script 웹 앱 주소(apiUrl)를 아직 넣지 않았습니다.",ACCESS:"저장 서버가 로그인 화면을 돌려주었습니다. 구글 Apps Script를 '모든 사용자'로 배포했는지 확인해 주세요."};
 const errMsg=e=>ERR[e&&e.error]||("문제가 생겼습니다"+(e&&e.message?": "+e.message:"."));
 async function api(action,payload){
@@ -1686,7 +1692,20 @@ async function api(action,payload){
   let r; try{ r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,payload:payload||{},token:TOKEN}),redirect:"follow"}); }
   catch(e){ throw {error:"NETWORK",message:String(e&&e.message||e)}; }
   const txt=await r.text(); let j; try{ j=JSON.parse(txt); }catch(e){ throw {error:"ACCESS"}; }
+  if(j&&j.config) checkVer(j.config.appVer);
   if(j&&j.ok) return j; if(j&&j.error==="SESSION") sessionLost(); throw (j||{}); }
+/* 화면 아래 알림 막대: 새 버전 안내 · 저장 충돌 · 기록 읽기 오류 */
+const sysMsgs={};
+function sysBar(key,html){ if(html) sysMsgs[key]=html; else delete sysMsgs[key]; let el=document.getElementById("sysBar");
+  if(!el){ el=document.createElement("div"); el.id="sysBar"; el.setAttribute("role","status"); document.body.appendChild(el); el.addEventListener("click",sysClick); }
+  el.innerHTML=Object.values(sysMsgs).join(""); el.hidden=!el.innerHTML; }
+function checkVer(v){ if(v&&+v>+APP_VER&&!sysMsgs.ver) sysBar("ver",`<div class="banner info"><span><b>앱이 새 버전으로 업데이트되었습니다.</b> 쓰던 내용을 저장하고 새로고침합니다.</span><button class="btn pri" type="button" data-sys="reload">저장하고 새로고침</button></div>`); }
+function showConflict(){ if(conflict) return; conflict=true; clearTimeout(saveTimer); setSave("err","다른 창에서 저장됨 · 저장 멈춤");
+  sysBar("conflict",`<div class="banner bad"><span><b>다른 창이나 기기에서 더 최근에 저장했습니다.</b> 그 내용을 지우지 않도록 이 창의 저장을 멈췄습니다. 보통은 최신 내용을 불러오면 됩니다(이 창에서 그 뒤에 쓴 내용은 사라집니다).</span><button class="btn pri" type="button" data-sys="latest">최신 내용 불러오기</button><button class="btn" type="button" data-sys="keep">이 창 내용으로 저장</button></div>`); }
+async function sysClick(e){ const b=e.target.closest("[data-sys]"); if(!b) return; const k=b.dataset.sys;
+  if(k==="reload"){ b.disabled=true; if(!conflict) await flush(); location.reload(); }
+  if(k==="latest"){ b.disabled=true; conflict=false; dirty=false; sysBar("conflict",null); try{ await loadMe(); }catch(x){ setSave("err",errMsg(x)); } }
+  if(k==="keep"){ conflict=false; forceSave=true; dirty=true; sysBar("conflict",null); await flush(); if(view==="student") renderStudent(); } }
 function setToken(t){ TOKEN=t; try{ t?localStorage.setItem("mt_token",t):localStorage.removeItem("mt_token"); }catch(e){} }
 
 /* ───────── 상태 ───────── */
@@ -1744,7 +1763,7 @@ app.addEventListener("submit",async e=>{ e.preventDefault(); const f=e.target, f
     try{ await api("changePw",{oldPw:v("p_old"),newPw:v("p_new")}); ME.mustChange=false; enterApp("비밀번호를 바꿨습니다."); }
     catch(x){ err.textContent=errMsg(x); btn.disabled=false; }
   } });
-async function loadMe(){ setSave("wait","불러오는 중");
+async function loadMe(){ setSave("wait","불러오는 중"); conflict=false; forceSave=false; sysBar("conflict",null);
   const r=await api("me"); ME=r.user; cfg=Object.assign(cfg,r.config||{}); myGrade=r.grade||null;
   me=Object.assign(blankDoc(),r.doc||{}); me.info=Object.assign({},me.info||{},ME.role==="student"?{sid:ME.sid,name:ME.name}:{}); if(!me.ans.s1_topic&&topicOf(me)) me.ans.s1_topic=topicOf(me); if(me.ans.s1_topic) me.info.title=me.ans.s1_topic; docAt=r.docAt||0;
   if(ME.mustChange) return renderPwChange(true);
@@ -1755,24 +1774,28 @@ function enterApp(note){ const ub=document.getElementById("userBox"); ub.hidden=
   if(ME.role==="teacher"){ document.getElementById("roleSeg").hidden=false; measureTop(); setView(view==="student"&&!roster.size?"teacher":view); pollRoster(); pollT=setInterval(()=>{ if(document.visibilityState==="visible") pollRoster(); },10000); }
   else { document.getElementById("roleSeg").hidden=true; measureTop(); view="student"; renderStudent(); pollT=setInterval(pollStatus,45000);
     if(ME.role==="student"&&me.updatedAt&&!docAt){ docDirty=true; scheduleDocSync(2000); } } }
-document.getElementById("logoutBtn").onclick=async()=>{ await flush(); try{ await api("logout"); }catch(e){} ME=null; authMode="login"; setToken(null); clearInterval(pollT); clearTimeout(docTimer); docs={}; share=null; roster=new Map(); grades={}; sel=null; lastSince=0; renderAuth(); };
+document.getElementById("logoutBtn").onclick=async()=>{ await flush(); try{ await api("logout"); }catch(e){} ME=null; authMode="login"; setToken(null); clearInterval(pollT); conflict=false; sysBar("conflict",null); sysBar("corrupt",null); clearTimeout(docTimer); docs={}; share=null; roster=new Map(); grades={}; sel=null; lastSince=0; renderAuth(); };
 document.getElementById("pwBtn").onclick=()=>{ flush(); renderPwChange(false); };
 
 /* ───────── 저장 ───────── */
-let saveTimer=null, saving=false, dirty=false;
-function scheduleSave(){ dirty=true; if(ME&&ME.role==="student") docDirty=true; setSave("wait","저장 대기"); clearTimeout(saveTimer); saveTimer=setTimeout(flush,2500); }
-async function flush(){ clearTimeout(saveTimer); if(!dirty||!ME) return; if(saving){ saveTimer=setTimeout(flush,800); return; }
+let saveTimer=null, saving=false, dirty=false, conflict=false, forceSave=false;
+function scheduleSave(){ dirty=true; if(conflict) return; if(ME&&ME.role==="student") docDirty=true; setSave("wait","저장 대기"); clearTimeout(saveTimer); saveTimer=setTimeout(flush,2500); }
+async function flush(){ clearTimeout(saveTimer); if(!dirty||!ME||conflict) return; if(saving){ saveTimer=setTimeout(flush,800); return; }
   saving=true; dirty=false; const body=JSON.parse(JSON.stringify(me)), an=analyze(me), p=progress(me);
   const summary={progress:Math.round(p.reduce((a,b)=>a+b,0)/5*100),n:an.pts.length,formA:formulaText(an.A),errA:an.eA?+an.eA.mean.toFixed(2):null};
-  try{ const r=await api("save",{doc:body,summary}); me.updatedAt=r.updatedAt; if(r.reopenAt) me.reopenAt=r.reopenAt;
+  const base=forceSave?undefined:(me.updatedAt||0); forceSave=false;   // base: 이 창이 마지막으로 받은 저장 시각 — 서버가 더 최근이면 CONFLICT
+  try{ const r=await api("save",{doc:body,summary,base}); me.updatedAt=r.updatedAt; if(r.reopenAt) me.reopenAt=r.reopenAt;
     const t=new Date(); setSave("ok",`저장됨 ${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}`); }
-  catch(e){ if(e.error==="LOCKED"){ cfg.locked=true; setSave("err","마감되어 저장 안 됨"); if(view==="student") renderStudent(); }
+  catch(e){ if(e.error==="CONFLICT"){ dirty=true; showConflict(); }
+    else if(e.error==="CORRUPT"){ dirty=false; conflict=true; setSave("err","기록 보호 · 저장 멈춤"); sysBar("conflict",`<div class="banner bad"><span>${esc(ERR.CORRUPT)}</span></div>`); }
+    else if(e.error==="LOCKED"){ cfg.locked=true; setSave("err","마감되어 저장 안 됨"); if(view==="student") renderStudent(); }
     else if(e.error!=="SESSION"){ dirty=true; setSave("err","저장 실패 · 다시 시도 중"); saveTimer=setTimeout(flush,4000+Math.random()*3000); } }
   saving=false; if(docDirty) scheduleDocSync(); }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden"){ flush(); if(docDirty) scheduleDocSync(500); } });
 window.addEventListener("beforeunload",e=>{ if(dirty){ flush(); e.preventDefault(); e.returnValue=""; } });
 async function pollStatus(){ if(!ME||document.visibilityState!=="visible") return; try{ const r=await api("status");
   const wasLocked=locked(), oldNotice=cfg.notice, oldGrade=JSON.stringify(myGrade); cfg=Object.assign(cfg,r.config||{}); myGrade=r.grade||null;
+  if(!saving&&r.updatedAt&&me.updatedAt&&r.updatedAt>me.updatedAt&&r.updatedAt!==r.reopenAt) showConflict();  // 다른 창이 더 최근에 저장함
   let full=false; if(r.reopenAt&&r.reopenAt!==me.reopenAt){ me.reopenAt=r.reopenAt; me.status=r.status; full=true; }
   if(view!=="student") return;
   if(full||wasLocked!==locked()) renderStudent(); else if(oldNotice!==cfg.notice||oldGrade!==JSON.stringify(myGrade)) renderTopBits(); }catch(e){} }
@@ -2030,6 +2053,7 @@ function selectStudent(id){ sel=id; selStage=-1; gradeDirty=false; const g=grade
   renderRoster(); renderDetail(true); document.getElementById("detailBox").scrollIntoView({behavior:"smooth",block:"start"}); }
 async function pollRoster(){ if(!ME||ME.role!=="teacher") return; try{ const r=await api("roster",{since:lastSince});
     const next=new Map(); r.students.forEach(s=>{ const prev=roster.get(s.id); next.set(s.id,Object.assign({},s,{doc:s.doc!==undefined?s.doc:(prev?prev.doc:null)})); });
+    const bad=r.students.filter(s=>s.corrupt); sysBar("corrupt",bad.length?`<div class="banner warn"><span><b>기록을 읽지 못한 학생: ${esc(bad.map(s=>s.name||s.id).join(", "))}</b> — 이 학생 화면은 기록 보호로 열리지 않습니다. 스프레드시트 '기록' 시트의 해당 줄('데이터' 열부터)을 [파일 → 버전 기록]에서 되돌려 주세요. 기록·채점 시트에는 열을 끼워 넣거나 데이터 칸을 고치지 마세요.</span></div>`:null);
     roster=next; grades=r.grades||{}; sheetUrl=r.sheetUrl||""; docs=r.docs||{}; folderUrl=r.folderUrl||""; lastSince=r.serverTime-15000;
     const oldLock=cfg.locked; cfg=Object.assign(cfg,r.config||{});
     const sl=document.getElementById("sheetLink"), shl=sheetLinkHTML(); if(sl&&sl.innerHTML!==shl) sl.innerHTML=shl;

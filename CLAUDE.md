@@ -71,6 +71,13 @@
 - 예비 경로는 구글이 iframe 안에서 보여 주므로 `localStorage`가 막힐 수 있다(로그인이 새로고침 때 풀림). PDF 내려받기가 막히면 [내려받기가 시작되지 않으면 여기를 누르세요] 링크를 쓴다.
 - 화면을 고친 뒤 순서: `node tools/build-gas.js` → 커밋·`git push`(GitHub Pages) → `clasp push` → `clasp deploy -i <배포ID>`(예비 경로).
 
+## 업데이트 안전장치 (2026-10-21)
+
+- **버전 번호**: `build-gas.js`가 화면 파일(index·config·mathtool) 내용이 바뀔 때만 `APP_VER`(KST `YYYYMMDDHHMM`, `// build:<해시>`)를 새로 매겨 `index.html`의 `config.js?v=`·`mathtool.js?v=`와 `apps-script/Version.gs`(자동 생성, 커밋)에 적는다. 서버가 `config.appVer`로 돌려주고, 화면은 자기보다 새 번호면 [저장하고 새로고침] 알림(`sysBar`)을 띄운다. 그래서 서버 배포(`deploy -i`)는 Pages 반영 뒤에 한다.
+- **저장 충돌**: 화면이 `save`에 `base`(마지막으로 받은 `updatedAt`)를 보내고, 서버의 `updatedAt`이 다르면 `CONFLICT`로 거절한다. `base`가 없는 요청(옛 화면·[이 창 내용으로 저장])과 교사가 다시 연 직후(`updatedAt===reopenAt`)는 통과. `status`도 `updatedAt`을 돌려줘 45초마다 미리 알아챈다. 충돌하면 그 창은 저장을 멈추고 [최신 내용 불러오기]/[이 창 내용으로 저장]을 고르게 한다.
+- **기록 보호**: JSON 조각은 머리글 '데이터' 열에서 찾는다(`dataCol_`). 오른쪽에 다른 내용이 붙어도 앞 조각만으로 읽어 본다(`parseParts_`). 그래도 못 읽으면 `CORRUPT` — `me`·`save`·`reopen`·채점 저장이 거절되고(빈 활동지로 덮어쓰지 않음), 교사 화면에 학생 이름 경고. 복구는 시트 [파일 → 버전 기록].
+- 기록·채점·계정 시트에 열을 끼워 넣거나 데이터 칸을 고치지 않는다(정렬·필터·숨기기는 괜찮음). 머리글 배열(`REC_HEAD` 등) 길이를 바꾸면 요약 열 위치가 밀리므로 함께 확인한다.
+
 ## 저장 서버 배포 (clasp)
 
 1. `npm i -g @google/clasp`

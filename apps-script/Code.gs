@@ -104,7 +104,7 @@ function readConfig_() {
     notice: String(m['공지'] || '')
   };
 }
-function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, notice: c.notice }; }
+function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, notice: c.notice, appVer: typeof APP_VER === 'undefined' ? '' : APP_VER }; }  // appVer: Version.gs(자동 생성) — 열려 있는 옛 화면에 새로고침 안내
 function apiConfig_() { return { config: publicConfig_() }; }
 function writeConfigValue_(label, value) {
   const sh = sheet_(SHEETS.cfg), col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(r => String(r[0]).trim());
@@ -178,11 +178,11 @@ function sessionUser_(token) {
 /* ───── 학생 기록 ───── */
 function apiMe_(user) {
   const d = docRecord_(user.id);
-  return { user: user, doc: readJson_(SHEETS.rec, user.id, REC_DATA_COL), grade: releasedGrade_(user.id), config: publicConfig_(), docAt: d ? d.at : 0 };
+  return { user: user, doc: readJson_(SHEETS.rec, user.id, REC_DATA_COL, true), grade: releasedGrade_(user.id), config: publicConfig_(), docAt: d ? d.at : 0 };
 }
 function apiStatus_(user) {
   const doc = readJson_(SHEETS.rec, user.id, REC_DATA_COL) || {};
-  return { config: publicConfig_(), grade: releasedGrade_(user.id), status: doc.status || 'draft', reopenAt: doc.reopenAt || null };
+  return { config: publicConfig_(), grade: releasedGrade_(user.id), status: doc.status || 'draft', reopenAt: doc.reopenAt || null, updatedAt: doc.updatedAt || 0 };
 }
 function releasedGrade_(id) { const g = readJson_(SHEETS.grd, id, GRD_DATA_COL); return g && g.released ? g : null; }
 function apiSave_(user, p) {
@@ -190,7 +190,9 @@ function apiSave_(user, p) {
   if (!doc || typeof doc !== 'object') fail_('BAD_DOC');
   if (readConfig_().locked && user.role !== 'teacher') fail_('LOCKED');
   return withLock_(() => {
-    const prev = readJson_(SHEETS.rec, user.id, REC_DATA_COL);
+    const prev = readJson_(SHEETS.rec, user.id, REC_DATA_COL, true);  // 저장된 기록을 읽지 못하면 덮어쓰지 않습니다(CORRUPT)
+    // 다른 창·기기가 더 최근에 저장했으면 거절합니다. base 가 없는 요청(옛 화면, '이 창 내용으로 저장')과 교사가 다시 연 직후는 통과
+    if (prev && p.base != null && prev.updatedAt && Number(p.base) !== prev.updatedAt && prev.updatedAt !== prev.reopenAt) fail_('CONFLICT');
     if (prev && prev.reopenAt && prev.reopenAt !== doc.reopenAt) { doc.reopenAt = prev.reopenAt; }  // 교사가 다시 연 기록은 유지
     doc.updatedAt = Date.now();
     if (user.role === 'student') doc.info = Object.assign({}, doc.info || {}, { sid: user.sid, name: user.name });  // 학번·이름은 가입 정보로 고정
@@ -206,10 +208,10 @@ function apiSave_(user, p) {
 function apiRoster_(user, p) {
   const since = Number(p.since || 0);
   const accs = sheet_(SHEETS.acc).getDataRange().getValues().slice(1).filter(r => r[0] && String(r[1]) !== 'teacher');
-  const recs = mapJson_(SHEETS.rec, REC_DATA_COL), grades = mapJson_(SHEETS.grd, GRD_DATA_COL);
+  const recs = mapJson_(SHEETS.rec, REC_DATA_COL, true), grades = mapJson_(SHEETS.grd, GRD_DATA_COL);
   const students = accs.map(r => {
-    const id = String(r[0]), doc = recs[id] || null, upd = doc && doc.updatedAt || 0;
-    return { id: id, sid: String(r[2]), name: String(r[3]), lastLogin: r[7] ? new Date(r[7]).getTime() : 0, updatedAt: upd, doc: upd > since ? doc : undefined };
+    const id = String(r[0]), bad = recs[id] === CORRUPT, doc = bad ? null : recs[id] || null, upd = doc && doc.updatedAt || 0;
+    return { id: id, sid: String(r[2]), name: String(r[3]), lastLogin: r[7] ? new Date(r[7]).getTime() : 0, updatedAt: upd, doc: upd > since ? doc : undefined, corrupt: bad || undefined };
   });
   return { students: students, grades: grades, config: publicConfig_(), sheetUrl: SpreadsheetApp.getActive().getUrl(), docs: docMap_(), folderUrl: PropertiesService.getScriptProperties().getProperty('FOLDER_URL') || '', serverTime: Date.now() };
 }
@@ -218,6 +220,7 @@ function apiSaveGrade_(user, p) {
   const res = withLock_(() => {
     const acc = sheet_(SHEETS.acc), row = findRow_(acc, id);
     if (row < 0) fail_('NOT_FOUND');
+    readJson_(SHEETS.grd, id, GRD_DATA_COL, true);  // 저장된 채점을 읽지 못하면 덮어쓰지 않습니다
     const a = acc.getRange(row, 1, 1, 4).getValues()[0], doc = readJson_(SHEETS.rec, id, REC_DATA_COL) || {}, info = doc.info || {};
     const sc = g.scores || {}, nums = [1, 2, 3, 4].map(i => (sc['s' + i] === '' || sc['s' + i] == null) ? '' : Number(sc['s' + i]));
     g.updatedAt = Date.now(); g.by = user.name || user.id;
@@ -237,9 +240,9 @@ function apiSetConfig_(user, p) {
 }
 function apiReopen_(user, p) {
   return withLock_(() => {
-    const doc = readJson_(SHEETS.rec, String(p.id), REC_DATA_COL);
+    const doc = readJson_(SHEETS.rec, String(p.id), REC_DATA_COL, true);
     if (!doc) fail_('NOT_FOUND');
-    doc.status = 'draft'; doc.reopenAt = Date.now(); doc.updatedAt = Date.now();
+    const t = Date.now(); doc.status = 'draft'; doc.reopenAt = t; doc.updatedAt = t;  // 같은 시각: 학생 창의 저장 충돌 검사에서 통과
     writeJson_(SHEETS.rec, String(p.id), REC_DATA_COL, doc, null);
     const sh = sheet_(SHEETS.rec), row = findRow_(sh, String(p.id)); sh.getRange(row, 5, 1, 2).setValues([['작성 중', new Date()]]);
     return {};
@@ -290,20 +293,39 @@ function findRow_(sh, id) {
   for (let i = 0; i < ids.length; i++) if (String(ids[i][0]) === String(id)) return i + 2;
   return -1;
 }
-function readJson_(name, id, dataCol) {
-  const sh = sheet_(name), row = findRow_(sh, id); if (row < 0) return null;
-  const w = sh.getLastColumn(); if (w < dataCol) return null;
-  const parts = sh.getRange(row, dataCol, 1, w - dataCol + 1).getValues()[0];
-  return parseParts_(parts);
+/** '데이터' 머리글이 있는 열. 시트에 열을 끼워 넣어도 JSON 조각을 제자리에서 읽고 씁니다(없으면 기본 위치). */
+function dataCol_(sh, fallback) {
+  const w = sh.getLastColumn(); if (w < 1) return fallback;
+  const i = sh.getRange(1, 1, 1, w).getValues()[0].map(v => String(v).trim()).indexOf('데이터');
+  return i >= 0 ? i + 1 : fallback;
 }
-function mapJson_(name, dataCol) {
-  const vals = sheet_(name).getDataRange().getValues().slice(1), out = {};
-  vals.forEach(r => { if (r[0]) { const d = parseParts_(r.slice(dataCol - 1)); if (d) out[String(r[0])] = d; } });
+/** strict: 내용은 있는데 읽지 못하면 CORRUPT 오류 — 빈 기록으로 착각해 덮어쓰는 일을 막습니다. */
+function readJson_(name, id, dataCol, strict) {
+  const sh = sheet_(name), row = findRow_(sh, id); if (row < 0) return null;
+  dataCol = dataCol_(sh, dataCol);
+  const w = sh.getLastColumn(); if (w < dataCol) return null;
+  const d = parseParts_(sh.getRange(row, dataCol, 1, w - dataCol + 1).getValues()[0]);
+  if (d === CORRUPT) { if (strict) fail_('CORRUPT'); return null; }
+  return d;
+}
+/** keepBad: 읽지 못한 줄을 CORRUPT 표시로 남깁니다(교사 화면 경고용). */
+function mapJson_(name, dataCol, keepBad) {
+  const sh = sheet_(name); dataCol = dataCol_(sh, dataCol);
+  const vals = sh.getDataRange().getValues().slice(1), out = {};
+  vals.forEach(r => { if (r[0]) { const d = parseParts_(r.slice(dataCol - 1)); if (d && (d !== CORRUPT || keepBad)) out[String(r[0])] = d; } });
   return out;
 }
-function parseParts_(parts) { const s = parts.map(v => String(v == null ? '' : v)).join(''); if (!s) return null; try { return JSON.parse(s); } catch (e) { return null; } }
+const CORRUPT = { corrupt: true };
+/** 조각을 이어 JSON 으로 읽습니다. 오른쪽 열에 다른 내용(교사 메모 등)이 있어도 앞쪽 조각만으로 읽어 봅니다. */
+function parseParts_(parts) {
+  const cells = parts.map(v => String(v == null ? '' : v));
+  if (!cells.join('')) return null;
+  for (let k = cells.length; k > 0; k--) { const s = cells.slice(0, k).join(''); if (!s) break; try { return JSON.parse(s); } catch (e) {} }
+  return CORRUPT;
+}
 function writeJson_(name, id, dataCol, obj, headVals) {
   const sh = sheet_(name), s = JSON.stringify(obj), chunks = [];
+  dataCol = dataCol_(sh, dataCol);
   for (let i = 0; i < s.length; i += CHUNK) chunks.push(s.slice(i, i + CHUNK));
   let row = findRow_(sh, id);
   if (row < 0) { row = sh.getLastRow() + 1; sh.getRange(row, 1).setValue(id); }

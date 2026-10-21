@@ -163,6 +163,7 @@
 .mt-keys .w2{grid-column:span 2}.mt-keys .w3{grid-column:span 3;font-size:14px}
 .mt-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .mt-nav button{font-family:var(--f-body);font-size:13px;background:var(--paper)}
+@media (max-width:420px){.mt-nav button{font-size:12px;padding:2px;white-space:nowrap;letter-spacing:-.03em}.mt-keys button,.mt-nav button{min-height:40px}}
 .mt-pad{position:relative;border:2px dashed var(--line);border-radius:10px;background:#fff;height:min(34dvh,260px);touch-action:none;overflow:hidden}
 .mt-pad canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
 .mt-pad .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa;font-size:14px;pointer-events:none;text-align:center;padding:16px}

@@ -71,6 +71,12 @@
 - 예비 경로는 구글이 iframe 안에서 보여 주므로 `localStorage`가 막힐 수 있다(로그인이 새로고침 때 풀림). PDF 내려받기가 막히면 [내려받기가 시작되지 않으면 여기를 누르세요] 링크를 쓴다.
 - 화면을 고친 뒤 순서: `node tools/build-gas.js` → 커밋·`git push`(GitHub Pages) → `clasp push` → `clasp deploy -i <배포ID>`(예비 경로).
 
+## 공지 · 휴대폰 화면 (2026-10-21)
+
+- 공지는 여러 개: 설정 시트 `공지 목록` 칸에 JSON `[{id,text,at,by}]`(최신이 앞, 최대 30개, 1~1000자). `addNotice`·`delNotice`는 교사 전용(teach 묶음). `공지` 칸에는 최신 공지 한 줄을 자동으로 적어 둔다(예전 화면·로그인 화면용). 예전 `setConfig{notice}`는 목록을 그 한 줄로 바꾼다.
+- 화면: 제목 옆 확성기(`#noticeBtn`, 안 읽은 수 빨간 배지), 로그인·상태 확인 때 안 읽은 공지가 있으면 팝업(`openNotices(true)`). 읽음은 `localStorage` `mt_seen_n_<아이디>`(막히면 그 창에서만). 교사는 확성기나 대시보드 [📢 공지 올리기·삭제]에서 올리고 지운다(삭제는 두 번 눌러 확인). 학생 화면 위쪽 공지 배너는 없앴다.
+- 휴대폰(≤560px): 위 막대는 짧은 제목·아이콘 단추(이름·버튼 글자 숨김)·저장 점만, 단계 막대·상황판·수식 독·카드 여백을 줄였다. 지금 단계는 단계 막대에서 자동으로 보이게 스크롤. 모델 값 칸(`.params`)은 ≤640px에서 줄바꿈(옆으로 숨지 않게).
+
 ## 업데이트 안전장치 (2026-10-21)
 
 - **버전 번호**: `build-gas.js`가 화면 파일(index·config·mathtool) 내용이 바뀔 때만 `APP_VER`(KST `YYYYMMDDHHMM`, `// build:<해시>`)를 새로 매겨 `index.html`의 `config.js?v=`·`mathtool.js?v=`와 `apps-script/Version.gs`(자동 생성, 커밋)에 적는다. 서버가 `config.appVer`로 돌려주고, 화면은 자기보다 새 번호면 [저장하고 새로고침] 알림(`sysBar`)을 띄운다. 그래서 서버 배포(`deploy -i`)는 Pages 반영 뒤에 한다.

@@ -55,7 +55,7 @@ function setup() {
       ['교사 가입 코드', makeCode_(8), '교사 계정을 만들 때 가입 화면의 "교사 가입 코드" 칸에 넣습니다. 학생에게 알려 주지 마세요.'],
       ['학급 코드', '', '비워 두면 링크를 아는 누구나 학생으로 가입합니다. 값을 넣으면 그 코드를 아는 학생만 가입합니다.'],
       ['작성 마감', false, 'TRUE면 학생이 고칠 수 없습니다. 교사 대시보드에서 바꿀 수 있습니다.'],
-      ['공지', '', '학생 화면 맨 위에 보이는 공지입니다.']
+      ['공지', '', '가장 최근 공지(자동). 공지는 교사 화면의 [📢 공지]에서 올리고 지웁니다.']
     ]);
     cfg.setColumnWidth(3, 520);
   }
@@ -80,7 +80,7 @@ function api(action, payload, token) {
     if (!user) return { ok: false, error: 'SESSION' };
     const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, upload: apiUpload_, getFile: apiGetFile_ };
     if (mine[action]) return Object.assign({ ok: true }, mine[action](user, payload, token));
-    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, organize: apiOrganize_ };
+    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, organize: apiOrganize_, addNotice: apiAddNotice_, delNotice: apiDelNotice_ };  // 교사만
     if (teach[action]) {
       if (user.role !== 'teacher') return { ok: false, error: 'FORBIDDEN' };
       return Object.assign({ ok: true }, teach[action](user, payload));
@@ -101,10 +101,40 @@ function readConfig_() {
     teacherCode: String(m['교사 가입 코드'] || '').trim(),
     classCode: String(m['학급 코드'] || '').trim(),
     locked: m['작성 마감'] === true || String(m['작성 마감']).toUpperCase() === 'TRUE',
-    notice: String(m['공지'] || '')
+    notice: String(m['공지'] || ''),
+    notices: parseNotices_(m['공지 목록'], m['공지'])
   };
 }
-function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, notice: c.notice, appVer: typeof APP_VER === 'undefined' ? '' : APP_VER }; }  // appVer: Version.gs(자동 생성) — 열려 있는 옛 화면에 새로고침 안내
+function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, notice: c.notices.length ? c.notices[0].text : '', notices: c.notices, appVer: typeof APP_VER === 'undefined' ? '' : APP_VER }; }  // appVer: Version.gs(자동 생성) — 열려 있는 옛 화면에 새로고침 안내
+/* ───── 공지: 설정 시트 '공지 목록' 칸에 JSON [{id,text,at,by}] (최신이 앞). 예전 '공지' 한 줄은 처음 읽을 때 목록 하나로 봅니다 ───── */
+const NOTICE_MAX = 30;
+function parseNotices_(list, legacy) {
+  const s = String(list == null ? '' : list).trim();
+  if (s) { try { const a = JSON.parse(s); if (Array.isArray(a)) return a.filter(n => n && n.id && n.text); } catch (e) {} return []; }
+  const t = String(legacy || '').trim();
+  return t ? [{ id: 'legacy', text: t, at: 0, by: '' }] : [];
+}
+function writeNotices_(list) {
+  writeConfigValue_('공지 목록', JSON.stringify(list.slice(0, NOTICE_MAX)));
+  writeConfigValue_('공지', list.length ? list[0].text : '');  // 예전 화면·시트에서 보는 최신 공지
+}
+function apiAddNotice_(user, p) {
+  const text = String(p.text || '').trim();
+  if (!text || text.length > 1000) fail_('BAD_NOTICE');
+  return withLock_(() => {
+    const list = readConfig_().notices, n = { id: makeCode_(10), text: text, at: Date.now(), by: user.name || user.id };
+    list.unshift(n); writeNotices_(list);
+    return { notice: n, config: publicConfig_() };
+  });
+}
+function apiDelNotice_(user, p) {
+  return withLock_(() => {
+    const list = readConfig_().notices, next = list.filter(n => n.id !== String(p.id || ''));
+    if (next.length === list.length) fail_('NOT_FOUND');
+    writeNotices_(next);
+    return { config: publicConfig_() };
+  });
+}
 function apiConfig_() { return { config: publicConfig_() }; }
 function writeConfigValue_(label, value) {
   const sh = sheet_(SHEETS.cfg), col = sh.getRange(1, 1, sh.getLastRow(), 1).getValues().map(r => String(r[0]).trim());
@@ -234,7 +264,7 @@ function apiSaveGrade_(user, p) {
 function apiSetConfig_(user, p) {
   return withLock_(() => {
     if ('locked' in p) writeConfigValue_('작성 마감', !!p.locked);
-    if ('notice' in p) writeConfigValue_('공지', String(p.notice || ''));
+    if ('notice' in p) { const t = String(p.notice || '').trim(); writeNotices_(t ? [{ id: makeCode_(10), text: t.slice(0, 1000), at: Date.now(), by: user.name || user.id }] : []); }  // 예전 화면의 [공지 올리기]
     return { config: publicConfig_() };
   });
 }

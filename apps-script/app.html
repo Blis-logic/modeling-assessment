@@ -179,6 +179,7 @@ window.APP_CONFIG = {
 .mt-keys .w2{grid-column:span 2}.mt-keys .w3{grid-column:span 3;font-size:14px}
 .mt-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
 .mt-nav button{font-family:var(--f-body);font-size:13px;background:var(--paper)}
+@media (max-width:420px){.mt-nav button{font-size:12px;padding:2px;white-space:nowrap;letter-spacing:-.03em}.mt-keys button,.mt-nav button{min-height:40px}}
 .mt-pad{position:relative;border:2px dashed var(--line);border-radius:10px;background:#fff;height:min(34dvh,260px);touch-action:none;overflow:hidden}
 .mt-pad canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
 .mt-pad .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9aa;font-size:14px;pointer-events:none;text-align:center;padding:16px}
@@ -621,7 +622,7 @@ details.help ul{margin:6px 0 0;padding-left:18px}
 .params{display:flex;gap:6px;align-items:flex-end;overflow-x:auto;padding-bottom:2px}
 .params .mini{flex:1 1 58px;min-width:58px}.params .mini.pform{flex:2 1 150px;min-width:140px}
 .livef{margin-left:10px;color:var(--bad);font-size:15px;font-weight:600;overflow-x:auto;max-width:100%}
-@media (max-width:640px){.params{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:640px){.params{flex-wrap:wrap;overflow:visible}.params .mini.pform{flex:1 1 100%}.params .mini{flex:1 1 52px;min-width:52px}}
 
 .mrow{border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:grid;gap:6px}
 .mrow h4{margin:0;font-size:13px;display:flex;gap:8px;align-items:center}
@@ -690,8 +691,9 @@ details.help ul{margin:6px 0 0;padding-left:18px}
 .total{font-family:var(--f-mono);font-size:22px}
 .dhead{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
 .dhead h2{margin:0;font-size:18px;font-family:var(--f-display);font-weight:800}
-.dtabs{display:flex;gap:6px;overflow-x:auto;margin-top:10px}
-.dtabs button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:3px 12px;font-size:13px;white-space:nowrap}
+.dtabs{display:flex;gap:6px;overflow-x:auto;margin-top:10px;align-items:center;scrollbar-width:none}
+.dtabs>span{flex:none;white-space:nowrap}
+.dtabs button{flex:none;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:3px 12px;font-size:13px;white-space:nowrap}
 .dtabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .loading{margin-top:40px;text-align:center;color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.tab,.btn,.seg button{transition:background .15s,border-color .15s}}
@@ -701,7 +703,38 @@ details.help ul{margin:6px 0 0;padding-left:18px}
 .authform .mini input{font-size:15px;padding:8px 10px}
 .autherr{margin:0;min-height:1.2em;font-size:13px;color:var(--bad)}
 .userbox{display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap}
-.userbox .btn{padding:3px 10px;font-size:12px}
+.userbox .btn{padding:3px 10px;font-size:12px;display:inline-flex;align-items:center;gap:5px}
+.userbox .btn .ic{width:14px;height:14px;flex:none}
+/* 공지: 제목 옆 확성기 · 새 공지 팝업 · 교사 관리 */
+.brand .iconbtn{margin-left:4px}
+.brand .tl-long{font-size:inherit;color:inherit}
+.iconbtn{position:relative;display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--muted);flex:none;padding:0;cursor:pointer}
+.iconbtn[hidden]{display:none}
+.iconbtn:hover{border-color:var(--accent);color:var(--accent)}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn.has{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+.nbadge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:#EF4444;color:#fff;font:700 11px/18px var(--f-body);text-align:center;box-shadow:0 0 0 2px var(--paper)}
+.nbadge[hidden]{display:none}
+.ntm{position:fixed;inset:0;z-index:400;background:rgba(15,23,42,.45);display:grid;place-items:center;padding:16px}
+.ntm[hidden]{display:none}
+.ntm-box{background:var(--paper);color:var(--ink);border-radius:16px;width:min(520px,100%);max-height:min(82vh,680px);display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(15,23,42,.35);overflow:hidden}
+.ntm-head{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 16px;border-bottom:1px solid var(--line)}
+.ntm-head b{font-size:17px;flex:1}
+.ntm-ico{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#6366F1,#4F46E5 45%,#0EA5E9);color:#fff;flex:none}
+.ntm-ico svg{width:18px;height:18px}
+.ntm-x{border:0;background:transparent;font-size:24px;line-height:1;color:var(--muted);width:36px;height:36px;border-radius:8px;cursor:pointer}
+.ntm-x:hover{background:var(--bg)}
+.ntm-form{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--bg)}
+.ntm-form textarea{width:100%;resize:vertical;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink)}
+.ntm-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ntm-list{overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.ntm-item{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:10px;padding:10px 12px;background:var(--paper)}
+.ntm-item p{margin:0;white-space:pre-wrap;word-break:break-word;font-size:15px}
+.ntm-meta{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:12px;color:var(--muted);min-height:26px}
+.ntm-meta .btn{margin-left:auto;padding:2px 10px;font-size:12px}
+.ntm-meta .btn.danger{border-color:#EF4444;color:#EF4444}
+.ntm-empty{margin:8px 0;text-align:center}
+.ntm-foot{padding:12px 16px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
 a.btn{color:var(--ink)}
 .docbar{margin-top:12px;border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}
 .docbar .grow{flex:1 1 220px;min-width:0;font-size:13px}
@@ -774,6 +807,7 @@ a.btn{color:var(--ink)}
 .dock button:hover{border-color:var(--accent);background:var(--accent-soft)}
 .dock button.big{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font:600 13px var(--f-body)}
 .dock button.big.alt{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.dock button.big svg{width:17px;height:17px;vertical-align:-3px}
 
 /* ── 제목·아이콘 ── */
 .brand{flex-direction:row;align-items:center;gap:11px}
@@ -943,18 +977,64 @@ ul.files li.go:hover{border-color:var(--accent);background:var(--accent-soft)}
 .row.long textarea.fld{min-height:220px;font-size:15px}
 .btn.submit-btn{border:2px solid var(--bad);color:var(--bad);background:var(--paper);font-weight:700;padding:8px 18px}
 .btn.submit-btn:hover:not(:disabled){background:var(--bad-soft)}
+/* ───── 휴대폰: 위아래 고정 막대를 얇게, 아이콘·여백 줄이기 ───── */
+@media (max-width:560px){
+  .top .wrap{gap:6px 8px;padding-block:6px}
+  .brand{gap:8px;flex:1 1 0;min-width:0}
+  .brand .logo{width:30px;height:30px;border-radius:9px;box-shadow:none}
+  .brand .logo svg{width:20px;height:20px}
+  .brand .bt{min-width:0}
+  .brand b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .brand .bt>span,.tl-long{display:none}
+  .brand .iconbtn{margin-left:0}
+  .iconbtn{width:32px;height:32px}
+  #whoami,.userbox .tx{display:none}
+  .userbox{flex-wrap:nowrap;gap:4px}
+  .userbox .btn{width:32px;height:32px;padding:0;justify-content:center;border-radius:10px}
+  .userbox .btn .ic{width:16px;height:16px}
+  .savest span:last-child{display:none}
+  #roleSeg{order:9;flex:1 1 100%;display:flex}
+  #roleSeg[hidden]{display:none}
+  #roleSeg button{flex:1}
+  .labbar{margin-top:6px;padding:4px 0;gap:4px 10px}
+  .steps{padding:3px;border-radius:10px}
+  .steps button{padding:5px 7px;font-size:12px;gap:4px}
+  .steps button i{width:6px;height:6px}
+  .status{font-size:12px;gap:4px 10px;flex-basis:100%}
+  .status .k{font-size:12.5px}
+  .stage-head{padding:14px 16px;gap:12px;margin-bottom:10px}
+  .stage-head::after{width:150px;height:150px;top:-50px;right:-40px}
+  .stage-head .sico{width:40px;height:40px;border-radius:12px}
+  .stage-head .sico svg{width:22px;height:22px}
+  .stage-head h2{font-size:20px}
+  .stage-head p{font-size:13px}
+  .bento{gap:10px}
+  .card{padding:14px}
+  .card .blk{grid-template-columns:auto minmax(0,1fr);gap:4px 8px}
+  .card .blk .body{grid-column:1/-1}
+  .card .blk .hint{margin-left:-36px}  /* 제목 칸 안에 있으므로 번호 너비만큼 왼쪽으로 */
+  .card .blk .no{width:28px;height:28px;font-size:13px;border-radius:8px}
+  .card .blk h3{font-size:17px;line-height:28px}
+  .dock{padding:5px;gap:4px;border-radius:12px}
+  .dock .lab{display:none}
+  .dock button{height:34px;min-width:34px;padding:0 7px;font-size:14px}
+  .dock button.big{font-size:12px;padding:0 9px}
+  .dock button.big svg{width:15px;height:15px}
+  .ntm{padding:10px;align-items:end}
+  .ntm-box{max-height:88vh;border-radius:16px}
+}
 </style>
 
 </head>
 <body>
 <header class="top" id="top">
   <div class="wrap">
-    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0" stroke-width="2.3"/><path d="M2 17.5c1.7-2.6 3.3-2.6 5 0s3.3 2.6 5 0 3.3-2.6 5 0 3.3 2.6 5 0" stroke-width="1.4" opacity=".55"/></svg></span><span class="bt"><b>삼각함수·미적분 수학적 모델링 탐구</b><span>전문 수학 수행평가</span></span></div>
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0" stroke-width="2.3"/><path d="M2 17.5c1.7-2.6 3.3-2.6 5 0s3.3 2.6 5 0 3.3-2.6 5 0 3.3 2.6 5 0" stroke-width="1.4" opacity=".55"/></svg></span><span class="bt"><b><span class="tl-long">삼각함수·미적분 </span>수학적 모델링 탐구</b><span>전문 수학 수행평가</span></span><button class="iconbtn ntbtn" type="button" id="noticeBtn" hidden aria-label="공지" title="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><span class="nbadge" id="noticeBadge" hidden></span></button></div>
     <div class="seg" id="roleSeg" hidden>
       <button id="roleT" type="button" aria-pressed="true">교사 대시보드</button>
       <button id="roleS" type="button" aria-pressed="false">학생 화면 미리보기</button>
     </div>
-    <div class="userbox" id="userBox" hidden><span id="whoami"></span><button class="btn" type="button" id="pwBtn">비밀번호 바꾸기</button><button class="btn" type="button" id="logoutBtn">로그아웃</button></div>
+    <div class="userbox" id="userBox" hidden><span id="whoami"></span><button class="btn" type="button" id="pwBtn" title="비밀번호 바꾸기" aria-label="비밀번호 바꾸기"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2 2"/></svg><span class="tx">비밀번호 바꾸기</span></button><button class="btn" type="button" id="logoutBtn" title="로그아웃" aria-label="로그아웃"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="tx">로그아웃</span></button></div>
     <div class="savest" id="saveSt"><span class="dot"></span><span>연결 중</span></div>
   </div>
 </header>
@@ -1675,7 +1755,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610210851"; // build:edf7d401  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610210916"; // build:848d8630  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -1684,7 +1764,7 @@ const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.
   NO_SETUP:"선생님이 아직 초기 설정(setup)을 하지 않았습니다.",NETWORK:"저장 서버에 연결하지 못했습니다. 잠시 뒤 다시 해 주세요.",SELF:"내 계정은 지울 수 없습니다.",
   BAD_EMAIL:"구글 계정 이메일 주소를 정확히 써 주세요.",SHARE:"폴더를 공유하지 못했습니다. 구글 계정 이메일이 맞는지 확인해 주세요.",BAD_DOC:"문서를 만들 수 없는 내용입니다. 잠시 뒤 다시 시도해 주세요.",
   BAD_FILE:"올릴 수 없는 파일입니다. 다른 파일을 골라 주세요.",BIG_FILE:"파일이 너무 큽니다 (원본 자료 10MB, 풀이 사진 50KB 이하).",
-  CORRUPT:"저장된 기록을 읽지 못했습니다. 기록을 지키려고 화면을 열지 않았습니다. 선생님께 알려 주세요.",CONFLICT:"다른 창이나 기기에서 더 최근에 저장했습니다.",UNKNOWN_ACTION:"앱이 새 버전으로 바뀌었습니다. 새로고침(F5)해 주세요.",
+  CORRUPT:"저장된 기록을 읽지 못했습니다. 기록을 지키려고 화면을 열지 않았습니다. 선생님께 알려 주세요.",BAD_NOTICE:"공지는 1~1000자로 써 주세요.",CONFLICT:"다른 창이나 기기에서 더 최근에 저장했습니다.",UNKNOWN_ACTION:"앱이 새 버전으로 바뀌었습니다. 새로고침(F5)해 주세요.",
   NO_API:"config.js에 구글 Apps Script 웹 앱 주소(apiUrl)를 아직 넣지 않았습니다.",ACCESS:"저장 서버가 로그인 화면을 돌려주었습니다. 구글 Apps Script를 '모든 사용자'로 배포했는지 확인해 주세요."};
 const errMsg=e=>ERR[e&&e.error]||("문제가 생겼습니다"+(e&&e.message?": "+e.message:"."));
 async function api(action,payload){
@@ -1692,7 +1772,7 @@ async function api(action,payload){
   let r; try{ r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,payload:payload||{},token:TOKEN}),redirect:"follow"}); }
   catch(e){ throw {error:"NETWORK",message:String(e&&e.message||e)}; }
   const txt=await r.text(); let j; try{ j=JSON.parse(txt); }catch(e){ throw {error:"ACCESS"}; }
-  if(j&&j.config) checkVer(j.config.appVer);
+  if(j&&j.config){ checkVer(j.config.appVer); if(ME) setTimeout(noticeSync,0); }  // 공지가 바뀌면 확성기·팝업 갱신
   if(j&&j.ok) return j; if(j&&j.error==="SESSION") sessionLost(); throw (j||{}); }
 /* 화면 아래 알림 막대: 새 버전 안내 · 저장 충돌 · 기록 읽기 오류 */
 const sysMsgs={};
@@ -1702,6 +1782,51 @@ function sysBar(key,html){ if(html) sysMsgs[key]=html; else delete sysMsgs[key];
 function checkVer(v){ if(v&&+v>+APP_VER&&!sysMsgs.ver) sysBar("ver",`<div class="banner info"><span><b>앱이 새 버전으로 업데이트되었습니다.</b> 쓰던 내용을 저장하고 새로고침합니다.</span><button class="btn pri" type="button" data-sys="reload">저장하고 새로고침</button></div>`); }
 function showConflict(){ if(conflict) return; conflict=true; clearTimeout(saveTimer); setSave("err","다른 창에서 저장됨 · 저장 멈춤");
   sysBar("conflict",`<div class="banner bad"><span><b>다른 창이나 기기에서 더 최근에 저장했습니다.</b> 그 내용을 지우지 않도록 이 창의 저장을 멈췄습니다. 보통은 최신 내용을 불러오면 됩니다(이 창에서 그 뒤에 쓴 내용은 사라집니다).</span><button class="btn pri" type="button" data-sys="latest">최신 내용 불러오기</button><button class="btn" type="button" data-sys="keep">이 창 내용으로 저장</button></div>`); }
+/* ───────── 공지: 제목 옆 확성기(안 읽은 수) · 새 공지 팝업 · 교사는 올리기·삭제 ───────── */
+let ntOpen=false, ntMode="all", ntDel=null, seenMem=null, ntNote="";
+const ntList=()=>Array.isArray(cfg.notices)?cfg.notices:[];
+const seenKey=()=>"mt_seen_n_"+(ME?ME.id:"");
+function seenSet(){ if(seenMem&&seenMem.k===seenKey()) return seenMem.s; let a=[]; try{ a=JSON.parse(localStorage.getItem(seenKey())||"[]"); }catch(e){} seenMem={k:seenKey(),s:new Set(a)}; return seenMem.s; }
+function markSeen(ids){ const s=seenSet(); ids.forEach(i=>s.add(i)); try{ localStorage.setItem(seenKey(),JSON.stringify([...s].slice(-200))); }catch(e){} }  // 예비 주소(iframe)에서 막히면 이 창에서만 기억
+const unseenN=()=>{ const s=seenSet(); return ntList().filter(n=>!s.has(n.id)); };
+function ntBadge(){ const b=document.getElementById("noticeBtn"); if(!b) return; b.hidden=!ME; if(!ME) return;
+  const u=unseenN().length, bd=document.getElementById("noticeBadge"); bd.hidden=!u; bd.textContent=u>9?"9+":String(u);
+  b.classList.toggle("has",ntList().length>0); b.setAttribute("aria-label","공지"+(u?` · 새 공지 ${u}개`:"")); }
+function noticeSync(){ ntBadge(); if(!ME||ME.mustChange) return;
+  if(ntOpen){ renderNotices(); return; }
+  if(unseenN().length) openNotices(true); }
+function openNotices(isNew){ ntMode=isNew?"new":"all"; ntDel=null; ntNote=""; ntOpen=true; if(!isNew) markSeen(ntList().map(n=>n.id)); renderNotices(); ntBadge();
+  const el=document.getElementById("ntModal"), f=el&&el.querySelector(isNew?"[data-nt=ok]":"#ntText,[data-nt=close]"); if(f) f.focus(); }
+function closeNotices(){ const el=document.getElementById("ntModal"); if(!el||!ntOpen) return;
+  if(ntMode==="new") markSeen(ntList().map(n=>n.id));
+  ntOpen=false; el.hidden=true; ntBadge(); }
+function ntWhen(t){ if(!t) return ""; const d=new Date(t); return `${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
+function renderNotices(){ let el=document.getElementById("ntModal");
+  if(!el){ el=document.createElement("div"); el.id="ntModal"; el.className="ntm"; document.body.appendChild(el);
+    el.addEventListener("click",ntClick); el.addEventListener("submit",ntSubmit); }
+  const T=ME&&ME.role==="teacher"&&ntMode==="all", list=ntMode==="new"?unseenN():ntList(), draft=(document.getElementById("ntText")||{}).value||"";
+  if(ntMode==="new"&&!list.length){ ntOpen=false; el.hidden=true; return; }
+  el.innerHTML=`<div class="ntm-box" role="dialog" aria-modal="true" aria-labelledby="ntTitle">
+    <div class="ntm-head"><span class="ntm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span><b id="ntTitle">${ntMode==="new"?"새 공지가 있습니다":"공지"}</b><button class="ntm-x" type="button" data-nt="close" aria-label="닫기">×</button></div>
+    ${T?`<form class="ntm-form" id="ntForm"><textarea id="ntText" rows="3" maxlength="1000" placeholder="학생과 선생님 화면에 팝업으로 보일 공지 (예: 4교시 끝나기 전에 3단계까지 쓰기)">${esc(draft)}</textarea>
+      <div class="ntm-row"><span class="sub" id="ntMsg">${esc(ntNote)}</span><button class="btn pri" type="submit">📢 공지 올리기</button></div></form>`:""}
+    <div class="ntm-list">${list.length?list.map(n=>`<article class="ntm-item"><p>${esc(n.text)}</p><div class="ntm-meta"><span>${ntWhen(n.at)}${n.by?" · "+esc(n.by):""}</span>
+      ${T?`<button class="btn${ntDel===n.id?" danger":""}" type="button" data-nt="del" data-id="${esc(n.id)}">${ntDel===n.id?"정말 삭제":"삭제"}</button>`:""}</div></article>`).join(""):`<p class="sub ntm-empty">올라온 공지가 없습니다.</p>`}</div>
+    ${ntMode==="new"?`<div class="ntm-foot"><button class="btn pri" type="button" data-nt="ok">확인했습니다</button></div>`:""}</div>`;
+  el.hidden=false; }
+function ntClick(e){ const el=document.getElementById("ntModal"); if(e.target===el){ closeNotices(); return; }
+  const b=e.target.closest("[data-nt]"); if(!b) return; const k=b.dataset.nt;
+  if(k==="close"||k==="ok"){ closeNotices(); return; }
+  if(k==="del"){ const id=b.dataset.id; if(ntDel!==id){ ntDel=id; renderNotices(); return; }
+    b.disabled=true; api("delNotice",{id}).then(r=>{ cfg=Object.assign(cfg,r.config||{}); ntDel=null; renderNotices(); ntBadge(); })
+      .catch(x=>{ b.disabled=false; const m=document.getElementById("ntMsg"); if(m) m.textContent=errMsg(x); else alertMsg(errMsg(x)); }); } }
+async function ntSubmit(e){ e.preventDefault(); const ta=document.getElementById("ntText"), m=document.getElementById("ntMsg"), btn=e.target.querySelector("[type=submit]"), text=ta.value.trim();
+  if(!text){ m.textContent="공지 내용을 써 주세요."; ta.focus(); return; }
+  btn.disabled=true; m.textContent="올리는 중…";
+  try{ const r=await api("addNotice",{text}); markSeen([r.notice.id]); cfg=Object.assign(cfg,r.config||{}); ta.value=""; ntNote="올렸습니다. 학생 화면에는 1분 안에 팝업으로 뜹니다."; renderNotices(); ntBadge(); }
+  catch(x){ btn.disabled=false; m.textContent=errMsg(x); } }
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&ntOpen) closeNotices(); });
+document.getElementById("noticeBtn").onclick=()=>openNotices(false);
 async function sysClick(e){ const b=e.target.closest("[data-sys]"); if(!b) return; const k=b.dataset.sys;
   if(k==="reload"){ b.disabled=true; if(!conflict) await flush(); location.reload(); }
   if(k==="latest"){ b.disabled=true; conflict=false; dirty=false; sysBar("conflict",null); try{ await loadMe(); }catch(x){ setSave("err",errMsg(x)); } }
@@ -1717,7 +1842,7 @@ let docAt=0, docDirty=false, docBusy=false, docTimer=null, docs={}, folderUrl=""
 const app=document.getElementById("app");
 function setSave(state,text){ document.getElementById("saveSt").innerHTML=`<span class="dot ${state}"></span><span>${esc(text)}</span>`; }
 function locked(){ return cfg.locked || me.status==="submitted"; }
-function sessionLost(){ if(!ME) return; ME=null; setToken(null); clearInterval(pollT); renderAuth("로그인이 끝났습니다. 다시 로그인해 주세요."); }
+function sessionLost(){ if(!ME) return; ME=null; closeNotices(); ntBadge(); setToken(null); clearInterval(pollT); renderAuth("로그인이 끝났습니다. 다시 로그인해 주세요."); }
 
 /* ───────── 로그인 · 가입 ───────── */
 function renderAuth(msg){ document.getElementById("roleSeg").hidden=true; document.getElementById("userBox").hidden=true; setSave("", "로그인 전"); measureTop();
@@ -1773,8 +1898,9 @@ function enterApp(note){ const ub=document.getElementById("userBox"); ub.hidden=
   setSave("ok",note||pendingNote||"연결됨"); pendingNote=""; clearInterval(pollT);
   if(ME.role==="teacher"){ document.getElementById("roleSeg").hidden=false; measureTop(); setView(view==="student"&&!roster.size?"teacher":view); pollRoster(); pollT=setInterval(()=>{ if(document.visibilityState==="visible") pollRoster(); },10000); }
   else { document.getElementById("roleSeg").hidden=true; measureTop(); view="student"; renderStudent(); pollT=setInterval(pollStatus,45000);
-    if(ME.role==="student"&&me.updatedAt&&!docAt){ docDirty=true; scheduleDocSync(2000); } } }
-document.getElementById("logoutBtn").onclick=async()=>{ await flush(); try{ await api("logout"); }catch(e){} ME=null; authMode="login"; setToken(null); clearInterval(pollT); conflict=false; sysBar("conflict",null); sysBar("corrupt",null); clearTimeout(docTimer); docs={}; share=null; roster=new Map(); grades={}; sel=null; lastSince=0; renderAuth(); };
+    if(ME.role==="student"&&me.updatedAt&&!docAt){ docDirty=true; scheduleDocSync(2000); } }
+  noticeSync(); }
+document.getElementById("logoutBtn").onclick=async()=>{ await flush(); try{ await api("logout"); }catch(e){} ME=null; authMode="login"; setToken(null); clearInterval(pollT); conflict=false; sysBar("conflict",null); sysBar("corrupt",null); closeNotices(); ntBadge(); clearTimeout(docTimer); docs={}; share=null; roster=new Map(); grades={}; sel=null; lastSince=0; renderAuth(); };
 document.getElementById("pwBtn").onclick=()=>{ flush(); renderPwChange(false); };
 
 /* ───────── 저장 ───────── */
@@ -1794,11 +1920,11 @@ async function flush(){ clearTimeout(saveTimer); if(!dirty||!ME||conflict) retur
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden"){ flush(); if(docDirty) scheduleDocSync(500); } });
 window.addEventListener("beforeunload",e=>{ if(dirty){ flush(); e.preventDefault(); e.returnValue=""; } });
 async function pollStatus(){ if(!ME||document.visibilityState!=="visible") return; try{ const r=await api("status");
-  const wasLocked=locked(), oldNotice=cfg.notice, oldGrade=JSON.stringify(myGrade); cfg=Object.assign(cfg,r.config||{}); myGrade=r.grade||null;
+  const wasLocked=locked(), oldGrade=JSON.stringify(myGrade); cfg=Object.assign(cfg,r.config||{}); myGrade=r.grade||null;
   if(!saving&&r.updatedAt&&me.updatedAt&&r.updatedAt>me.updatedAt&&r.updatedAt!==r.reopenAt) showConflict();  // 다른 창이 더 최근에 저장함
   let full=false; if(r.reopenAt&&r.reopenAt!==me.reopenAt){ me.reopenAt=r.reopenAt; me.status=r.status; full=true; }
   if(view!=="student") return;
-  if(full||wasLocked!==locked()) renderStudent(); else if(oldNotice!==cfg.notice||oldGrade!==JSON.stringify(myGrade)) renderTopBits(); }catch(e){} }
+  if(full||wasLocked!==locked()) renderStudent(); else if(oldGrade!==JSON.stringify(myGrade)) renderTopBits(); }catch(e){} }
 
 /* ───────── 학생 화면 ───────── */
 function submitHTML(doc){ const p=progress(doc), avg=Math.round(p.reduce((a,b)=>a+b,0)/5*100);
@@ -1808,7 +1934,7 @@ function submitHTML(doc){ const p=progress(doc), avg=Math.round(p.reduce((a,b)=>
 function feedbackHTML(){ const g=myGrade; if(!g||!g.released) return ""; const sc=g.scores||{}, tot=[1,2,3,4].reduce((s,i)=>s+(isNum(sc["s"+i])?+sc["s"+i]:0),0);
   return `<section class="fb"><h3>선생님 피드백 · ${tot} / 40점</h3><div class="fbgrid">${ELEMENTS.map((e,i)=>`<div>${esc(e[0])}<b>${isNum(sc["s"+(i+1)])?sc["s"+(i+1)]:"–"} / 10</b>${(g.notes||{})["s"+(i+1)]?`<span class="sub">${esc(g.notes["s"+(i+1)])}</span>`:""}</div>`).join("")}</div>${g.overall?`<p style="margin:8px 0 0;white-space:pre-wrap">${esc(g.overall)}</p>`:""}</section>`; }
 function bannersHTML(){ let b=""; if(cfg.locked) b+=`<div class="banner warn">선생님이 작성을 마감했습니다. 지금은 읽기만 할 수 있습니다.</div>`;
-  if(cfg.notice) b+=`<div class="banner info">📢 ${esc(cfg.notice)}</div>`; return b+feedbackHTML(); }
+  return b+feedbackHTML(); }
 function renderTopBits(){ const t=document.getElementById("topBits"); if(t) t.innerHTML=bannersHTML(); }
 function renderStudent(){
   const p=progress(me), ro=locked(), y=window.scrollY;
@@ -1818,6 +1944,7 @@ function renderStudent(){
   ${ro?"":`<div class="dock" aria-label="수식 키보드"><button type="button" class="big" data-mtlast>${MathTool.iconSVG||""} 수식 입력기</button><button type="button" class="big alt" data-mtlast data-mode="hw">✍ 기호 그리기</button><span class="lab">기호 넣기</span>${SYMS.map(s=>`<button type="button" data-sym="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}`;
   if(ro) app.querySelectorAll("#stageBox [data-p], #stageBox [data-grid] input").forEach(e=>e.disabled=true);
   updateOutputs(app,me); updateDocSt();
+  const sb=document.getElementById("steps"), cur=sb&&sb.querySelector("[aria-selected=true]"); if(cur&&sb.scrollWidth>sb.clientWidth) sb.scrollLeft=Math.max(0,cur.offsetLeft-(sb.clientWidth-cur.offsetWidth)/2);  // 휴대폰: 지금 단계가 보이게
   if(renderStudent.keepScroll){ renderStudent.keepScroll=false; window.scrollTo({top:y}); } }
 const SHORT=["설계","자료","모델","미분·적분","검증"];
 function homeProgress(doc){ const i=doc.info||{}, a=doc.ans||{}; const parts=[topicOf(doc),a.s5_src,a.s5_tool].filter(v=>String(v||"").trim()).length; return parts/3; }
@@ -2017,7 +2144,7 @@ function renderTeacher(){
     <select id="rs" aria-label="상태로 거르기"><option value="all"${rStatus==="all"?" selected":""}>전체</option><option value="draft"${rStatus==="draft"?" selected":""}>작성 중</option><option value="sub"${rStatus==="sub"?" selected":""}>제출함</option><option value="ungraded"${rStatus==="ungraded"?" selected":""}>채점 안 함</option></select>
     <label class="toggle"><input type="checkbox" id="lockT"${cfg.locked?" checked":""}> 작성 마감 (학생 입력 잠금)</label>
   </div>
-  <div class="controls"><input type="search" id="noticeIn" placeholder="학생 화면 맨 위에 띄울 공지 (예: 4교시 끝나기 전에 3단계까지 쓰기)" value="${esc(cfg.notice||"")}" aria-label="공지"><button class="btn" type="button" data-act="notice">공지 올리기</button></div>
+  <div class="controls"><button class="btn" type="button" data-act="noticeMgr">📢 공지 올리기·삭제</button><span class="sub">올린 공지는 학생·교사 화면에 팝업으로 뜨고, 제목 옆 확성기에서 언제든 다시 볼 수 있습니다.</span></div>
   <div class="roster" id="rosterBox"></div><div id="detailBox"></div>`}`;
   if(tView==="acc") loadAccounts(); else if(tView==="share") loadShare(); else { renderRoster(); renderDetail(true); } }
 function renderRoster(){ const box=document.getElementById("rosterBox"); if(!box) return; const rows=rosterRows();
@@ -2077,7 +2204,7 @@ function teacherClick(t){
   if(act==="shareGo"){ const em=document.getElementById("shareEm").value.trim(), self=document.getElementById("shareSelf").checked, er=document.getElementById("shareErr"); t.disabled=true; er.textContent="공유하는 중…";
     api("shareFolder",{email:em,self}).then(r=>{ share=r; renderShare(em+" 계정에 폴더를 공유했습니다. 구글에서 초대 메일이 갑니다."); }).catch(e=>{ t.disabled=false; er.textContent=errMsg(e); }); return; }
   if(act==="reopen"){ t.disabled=true; api("reopen",{id:sel}).then(pollRoster).catch(e=>{ t.disabled=false; alertMsg(errMsg(e)); }); return; }
-  if(act==="notice"){ const v=document.getElementById("noticeIn").value.trim(); api("setConfig",{notice:v}).then(r=>{ cfg=Object.assign(cfg,r.config); t.textContent="올렸습니다"; setTimeout(()=>t.textContent="공지 올리기",1500); }).catch(e=>alertMsg(errMsg(e))); return; }
+  if(act==="noticeMgr"){ openNotices(false); return; }
   if(act==="accReset"){ accPending={id:t.dataset.id,kind:"reset"}; renderAccounts(); return; }
   if(act==="accDel"){ accPending={id:t.dataset.id,kind:"del"}; renderAccounts(); return; }
   if(act==="accCancel"){ accPending=null; renderAccounts(); return; }

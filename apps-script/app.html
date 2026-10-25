@@ -879,6 +879,11 @@ table.dg td.rn{width:38px;text-align:center;color:var(--muted);font-family:var(-
 table.dg input{width:100%;border:0;padding:7px 9px;font-family:var(--f-mono);font-size:14px;outline:0;min-width:0}
 table.dg input::placeholder{color:color-mix(in srgb,var(--muted) 60%,transparent)}
 .dg-tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+table.dg .dgx{width:30px;padding:0;text-align:center}
+.dgdel{border:0;background:transparent;color:var(--muted);font-size:16px;line-height:1;width:28px;height:28px;border-radius:6px;cursor:pointer;visibility:hidden}
+table.dg tr.has .dgdel{visibility:visible}
+table.dg tr .dgdel:disabled{visibility:hidden}
+.dgdel:hover,.dgdel:focus-visible{background:var(--bad-soft,#FEE2E2);color:var(--bad)}
 .dgcount{font-size:13px;margin-left:auto}.dgcount b.ok,.dash b.ok{color:var(--good)}.dgcount b.warn,.dash b.warn{color:var(--warn)}
 .upbox{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;background:var(--bg)}
 /* ── 풀이 사진 · AI 표시 ── */
@@ -1425,13 +1430,13 @@ function gridRows(doc){ const d=doc.data||{}; if(Array.isArray(d.grid)) return d
 /** i번째 줄 x의 예상값: 바로 위 두 줄의 간격을 이어 갑니다(위가 한 줄뿐이면 +1). */
 function predX(rows,i){ const xs=[]; for(let k=i-1;k>=0&&xs.length<2;k--){ const v=(rows[k]||[])[0]; if(isNum(v)) xs.push(+v); else break; }
   if(!xs.length) return ""; const st=xs.length>1?xs[0]-xs[1]:1; return String(+(xs[0]+st).toFixed(6)); }
-function dgRowHTML(i,r,ro,rows){ const p=predX(rows,i);
-  return `<tr><td class="rn">${i+1}</td><td><input data-r="${i}" data-c="0" value="${esc(r[0])}" placeholder="${p===""?" ":esc(p)}" inputmode="decimal" autocomplete="off"${ro?" disabled":""} aria-label="${i+1}번째 x"></td><td><input data-r="${i}" data-c="1" value="${esc(r[1])}" placeholder=" " inputmode="decimal" autocomplete="off"${ro?" disabled":""} aria-label="${i+1}번째 y"></td></tr>`; }
-let dgExtra=0;
+function dgRowHTML(i,r,ro,rows){ const p=predX(rows,i), has=String(r[0]).trim()||String(r[1]).trim();
+  return `<tr${has?' class="has"':""}><td class="rn">${i+1}</td><td><input data-r="${i}" data-c="0" value="${esc(r[0])}" placeholder="${p===""?" ":esc(p)}" inputmode="decimal" autocomplete="off"${ro?" disabled":""} aria-label="${i+1}번째 x"></td><td><input data-r="${i}" data-c="1" value="${esc(r[1])}" placeholder=" " inputmode="decimal" autocomplete="off"${ro?" disabled":""} aria-label="${i+1}번째 y"></td>${ro?"":`<td class="dgx"><button type="button" class="dgdel" data-act="dgDel" data-r="${i}" title="${i+1}번째 줄 지우기" aria-label="${i+1}번째 줄 지우기">×</button></td>`}</tr>`; }
+let dgExtra=0, dgUndo=null;   // dgUndo: 마지막으로 지운 줄 {i,row} — [지운 줄 되살리기]
 function dgBodyHTML(rows,ro){ const n=ro?Math.max(rows.length,1):Math.max(rows.length+1,DATA_GOAL+1)+dgExtra; let h=""; for(let i=0;i<n;i++) h+=dgRowHTML(i,rows[i]||["",""],ro,rows); return h; }
 function gridHTML(doc,ro){ const rows=gridRows(doc);
-  return `<div class="dgwrap"><table class="dg" data-grid><thead><tr><th>#</th><th>${esc(axisLabel(doc,"x"))}</th><th>${esc(axisLabel(doc,"y"))}</th></tr></thead><tbody>${dgBodyHTML(rows,ro)}</tbody></table></div>
-  <div class="dg-tools">${ro?"":`<button class="btn" type="button" data-act="dgFill">↧ x 자동 채우기</button><button class="btn" type="button" data-act="dgAdd">＋ 줄 5개</button><button class="btn" type="button" data-act="dgClear">표 비우기</button>`}<span class="dgcount" data-out="dgCount"></span></div>
+  return `<div class="dgwrap"><table class="dg" data-grid><thead><tr><th>#</th><th>${esc(axisLabel(doc,"x"))}</th><th>${esc(axisLabel(doc,"y"))}</th>${ro?"":'<th class="dgx"></th>'}</tr></thead><tbody>${dgBodyHTML(rows,ro)}</tbody></table></div>
+  <div class="dg-tools">${ro?"":`<button class="btn" type="button" data-act="dgFill">↧ x 자동 채우기</button><button class="btn" type="button" data-act="dgAdd">＋ 줄 5개</button><button class="btn" type="button" data-act="dgClear">표 비우기</button><button class="btn" type="button" data-act="dgUndo"${dgUndo?"":" hidden"}>↶ 지운 줄 되살리기</button>`}<span class="dgcount" data-out="dgCount"></span></div>
   ${ro?"":`<p class="sub" style="margin:0">엑셀에서 x·y 두 열(또는 y 한 열)을 복사해 칸에 붙여 넣으면 한꺼번에 들어갑니다. y만 넣으면 x는 위 두 줄의 간격대로 자동으로 채워지고(흐린 숫자), Enter는 아래 칸으로 갑니다.</p>`}`; }
 
 function toolHTML(doc,tool,ro){ const d=doc.data||{}, M=doc.models||{}, c=doc.calc||{}; const dis=ro?" disabled":"";
@@ -1778,7 +1783,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610251339"; // build:1a7c6cc5  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610251917"; // build:f3c1d9cf  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -1965,7 +1970,7 @@ function renderStudent(){
   <div id="topBits">${bannersHTML()}</div>
   <div id="stageBox">${stage<0?homeHTML(me,false,ME):stageHTML(me,stage,false)}</div>
   ${ro?"":`<div class="dock" aria-label="수식 키보드"><button type="button" class="big" data-mtlast>${MathTool.iconSVG||""} 수식 입력기</button><button type="button" class="big alt" data-mtlast data-mode="hw">✍ 기호 그리기</button><span class="lab">기호 넣기</span>${SYMS.map(s=>`<button type="button" data-sym="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}`;
-  if(ro) app.querySelectorAll("#stageBox [data-p], #stageBox [data-grid] input").forEach(e=>e.disabled=true);
+  if(ro) app.querySelectorAll("#stageBox [data-p], #stageBox [data-grid] input, #stageBox [data-grid] button").forEach(e=>e.disabled=true);
   updateOutputs(app,me); updateDocSt();
   const sb=document.getElementById("steps"), cur=sb&&sb.querySelector("[aria-selected=true]"); if(cur&&sb.scrollWidth>sb.clientWidth) sb.scrollLeft=Math.max(0,cur.offsetLeft-(sb.clientWidth-cur.offsetWidth)/2);  // 휴대폰: 지금 단계가 보이게
   if(renderStudent.keepScroll){ renderStudent.keepScroll=false; window.scrollTo({top:y}); } }
@@ -2049,14 +2054,14 @@ function redrawGrid(focus){ const tb=gridEl(); if(!tb) return; tb.innerHTML=dgBo
   if(focus){ const el=tb.querySelector(`[data-r="${focus[0]}"][data-c="${focus[1]}"]`); if(el) el.focus(); } }
 function afterGrid(){ syncGrid(); scheduleSave(); updateOutputs(app,me); refreshTabs(); }
 function dgInput(t){ const r=+t.dataset.r, c=+t.dataset.c, g=me.data.grid||(me.data.grid=gridRows(me));
-  while(g.length<=r) g.push(["",""]); g[r][c]=t.value.trim();
+  while(g.length<=r) g.push(["",""]); g[r][c]=t.value.trim(); t.closest("tr").classList.toggle("has",!!(String(g[r][0]).trim()||String(g[r][1]).trim()));
   if(c===1&&g[r][1]!==""&&!String(g[r][0]).trim()){ const p=predX(g,r); g[r][0]=p===""?String(r+1):p; const xi=t.closest("tr").querySelector('[data-c="0"]'); if(xi) xi.value=g[r][0]; }
   const tb=gridEl(), need=Math.max(g.length+1,DATA_GOAL+1)+dgExtra;
   if(tb&&tb.rows.length<need) for(let i=tb.rows.length;i<need;i++) tb.insertAdjacentHTML("beforeend",dgRowHTML(i,["",""],false,g));
   if(tb) tb.querySelectorAll('[data-c="0"]').forEach(x=>{ if(!x.value){ const p=predX(g,+x.dataset.r); x.placeholder=p===""?" ":p; } });
   afterGrid(); }
 app.addEventListener("input",e=>{ const t=e.target; if(!t.closest||!t.closest("[data-grid]")||view!=="student"||locked()) return; dgInput(t); });
-app.addEventListener("keydown",e=>{ const t=e.target; if(!t.closest||!t.closest("[data-grid]")) return; const r=+t.dataset.r, c=+t.dataset.c;
+app.addEventListener("keydown",e=>{ const t=e.target; if(t.tagName!=="INPUT"||!t.closest("[data-grid]")) return; const r=+t.dataset.r, c=+t.dataset.c;
   if(e.key==="Enter"||e.key==="ArrowDown"){ e.preventDefault();
     if(e.key==="Enter"&&c===0&&!t.value&&t.placeholder.trim()){ t.value=t.placeholder; dgInput(t); }
     let nx=gridEl().querySelector(`[data-r="${r+1}"][data-c="${c}"]`); if(!nx){ dgExtra++; redrawGrid(); nx=gridEl().querySelector(`[data-r="${r+1}"][data-c="${c}"]`); } if(nx) nx.focus(); }
@@ -2112,7 +2117,12 @@ app.addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t||!ME
     redrawGrid(); afterGrid(); setSave("ok","x 값을 채웠습니다"); return; }
   if(act==="dgAdd"){ dgExtra+=5; redrawGrid(); return; }
   if(act==="dgClear"){ if(!t.dataset.sure){ t.dataset.sure=1; t.textContent="정말 비울까요? 한 번 더 누르기"; setTimeout(()=>{ delete t.dataset.sure; t.textContent="표 비우기"; },4000); return; }
-    me.data.grid=[]; dgExtra=0; syncGrid(); redrawGrid(); afterGrid(); return; } });
+    me.data.grid=[]; dgExtra=0; dgUndo=null; syncGrid(); redrawGrid(); afterGrid(); showDgUndo(); return; }
+  if(act==="dgDel"){ const g=me.data.grid||(me.data.grid=gridRows(me)), i=+t.dataset.r; if(!(i<g.length)) return;
+    dgUndo={i,row:g.splice(i,1)[0]}; syncGrid(); redrawGrid([Math.min(i,g.length),1]); afterGrid(); showDgUndo(); setSave("ok",`${i+1}번째 줄을 지웠습니다`); return; }
+  if(act==="dgUndo"){ if(!dgUndo) return; const g=me.data.grid||(me.data.grid=gridRows(me)), {i,row}=dgUndo; while(g.length<i) g.push(["",""]);
+    g.splice(i,0,row); dgUndo=null; syncGrid(); redrawGrid([i,1]); afterGrid(); showDgUndo(); setSave("ok",`${i+1}번째 줄을 되살렸습니다`); return; } });
+function showDgUndo(){ const b=app.querySelector('[data-act="dgUndo"]'); if(b) b.hidden=!dgUndo; }
 // 칸 이름 링크 미리보기
 app.addEventListener("input",e=>{ const t=e.target; if(!t.dataset||!t.dataset.p) return; const k=t.dataset.p.replace(/^ans\./,""), lk=app.querySelector(`[data-links="${k}"]`); if(lk) lk.innerHTML=linkify(t.value);
   if(view==="student"&&t.dataset.p==="ans.s1_topic"){ me.info.title=t.value; app.querySelectorAll("[data-cardinfo]").forEach(e=>e.innerHTML=cardInfo(me)); }

@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>삼각함수·미적분 수학적 모델링 탐구</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%234F46E5%22/%3E%3Cpath d=%22M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
-<script src="config.js?v=202610210916"></script>
-<script src="mathtool.js?v=202610210916"></script>
+<script src="config.js?v=202610251327"></script>
+<script src="mathtool.js?v=202610251327"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -1256,7 +1256,9 @@ function svgToPng(svg){ return new Promise(res=>{ if(!/^<svg/.test(svg)) return 
   const im=new Image(); im.onload=()=>{ try{ const cv=document.createElement("canvas"); cv.width=1280; cv.height=640; cv.getContext("2d").drawImage(im,0,0,1280,640); res(cv.toDataURL("image/png").split(",")[1]); }catch(e){ res(""); } };
   im.onerror=()=>res(""); im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(s); }); }
 /** 문서(구글 문서)를 만들거나 갱신합니다. pdf=true 이면 PDF(base64)도 받아 옵니다. 교사는 id로 학생을 지정합니다. */
-async function makeDoc(doc,id,pdf,acct){ const {spec,svgs}=buildSpec(doc,acct), images=await Promise.all(svgs.map(svgToPng));
+async function makeDoc(doc,id,pdf,acct){ const built=buildSpec(doc,acct), svgs=built.svgs, images=await Promise.all(svgs.map(svgToPng));
+  // 긴 수식은 +·− 자리에서 조각 그림 여러 개로 나눠(사이에 폭 없는 빈칸) 문서 칸 안에서 줄이 바뀌게 합니다
+  const spec=JSON.parse(JSON.stringify(built.spec,(k,v)=>typeof v==="string"?v.replace(/\$([^$\n]+?)\$/g,(m,t)=>{ const ps=MathTool.splitLong(t.trim()); return ps.length>1?ps.map(p=>`$${p}$`).join("​"):m; }):v));
   // $LaTeX$ 수식은 그림으로 바꿔 보냅니다 → 문서에 깨지지 않게 들어가고, 그림의 대체 텍스트에 LaTeX 원문이 남습니다
   const texs=[]; JSON.stringify(spec,(k,v)=>{ if(typeof v==="string") MathTool.tokens(v).forEach(t=>texs.push(t.tex)); return v; });
   if(texs.length){ try{ const m=await MathTool.toImages(texs); spec.math={}; Object.keys(m).forEach(tex=>{ spec.math[tex]={i:images.length,w:m[tex].w,h:m[tex].h}; images.push(m[tex].b64); }); }catch(e){} }
@@ -1285,7 +1287,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610210916"; // build:848d8630  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610251327"; // build:80f3a73e  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",

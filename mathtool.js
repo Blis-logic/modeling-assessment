@@ -37,12 +37,32 @@
   function hasMath(text) { TOKEN.lastIndex = 0; return TOKEN.test(String(text || "")); }
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+  /** 긴 수식을 맨 바깥 +·− 자리에서 조각으로 나눕니다(괄호·{} 안, 연산 기호 바로 뒤는 나누지 않음).
+   *  조각을 따로 그려 칸이 좁으면 + 앞에서 줄이 바뀌게 합니다. 둘째 조각부터 {}를 붙여 +·−가 이항 연산 간격을 갖게 합니다. */
+  const SPLIT_MIN = 40;
+  function splitLong(tex) {
+    tex = String(tex || ""); if (tex.length < SPLIT_MIN) return [tex];
+    const out = []; let dep = 0, st = 0, i = 0;
+    while (i < tex.length) {
+      const c = tex[i];
+      if (c === "\\") { const m = /^\\(left|right)(?![a-zA-Z])/.exec(tex.slice(i)); if (m) { dep += m[1] === "left" ? 1 : -1; i += m[0].length + 1; continue; } i += 2; continue; }
+      if (c === "{") dep++; else if (c === "}") dep--;
+      else if (dep === 0 && (c === "+" || c === "-") && i > st) {
+        const prev = tex.slice(st, i).trim();
+        if (prev && !/(\\(cdot|times|div|pm|mp|le|ge|ne|approx|lt|gt)|[=+\-<>(,^_])$/.test(prev)) { out.push(tex.slice(st, i)); st = i; }
+      }
+      i++;
+    }
+    out.push(tex.slice(st));
+    return out.map((p, k) => k ? "{}" + p : p);
+  }
+
   /** 글을 HTML로 바꿉니다. 수식은 MathLive가 이미 불러와져 있을 때만 그림으로, 아니면 글자로 둡니다. */
   function render(text) {
     const ML = window.MathLive; let out = "", last = 0; const s = String(text || "");
     tokens(s).forEach((t, i) => {
       out += esc(s.slice(last, t.start));
-      let m = ""; try { m = ML ? ML.convertLatexToMarkup(t.tex) : ""; } catch (e) { m = ""; }
+      let m = ""; try { m = ML ? splitLong(t.tex).map(p => `<span class="mt-p">${ML.convertLatexToMarkup(p)}</span>`).join("") : ""; } catch (e) { m = ""; }
       out += `<span class="mt-f" data-mt="${i}" title="${esc(t.tex)}">${m || esc(t.tex)}</span>`;
       last = t.end;
     });
@@ -134,6 +154,7 @@
 .mt-wrap>.fld,.mt-wrap>input,.mt-wrap>textarea{flex:1 1 auto;min-width:0}
 .mt-prev{padding:6px 10px;border-top:1px dashed var(--fill-line);background:var(--paper);font-size:15px;line-height:1.9;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
 .mt-prev:empty{display:none}
+.mt-p{display:inline-block;max-width:100%}
 .mt-prev .mt-f{cursor:pointer;border-radius:4px;padding:0 2px}
 .mt-prev .mt-f:hover{background:var(--accent-soft)}
 .ro .mt-f{padding:0 1px}
@@ -457,5 +478,5 @@
   }
 
   injectCss();
-  window.MathTool = { iconSVG: ICON, symbolMatch, open, close, render, renderInto, toImages, tokens, hasMath, buttonHTML, injectCss, preload: () => loadMathLive().catch(() => {}) };
+  window.MathTool = { iconSVG: ICON, symbolMatch, open, close, render, renderInto, toImages, tokens, hasMath, splitLong, buttonHTML, injectCss, preload: () => loadMathLive().catch(() => {}) };
 })();

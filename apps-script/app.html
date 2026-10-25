@@ -53,12 +53,32 @@ window.APP_CONFIG = {
   function hasMath(text) { TOKEN.lastIndex = 0; return TOKEN.test(String(text || "")); }
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+  /** 긴 수식을 맨 바깥 +·− 자리에서 조각으로 나눕니다(괄호·{} 안, 연산 기호 바로 뒤는 나누지 않음).
+   *  조각을 따로 그려 칸이 좁으면 + 앞에서 줄이 바뀌게 합니다. 둘째 조각부터 {}를 붙여 +·−가 이항 연산 간격을 갖게 합니다. */
+  const SPLIT_MIN = 40;
+  function splitLong(tex) {
+    tex = String(tex || ""); if (tex.length < SPLIT_MIN) return [tex];
+    const out = []; let dep = 0, st = 0, i = 0;
+    while (i < tex.length) {
+      const c = tex[i];
+      if (c === "\\") { const m = /^\\(left|right)(?![a-zA-Z])/.exec(tex.slice(i)); if (m) { dep += m[1] === "left" ? 1 : -1; i += m[0].length + 1; continue; } i += 2; continue; }
+      if (c === "{") dep++; else if (c === "}") dep--;
+      else if (dep === 0 && (c === "+" || c === "-") && i > st) {
+        const prev = tex.slice(st, i).trim();
+        if (prev && !/(\\(cdot|times|div|pm|mp|le|ge|ne|approx|lt|gt)|[=+\-<>(,^_])$/.test(prev)) { out.push(tex.slice(st, i)); st = i; }
+      }
+      i++;
+    }
+    out.push(tex.slice(st));
+    return out.map((p, k) => k ? "{}" + p : p);
+  }
+
   /** 글을 HTML로 바꿉니다. 수식은 MathLive가 이미 불러와져 있을 때만 그림으로, 아니면 글자로 둡니다. */
   function render(text) {
     const ML = window.MathLive; let out = "", last = 0; const s = String(text || "");
     tokens(s).forEach((t, i) => {
       out += esc(s.slice(last, t.start));
-      let m = ""; try { m = ML ? ML.convertLatexToMarkup(t.tex) : ""; } catch (e) { m = ""; }
+      let m = ""; try { m = ML ? splitLong(t.tex).map(p => `<span class="mt-p">${ML.convertLatexToMarkup(p)}</span>`).join("") : ""; } catch (e) { m = ""; }
       out += `<span class="mt-f" data-mt="${i}" title="${esc(t.tex)}">${m || esc(t.tex)}</span>`;
       last = t.end;
     });
@@ -150,6 +170,7 @@ window.APP_CONFIG = {
 .mt-wrap>.fld,.mt-wrap>input,.mt-wrap>textarea{flex:1 1 auto;min-width:0}
 .mt-prev{padding:6px 10px;border-top:1px dashed var(--fill-line);background:var(--paper);font-size:15px;line-height:1.9;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
 .mt-prev:empty{display:none}
+.mt-p{display:inline-block;max-width:100%}
 .mt-prev .mt-f{cursor:pointer;border-radius:4px;padding:0 2px}
 .mt-prev .mt-f:hover{background:var(--accent-soft)}
 .ro .mt-f{padding:0 1px}
@@ -473,7 +494,7 @@ window.APP_CONFIG = {
   }
 
   injectCss();
-  window.MathTool = { iconSVG: ICON, symbolMatch, open, close, render, renderInto, toImages, tokens, hasMath, buttonHTML, injectCss, preload: () => loadMathLive().catch(() => {}) };
+  window.MathTool = { iconSVG: ICON, symbolMatch, open, close, render, renderInto, toImages, tokens, hasMath, splitLong, buttonHTML, injectCss, preload: () => loadMathLive().catch(() => {}) };
 })();
 
 </script>
@@ -1726,7 +1747,9 @@ function svgToPng(svg){ return new Promise(res=>{ if(!/^<svg/.test(svg)) return 
   const im=new Image(); im.onload=()=>{ try{ const cv=document.createElement("canvas"); cv.width=1280; cv.height=640; cv.getContext("2d").drawImage(im,0,0,1280,640); res(cv.toDataURL("image/png").split(",")[1]); }catch(e){ res(""); } };
   im.onerror=()=>res(""); im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(s); }); }
 /** 문서(구글 문서)를 만들거나 갱신합니다. pdf=true 이면 PDF(base64)도 받아 옵니다. 교사는 id로 학생을 지정합니다. */
-async function makeDoc(doc,id,pdf,acct){ const {spec,svgs}=buildSpec(doc,acct), images=await Promise.all(svgs.map(svgToPng));
+async function makeDoc(doc,id,pdf,acct){ const built=buildSpec(doc,acct), svgs=built.svgs, images=await Promise.all(svgs.map(svgToPng));
+  // 긴 수식은 +·− 자리에서 조각 그림 여러 개로 나눠(사이에 폭 없는 빈칸) 문서 칸 안에서 줄이 바뀌게 합니다
+  const spec=JSON.parse(JSON.stringify(built.spec,(k,v)=>typeof v==="string"?v.replace(/\$([^$\n]+?)\$/g,(m,t)=>{ const ps=MathTool.splitLong(t.trim()); return ps.length>1?ps.map(p=>`$${p}$`).join("​"):m; }):v));
   // $LaTeX$ 수식은 그림으로 바꿔 보냅니다 → 문서에 깨지지 않게 들어가고, 그림의 대체 텍스트에 LaTeX 원문이 남습니다
   const texs=[]; JSON.stringify(spec,(k,v)=>{ if(typeof v==="string") MathTool.tokens(v).forEach(t=>texs.push(t.tex)); return v; });
   if(texs.length){ try{ const m=await MathTool.toImages(texs); spec.math={}; Object.keys(m).forEach(tex=>{ spec.math[tex]={i:images.length,w:m[tex].w,h:m[tex].h}; images.push(m[tex].b64); }); }catch(e){} }
@@ -1755,7 +1778,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610210916"; // build:848d8630  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610251327"; // build:80f3a73e  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",

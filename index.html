@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>삼각함수·미적분 수학적 모델링 탐구</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%234F46E5%22/%3E%3Cpath d=%22M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
-<script src="config.js?v=202610251917"></script>
-<script src="mathtool.js?v=202610251917"></script>
+<script src="config.js?v=202610251925"></script>
+<script src="mathtool.js?v=202610251925"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -637,7 +637,7 @@ const STAGES = [
   {help:["미분: $u=b(x-c)$라 하면 $\\dfrac{du}{dx}=b$","$(a\\sec u)'=ab\\sec u\\tan u$ · $(a\\csc u)'=-ab\\csc u\\cot u$ · $(a\\tan u)'=ab\\sec^2 u$","$(a\\arctan u)'=\\dfrac{ab}{1+u^2}$ · $(a\\sin^2 u)'=ab\\sin 2u$ · $(e\\cos 2u)'=-2eb\\sin 2u$","적분: $\\displaystyle\\int a\\sec u\\,dx=\\dfrac{a}{b}\\ln\\left|\\sec u+\\tan u\\right|+C$ · $\\displaystyle\\int a\\csc u\\,dx=\\dfrac{a}{b}\\ln\\left|\\tan\\dfrac{u}{2}\\right|+C$","$\\displaystyle\\int a\\tan u\\,dx=-\\dfrac{a}{b}\\ln\\left|\\cos u\\right|+C$ · $\\displaystyle\\int a\\sin^2 u\\,dx=a\\left(\\dfrac{x}{2}-\\dfrac{\\sin 2u}{4b}\\right)+C$","아크탄젠트형은 부분적분을 씁니다. 손 계산이 어려우면 도구 값을 쓰고 그 뜻을 해석해도 됩니다."]}
  ]},
  {name:"검증·결론", el:"결과 분석·검증 및 성찰", time:"4시간째 · 60분", goal:"모델이 얼마나 맞고, 왜 틀리며, 어떻게 고칠 수 있는지 숫자와 근거로 말합니다.", blocks:[
-  {n:"①",t:"숫자로 비교하기",hint:"오차 $=y-f(x)$ (실측값 − 모델값), 오차율 $=\\dfrac{\\left|y-f(x)\\right|}{\\left|y\\right|}\\times 100$ (실측값이 0인 점은 오차율에서 뺍니다). 평균 제곱근 오차 $\\sqrt{\\dfrac{1}{n}\\sum_{i=1}^{n}\\left(y_i-f(x_i)\\right)^2}$는 모델이 실제 자료에서 평균적으로 몇 (y 단위)만큼 빗나가는지 나타내며, 0에 가까울수록 잘 맞습니다.",tool:"errTable"},
+  {n:"①",t:"숫자로 비교하기",hint:"오차 $=y-f(x)$ (실측값 − 모델값), 오차율 $=\\dfrac{\\left|y-f(x)\\right|}{y_{\\max}-y_{\\min}}\\times 100$ (자료 y가 오르내리는 폭에 대해 몇 %만큼 빗나갔는지). 평균 제곱근 오차 $\\sqrt{\\dfrac{1}{n}\\sum_{i=1}^{n}\\left(y_i-f(x_i)\\right)^2}$는 모델이 실제 자료에서 평균적으로 몇 (y 단위)만큼 빗나가는지 나타내며, 0에 가까울수록 잘 맞습니다.",tool:"errTable"},
   {n:"②",t:"오차 그래프",hint:"점선은 오차 $\\pm 1$ 기준선입니다. 1을 넘는 오차는 그래프 안에 들어오도록 줄여서(로그 눈금) 그립니다.",tool:"errChart"},
   {n:"③",t:"오차 그래프에서 보이는 규칙",f:[["s5_pos","오차가 (+)인 구간"],["s5_neg","오차가 (−)인 구간"],["s5_rule","규칙","long"]]},
   {n:"④",t:"오차의 원인 2가지",hint:"자료의 오차(눈금, 반올림) · 식의 모양 자체의 한계 · 매개변수 값의 어긋남 · 통제하지 못한 조건 등",table:{cols:["","오차의 원인","근거 (그래프의 위치, 숫자)"],rows:[["1.","s5_c1","s5_c1b"],["2.","s5_c2","s5_c2b"]]}},
@@ -773,7 +773,9 @@ function Fanti(m,x){ const {a,b,c,d,e,g}=m,u=b*(x-c),S=Math.sin,C=Math.cos,L=Mat
 function integ(m,p,q){ if(!m.ok||!isNum(p)||!isNum(q)) return NaN; const v=Fanti(m,+q)-Fanti(m,+p); return isFinite(v)?v:NaN; }
 function trapezoid(pts,p,q){ if(!isNum(p)||!isNum(q)||pts.length<2) return NaN; let s=0;
   for(let i=0;i<pts.length-1;i++){ const P=pts[i],Q=pts[i+1]; if(P.x>=+p&&Q.x<=+q&&Q.x>P.x) s+=(Q.x-P.x)*(P.y+Q.y)/2; } return s; }
-function errStats(m,pts){ if(!m.ok||!pts.length) return null; const rows=[]; pts.forEach(p=>{ const f=fval(m,p.x); if(isNaN(f)) return; const e=p.y-f; rows.push({x:p.x,y:p.y,f,e,r:p.y!==0?Math.abs(e/p.y)*100:null}); });
+// 오차율 = |오차| ÷ (자료 y의 최댓값 − 최솟값) × 100 — 범위로 정규화해 0 근처 점에서 커지지 않고, 자료 개수와 무관하게 비교됩니다
+function errStats(m,pts){ if(!m.ok||!pts.length) return null; const rows=[], ys=pts.map(p=>p.y), rg=Math.max(...ys)-Math.min(...ys);
+  pts.forEach(p=>{ const f=fval(m,p.x); if(isNaN(f)) return; const e=p.y-f; rows.push({x:p.x,y:p.y,f,e,r:rg>0?Math.abs(e)/rg*100:null}); });
   if(!rows.length) return null; const rs=rows.filter(r=>r.r!=null); let mx=null; rs.forEach(r=>{ if(!mx||r.r>mx.r) mx=r; });
   return {rows, mean:rs.length?rs.reduce((s,r)=>s+r.r,0)/rs.length:NaN, max:mx?mx.r:NaN, maxX:mx?mx.x:NaN,
     rmse:Math.sqrt(rows.reduce((s,r)=>s+r.e*r.e,0)/rows.length), me:rows.reduce((s,r)=>s+r.e,0)/rows.length,
@@ -1137,7 +1139,7 @@ const EG_HELP=`<details class="help eg"><summary>❓ e와 g는 무엇인가요? 
 </tbody></table></div><p class="sub">e, g 값을 바꿔 보며 그래프가 어떻게 바뀌는지 관찰하세요. 0이면 그 물결이 없는 것입니다.</p></details>`;
 /* ── 어려운 용어 풀이 (마우스를 대면 설명) ── */
 const GLOSS={rmse:"평균 제곱근 오차(RMSE): 모델이 실제 자료에서 평균적으로 몇 (y 단위)만큼 빗나가는지 나타냅니다. 식은 $\\sqrt{\\dfrac{1}{n}\\sum_{i=1}^{n}\\left(y_i-f(x_i)\\right)^2}$ 입니다. 각 점의 오차(실측값 − 모델값)를 제곱해 평균을 낸 뒤 제곱근을 씌웁니다. 0에 가까울수록 잘 맞습니다. 예: 값이 0.3이고 y의 단위가 m라면, 모델이 평균 0.3 m쯤 틀리게 예측한다는 뜻입니다.",
-  mape:"평균 오차율: 각 점에서 빗나간 정도를 실측값에 대한 백분율(%)로 나타내 평균 낸 값입니다. 예: 5%면 실제 값의 5%쯤 빗나갑니다."};
+  mape:"평균 오차율: 각 점에서 빗나간 크기를 자료 y의 변화 폭(최댓값 − 최솟값)에 대한 백분율(%)로 나타내 평균 낸 값입니다. 예: 5%면 자료가 오르내리는 폭의 5%쯤 빗나갑니다."};
 const term=(k,label)=>`<span class="term" data-tip="${esc(GLOSS[k])}" tabindex="0">${label}</span>`;
 /* ── 이동: 결과물 목록에서 빠진 항목을 누르면 그 칸으로 ── */
 function goTo(where){ stage=where==="data"?1:where==="vars"?0:3; renderStudent(); const el=app.querySelector(where==="data"?".upbox":where==="vars"?"#f_s1_xn":"[data-photo]");
@@ -1292,7 +1294,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610251917"; // build:f3c1d9cf  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610251925"; // build:6da23956  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",

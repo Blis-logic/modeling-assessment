@@ -79,7 +79,7 @@ function api(action, payload, token) {
     if (pub[action]) return Object.assign({ ok: true }, pub[action](payload));
     const user = sessionUser_(token);
     if (!user) return { ok: false, error: 'SESSION' };
-    const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, upload: apiUpload_, getFile: apiGetFile_ };
+    const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, upload: apiUpload_, getFile: apiGetFile_, consent: apiConsent_ };
     if (mine[action]) return Object.assign({ ok: true }, mine[action](user, payload, token));
     const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, organize: apiOrganize_, addNotice: apiAddNotice_, delNotice: apiDelNotice_, backupNow: apiBackupNow_ };  // 교사만
     if (teach[action]) {
@@ -209,7 +209,7 @@ function sessionUser_(token) {
 /* ───── 학생 기록 ───── */
 function apiMe_(user) {
   const d = docRecord_(user.id);
-  return { user: user, doc: readJson_(SHEETS.rec, user.id, REC_DATA_COL, true), grade: releasedGrade_(user.id), config: publicConfig_(), docAt: d ? d.at : 0 };
+  return { user: user, doc: readJson_(SHEETS.rec, user.id, REC_DATA_COL, true), grade: releasedGrade_(user.id), config: publicConfig_(), docAt: d ? d.at : 0, consent: consentInfo_(user) };
 }
 function apiStatus_(user) {
   const doc = readJson_(SHEETS.rec, user.id, REC_DATA_COL) || {};

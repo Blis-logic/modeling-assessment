@@ -738,6 +738,17 @@ details.help ul{margin:6px 0 0;padding-left:18px}
 .nbadge[hidden]{display:none}
 .ntm{position:fixed;inset:0;z-index:400;background:rgba(15,23,42,.45);display:grid;place-items:center;padding:16px}
 .ntm[hidden]{display:none}
+.cst{position:fixed;inset:0;z-index:450;background:rgba(15,23,42,.55);display:grid;place-items:center;padding:16px}
+.cst[hidden]{display:none}
+.cst-box{background:var(--paper);color:var(--ink);border-radius:16px;width:min(600px,100%);max-height:min(92vh,900px);display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(15,23,42,.35);overflow:hidden}
+.cst-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px}.cst-head b{font-size:18px}
+.cst-body{overflow-y:auto;padding:10px 18px 12px;display:flex;flex-direction:column;gap:8px}
+.cst-body h4{margin:6px 0 2px;font-size:14.5px;color:var(--accent)}.cst-body ul{margin:0;padding-left:18px}.cst-body li{font-size:13.5px;line-height:1.6;color:var(--ink)}
+.cst-ck{display:flex;gap:8px;align-items:flex-start;font-weight:700;font-size:14px;margin-top:8px;cursor:pointer}.cst-ck input{width:18px;height:18px;margin-top:1px;flex:none}
+.cst-sg{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px;flex-wrap:wrap}
+#cstPad{width:100%;height:150px;border:1.5px dashed var(--line);border-radius:10px;background:#fff;touch-action:none;display:block;cursor:crosshair;flex:none}
+.cst-err{margin:0;min-height:18px;font-size:13px;color:var(--bad);font-weight:600}
+.cst-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--bg);flex-wrap:wrap}
 .ntm-box{background:var(--paper);color:var(--ink);border-radius:16px;width:min(520px,100%);max-height:min(82vh,680px);display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(15,23,42,.35);overflow:hidden}
 .ntm-head{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 16px;border-bottom:1px solid var(--line)}
 .ntm-head b{font-size:17px;flex:1}
@@ -1792,10 +1803,10 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610260815"; // build:e47c7dca  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610260835"; // build:fe145aa2  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
-const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
+const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",CONSENT_SIGN:"서명을 저장하지 못했습니다. [다시 쓰기]를 누르고 서명해 주세요.",CONSENT_VER:"동의서가 바뀌었습니다. 새로고침한 뒤 다시 동의해 주세요.",CONSENT_AGREE:"동의 칸에 체크해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
   WRONG_LOGIN:"아이디 또는 비밀번호가 맞지 않습니다. 잊었다면 선생님께 초기화를 요청하세요.",CLASS_CODE:"학급 코드가 맞지 않습니다. 선생님께 확인하세요.",TEACHER_CODE:"교사 가입 코드가 맞지 않습니다.",
   LOCKED:"선생님이 작성을 마감해서 저장할 수 없습니다.",FORBIDDEN:"교사만 할 수 있습니다.",NOT_FOUND:"그 계정을 찾지 못했습니다.",WRONG_PW:"지금 비밀번호가 맞지 않습니다.",
   NO_SETUP:"선생님이 아직 초기 설정(setup)을 하지 않았습니다.",NETWORK:"저장 서버에 연결하지 못했습니다. 잠시 뒤 다시 해 주세요.",SELF:"내 계정은 지울 수 없습니다.",
@@ -1929,7 +1940,36 @@ async function loadMe(){ setSave("wait","불러오는 중"); conflict=false; for
   const r=await api("me"); ME=r.user; cfg=Object.assign(cfg,r.config||{}); myGrade=r.grade||null;
   me=Object.assign(blankDoc(),r.doc||{}); me.info=Object.assign({},me.info||{},ME.role==="student"?{sid:ME.sid,name:ME.name}:{}); if(!me.ans.s1_topic&&topicOf(me)) me.ans.s1_topic=topicOf(me); if(me.ans.s1_topic) me.info.title=me.ans.s1_topic; docAt=r.docAt||0;
   if(ME.mustChange) return renderPwChange(true);
-  enterApp(); }
+  enterApp(); if(ME.role==="student"&&r.consent&&r.consent.need&&r.consent.text) openConsent(r.consent.text); }
+/* 개인정보 수집·이용 동의(학생만): 서버가 동의서 문구를 보낼 때만 띄웁니다. 체크 + 서명 판에 직접 서명 → 서버가 구글 문서로 저장 */
+function openConsent(t){ let el=document.getElementById("cstModal"); if(!el){ el=document.createElement("div"); el.id="cstModal"; el.className="cst"; document.body.appendChild(el); }
+  el.innerHTML=`<div class="cst-box" role="dialog" aria-modal="true" aria-labelledby="cstT"><div class="cst-head"><b id="cstT">${esc(t.title)}</b><span class="sub">${esc((t.org?t.org+" · ":"")+"수학적 모델링 탐구 수행평가 · 동의서 판 "+t.ver)}</span></div>
+  <div class="cst-body">${(t.sections||[]).map(s=>`<section><h4>${esc(s.h)}</h4><ul>${s.items.map(i=>`<li>${esc(i)}</li>`).join("")}</ul></section>`).join("")}
+  <label class="cst-ck"><input type="checkbox" id="cstCk"> <span>${esc(t.agree)}</span></label>
+  <div class="cst-sg"><span><b>서명</b> · ${esc(ME.sid||"")} ${esc(ME.name||"")} <span class="sub">(마우스·터치패드·손가락으로 이름을 쓰세요)</span></span><button class="btn" type="button" id="cstClr">다시 쓰기</button></div>
+  <canvas id="cstPad" width="1040" height="300" aria-label="서명 판"></canvas><p class="cst-err" id="cstErr" role="alert"></p></div>
+  <div class="cst-foot" id="cstFoot"></div></div>`;
+  el.hidden=false;
+  const cv=el.querySelector("#cstPad"), cx=cv.getContext("2d"), er=el.querySelector("#cstErr"), ck=el.querySelector("#cstCk"), foot=el.querySelector("#cstFoot");
+  cx.lineWidth=5; cx.lineCap="round"; cx.lineJoin="round"; cx.strokeStyle="#111"; let down=false, len=0, last=null;
+  const pt=e=>{ const b=cv.getBoundingClientRect(); return [(e.clientX-b.left)*cv.width/b.width,(e.clientY-b.top)*cv.height/b.height]; };
+  cv.addEventListener("pointerdown",e=>{ down=true; last=pt(e); try{ cv.setPointerCapture(e.pointerId); }catch(x){} er.textContent=""; e.preventDefault(); });
+  cv.addEventListener("pointermove",e=>{ if(!down) return; const p=pt(e); cx.beginPath(); cx.moveTo(last[0],last[1]); cx.lineTo(p[0],p[1]); cx.stroke(); len+=Math.hypot(p[0]-last[0],p[1]-last[1]); last=p; });
+  ["pointerup","pointercancel","pointerleave"].forEach(k=>cv.addEventListener(k,()=>{ down=false; }));
+  el.querySelector("#cstClr").onclick=()=>{ cx.clearRect(0,0,cv.width,cv.height); len=0; er.textContent=""; };
+  ck.onchange=()=>{ er.textContent=""; };
+  const main=()=>{ foot.innerHTML=`<button class="btn" type="button" id="cstNo">동의하지 않음</button><button class="btn pri" type="button" id="cstOk">동의하고 시작하기</button>`;
+    foot.querySelector("#cstNo").onclick=refuse; foot.querySelector("#cstOk").onclick=agree; };
+  const refuse=()=>{ er.textContent="동의하지 않으면 이 앱을 쓸 수 없어 로그아웃됩니다. 담당 선생님께 종이 활동지를 요청하세요(평가상 불이익 없음).";
+    foot.innerHTML=`<button class="btn" type="button" id="cstBack">돌아가기</button><button class="btn danger" type="button" id="cstOut">로그아웃</button>`;
+    foot.querySelector("#cstBack").onclick=()=>{ er.textContent=""; main(); };
+    foot.querySelector("#cstOut").onclick=()=>{ el.hidden=true; document.getElementById("logoutBtn").click(); }; };
+  const agree=async()=>{ if(!ck.checked){ er.textContent="동의 칸에 체크해 주세요."; return; } if(len<150){ er.textContent="서명이 너무 짧습니다. 서명 판에 이름을 써 주세요."; return; }
+    const out=document.createElement("canvas"); out.width=520; out.height=150; const oc=out.getContext("2d"); oc.fillStyle="#fff"; oc.fillRect(0,0,520,150); oc.drawImage(cv,0,0,520,150);
+    const btn=foot.querySelector("#cstOk"); btn.disabled=true; btn.textContent="저장하는 중…";
+    try{ await api("consent",{ver:t.ver,agree:true,sign:out.toDataURL("image/png").split(",")[1]}); el.hidden=true; setSave("ok","개인정보 동의를 저장했습니다"); }
+    catch(x){ er.textContent=errMsg(x); btn.disabled=false; btn.textContent="동의하고 시작하기"; } };
+  main(); }
 function enterApp(note){ const ub=document.getElementById("userBox"); ub.hidden=false;
   document.getElementById("whoami").textContent=`${ME.name||ME.id}${ME.role==="teacher"?" 선생님":""}`;
   setSave("ok",note||pendingNote||"연결됨"); pendingNote=""; clearInterval(pollT);
@@ -1937,7 +1977,7 @@ function enterApp(note){ const ub=document.getElementById("userBox"); ub.hidden=
   else { document.getElementById("roleSeg").hidden=true; measureTop(); view="student"; renderStudent(); pollT=setInterval(pollStatus,45000);
     if(ME.role==="student"&&me.updatedAt&&!docAt){ docDirty=true; scheduleDocSync(2000); } }
   noticeSync(); }
-document.getElementById("logoutBtn").onclick=async()=>{ await flush(); try{ await api("logout"); }catch(e){} ME=null; authMode="login"; setToken(null); clearInterval(pollT); conflict=false; sysBar("conflict",null); sysBar("corrupt",null); closeNotices(); ntBadge(); clearTimeout(docTimer); docs={}; share=null; roster=new Map(); grades={}; sel=null; lastSince=0; renderAuth(); };
+document.getElementById("logoutBtn").onclick=async()=>{ const cm=document.getElementById("cstModal"); if(cm) cm.hidden=true; await flush(); try{ await api("logout"); }catch(e){} ME=null; authMode="login"; setToken(null); clearInterval(pollT); conflict=false; sysBar("conflict",null); sysBar("corrupt",null); closeNotices(); ntBadge(); clearTimeout(docTimer); docs={}; share=null; roster=new Map(); grades={}; sel=null; lastSince=0; renderAuth(); };
 document.getElementById("pwBtn").onclick=()=>{ flush(); renderPwChange(false); };
 
 /* ───────── 저장 ───────── */

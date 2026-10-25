@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>삼각함수·미적분 수학적 모델링 탐구</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%234F46E5%22/%3E%3Cpath d=%22M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
-<script src="config.js?v=202610251925"></script>
-<script src="mathtool.js?v=202610251925"></script>
+<script src="config.js?v=202610260815"></script>
+<script src="mathtool.js?v=202610260815"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -388,11 +388,17 @@ table.dg td.rn{width:38px;text-align:center;color:var(--muted);font-family:var(-
 table.dg input{width:100%;border:0;padding:7px 9px;font-family:var(--f-mono);font-size:14px;outline:0;min-width:0}
 table.dg input::placeholder{color:color-mix(in srgb,var(--muted) 60%,transparent)}
 .dg-tools{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-table.dg .dgx{width:30px;padding:0;text-align:center}
+table.dg .dgx{width:60px;padding:0;text-align:center;white-space:nowrap}
 .dgdel{border:0;background:transparent;color:var(--muted);font-size:16px;line-height:1;width:28px;height:28px;border-radius:6px;cursor:pointer;visibility:hidden}
 table.dg tr.has .dgdel{visibility:visible}
 table.dg tr .dgdel:disabled{visibility:hidden}
 .dgdel:hover,.dgdel:focus-visible{background:var(--bad-soft,#FEE2E2);color:var(--bad)}
+.dgins:hover,.dgins:focus-visible{background:var(--accent-soft);color:var(--accent)}
+table.dg td.sel{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+table.dg td.sel input,table.dg td.sel input:placeholder-shown{background:transparent;box-shadow:none}
+table.dg tr.wbad td.rn{background:var(--bad-soft,#FEE2E2);color:var(--bad);font-weight:700;cursor:help}
+.dgw{display:inline-grid;place-items:center;width:15px;height:15px;margin-left:2px;border-radius:50%;background:var(--bad);color:#fff;font-size:10.5px;font-weight:700;font-style:normal;vertical-align:1px}
+.dgwarn{margin:0;font-size:13px;color:var(--bad);font-weight:600}
 .dgcount{font-size:13px;margin-left:auto}.dgcount b.ok,.dash b.ok{color:var(--good)}.dgcount b.warn,.dash b.warn{color:var(--warn)}
 .upbox{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;background:var(--bg)}
 /* ── 풀이 사진 · AI 표시 ── */
@@ -942,13 +948,14 @@ function gridRows(doc){ const d=doc.data||{}; if(Array.isArray(d.grid)) return d
 function predX(rows,i){ const xs=[]; for(let k=i-1;k>=0&&xs.length<2;k--){ const v=(rows[k]||[])[0]; if(isNum(v)) xs.push(+v); else break; }
   if(!xs.length) return ""; const st=xs.length>1?xs[0]-xs[1]:1; return String(+(xs[0]+st).toFixed(6)); }
 function dgRowHTML(i,r,ro,rows){ const p=predX(rows,i), has=String(r[0]).trim()||String(r[1]).trim();
-  return `<tr${has?' class="has"':""}><td class="rn">${i+1}</td><td><input data-r="${i}" data-c="0" value="${esc(r[0])}" placeholder="${p===""?" ":esc(p)}" inputmode="decimal" autocomplete="off"${ro?" disabled":""} aria-label="${i+1}번째 x"></td><td><input data-r="${i}" data-c="1" value="${esc(r[1])}" placeholder=" " inputmode="decimal" autocomplete="off"${ro?" disabled":""} aria-label="${i+1}번째 y"></td>${ro?"":`<td class="dgx"><button type="button" class="dgdel" data-act="dgDel" data-r="${i}" title="${i+1}번째 줄 지우기" aria-label="${i+1}번째 줄 지우기">×</button></td>`}</tr>`; }
+  return `<tr${has?' class="has"':""}><td class="rn">${i+1}</td><td><input data-r="${i}" data-c="0" value="${esc(r[0])}" placeholder="${p===""?" ":esc(p)}" inputmode="decimal" autocomplete="off"${ro?" disabled":""} aria-label="${i+1}번째 x"></td><td><input data-r="${i}" data-c="1" value="${esc(r[1])}" placeholder=" " inputmode="decimal" autocomplete="off"${ro?" disabled":""} aria-label="${i+1}번째 y"></td>${ro?"":`<td class="dgx"><button type="button" class="dgdel dgins" data-act="dgIns" data-r="${i}" title="${i+1}번째 줄 아래에 줄 넣기" aria-label="${i+1}번째 줄 아래에 줄 넣기">+</button><button type="button" class="dgdel" data-act="dgDel" data-r="${i}" title="${i+1}번째 줄 지우기" aria-label="${i+1}번째 줄 지우기">×</button></td>`}</tr>`; }
 let dgExtra=0, dgUndo=null;   // dgUndo: 마지막으로 지운 줄 {i,row} — [지운 줄 되살리기]
 function dgBodyHTML(rows,ro){ const n=ro?Math.max(rows.length,1):Math.max(rows.length+1,DATA_GOAL+1)+dgExtra; let h=""; for(let i=0;i<n;i++) h+=dgRowHTML(i,rows[i]||["",""],ro,rows); return h; }
 function gridHTML(doc,ro){ const rows=gridRows(doc);
   return `<div class="dgwrap"><table class="dg" data-grid><thead><tr><th>#</th><th>${esc(axisLabel(doc,"x"))}</th><th>${esc(axisLabel(doc,"y"))}</th>${ro?"":'<th class="dgx"></th>'}</tr></thead><tbody>${dgBodyHTML(rows,ro)}</tbody></table></div>
   <div class="dg-tools">${ro?"":`<button class="btn" type="button" data-act="dgFill">↧ x 자동 채우기</button><button class="btn" type="button" data-act="dgAdd">＋ 줄 5개</button><button class="btn" type="button" data-act="dgClear">표 비우기</button><button class="btn" type="button" data-act="dgUndo"${dgUndo?"":" hidden"}>↶ 지운 줄 되살리기</button>`}<span class="dgcount" data-out="dgCount"></span></div>
-  ${ro?"":`<p class="sub" style="margin:0">엑셀에서 x·y 두 열(또는 y 한 열)을 복사해 칸에 붙여 넣으면 한꺼번에 들어갑니다. y만 넣으면 x는 위 두 줄의 간격대로 자동으로 채워지고(흐린 숫자), Enter는 아래 칸으로 갑니다.</p>`}`; }
+  <p class="dgwarn" data-out="dgWarn" hidden></p>
+  ${ro?"":`<p class="sub" style="margin:0">엑셀에서 x·y 두 열(또는 y 한 열)을 복사해 칸에 붙여 넣으면 한꺼번에 들어갑니다. y만 넣으면 x는 위 두 줄의 간격대로 자동으로 채워지고(흐린 숫자), Enter는 아래 칸으로 갑니다. 마우스로 여러 칸을 끌어 고른 뒤(또는 Shift+클릭) Ctrl+C는 복사, Ctrl+X는 잘라내기입니다. 줄 끝의 [+]는 아래에 줄 넣기, [×]는 줄 지우기입니다.</p>`}`; }
 
 function toolHTML(doc,tool,ro){ const d=doc.data||{}, M=doc.models||{}, c=doc.calc||{}; const dis=ro?" disabled":"";
   const inp=(p,v,lab,extra="")=>`<label class="mini">${tx(lab)}<input id="t_${p.replace(/\./g,"_")}" data-p="${p}" value="${esc(v??"")}" placeholder=" "${dis} ${extra} autocomplete="off"></label>`;
@@ -1004,7 +1011,7 @@ function updateOutputs(root,doc,owner){ const an=analyze(doc), $=s=>root.querySe
   if(autoChanged) scheduleSave();
   { const a=doc.ans||{}, v=(n,u,w)=>`<b>${esc(n||"(1단계에서 아직 정하지 않음)")}</b>${u?` <span class="sub">단위: ${esc(u)}</span>`:""}`;
     put("xyInfo",`<div><span class="xyk">x</span> 가로축 · 독립변인: ${v(a.s1_xn,a.s1_xu)}</div><div><span class="xyk y">y</span> 세로축 · 종속변인: ${v(a.s1_yn,a.s1_yu)}</div><div class="sub">1단계 ② 변인 정하기에서 쓴 내용이 연결됩니다. ${editing?`<button type="button" class="linkbtn" data-goto="vars">1단계에서 바꾸기 →</button>`:""}</div>`); }
-  put("dgCount",`자료 <b class="${an.pts.length>=DATA_GOAL?"ok":"warn"}">${an.pts.length}</b>개 / 목표 ${DATA_GOAL}개 이상`);
+  put("dgCount",`자료 <b class="${an.pts.length>=DATA_GOAL?"ok":"warn"}">${an.pts.length}</b>개 / 목표 ${DATA_GOAL}개 이상`); dgMarks(root,doc);
   const F=(doc.files||{}).data; put("upData",F?`<div class="sub">✔ ${esc(F.name)} · ${kb(F.size)} · ${ago(F.at)}${ME&&ME.role==="teacher"&&F.url?` · <a href="${esc(F.url)}" target="_blank" rel="noopener">열기 ↗</a>`:""}</div>`:`<div class="sub">아직 올린 파일이 없습니다.</div>`);
   put("dash",dashHTML(doc)); put("files",filesHTML(doc));
   const T=doc.tools||{}; $("aibox").forEach(e=>e.classList.toggle("on",!!T.ai));
@@ -1294,7 +1301,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610251925"; // build:6da23956  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610260815"; // build:e47c7dca  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -1561,7 +1568,7 @@ function syncGrid(){ const g=me.data.grid||[], xs=[], ys=[];
     if(x===""){ const p=predX(g,i); x=p===""?String(i+1):p; r[0]=x; } xs.push(x); ys.push(y); });
   me.data.xs=xs.join("\n"); me.data.ys=ys.join("\n"); }
 function gridEl(){ return app.querySelector("[data-grid] tbody"); }
-function redrawGrid(focus){ const tb=gridEl(); if(!tb) return; tb.innerHTML=dgBodyHTML(me.data.grid||[],locked());
+function redrawGrid(focus){ const tb=gridEl(); if(!tb) return; dgSel=null; tb.innerHTML=dgBodyHTML(me.data.grid||[],locked());
   if(focus){ const el=tb.querySelector(`[data-r="${focus[0]}"][data-c="${focus[1]}"]`); if(el) el.focus(); } }
 function afterGrid(){ syncGrid(); scheduleSave(); updateOutputs(app,me); refreshTabs(); }
 function dgInput(t){ const r=+t.dataset.r, c=+t.dataset.c, g=me.data.grid||(me.data.grid=gridRows(me));
@@ -1571,6 +1578,46 @@ function dgInput(t){ const r=+t.dataset.r, c=+t.dataset.c, g=me.data.grid||(me.d
   if(tb&&tb.rows.length<need) for(let i=tb.rows.length;i<need;i++) tb.insertAdjacentHTML("beforeend",dgRowHTML(i,["",""],false,g));
   if(tb) tb.querySelectorAll('[data-c="0"]').forEach(x=>{ if(!x.value){ const p=predX(g,+x.dataset.r); x.placeholder=p===""?" ":p; } });
   afterGrid(); }
+/* 자료 사이의 빈 줄·숫자가 아닌 값 알림(! 표시와 표 아래 한 줄). 저장값은 바꾸지 않습니다 */
+const DG_MSG={empty:"이 줄의 y가 비어 있어 계산에서 빠집니다. 자료가 빠지거나 x 간격이 어긋나면 모델과 맞지 않아 오차율이 커질 수 있습니다. 채우거나 [×]로 지우세요.",
+  nan:"숫자가 아닌 값이 있어 이 줄은 계산에서 빠집니다. 자료가 빠지면 오차율이 커질 수 있습니다. 숫자로 고쳐 주세요."};
+function dgIssues(rows){ let last=-1; rows.forEach((r,i)=>{ if(String(r[0]).trim()||String(r[1]).trim()) last=i; }); const out=[];
+  for(let i=0;i<=last;i++){ const x=String(rows[i][0]).trim(), y=String(rows[i][1]).trim();
+    if(y==="") out.push({i,k:"empty"}); else if(!isNum(y)||(x!==""&&!isNum(x))) out.push({i,k:"nan"}); }
+  return out; }
+function dgMarks(root,doc){ const tb=root.querySelector("[data-grid] tbody"); if(!tb) return; const iss=dgIssues(gridRows(doc)), m={}; iss.forEach(o=>{ m[o.i]=o.k; });
+  [...tb.rows].forEach((tr,i)=>{ const k=m[i], rn=tr.cells[0]; tr.classList.toggle("wbad",!!k);
+    if(k){ rn.innerHTML=`${i+1}<i class="dgw" aria-hidden="true">!</i>`; rn.dataset.tip=DG_MSG[k]; rn.tabIndex=0; }
+    else if(rn.dataset.tip){ rn.textContent=i+1; delete rn.dataset.tip; rn.removeAttribute("tabindex"); } });
+  const w=root.querySelector('[data-out="dgWarn"]'); if(!w) return;
+  const nums=k=>{ const a=iss.filter(o=>o.k===k).map(o=>o.i+1); return a.length?`${a.length}${k==="empty"?"개":"줄"}(${a.slice(0,8).join("·")}${a.length>8?"…":""}번째)`:""; };
+  const parts=[nums("empty")&&"빈 줄 "+nums("empty"), nums("nan")&&"숫자가 아닌 값 "+nums("nan")].filter(Boolean);
+  w.hidden=!parts.length; w.textContent=parts.length?`⚠ ${parts.join(" · ")} — 계산에서 빠져 오차율이 커질 수 있습니다. 채우거나 [×]로 지우세요.`:""; }
+/* 여러 칸 고르기(마우스로 끌기·Shift+클릭) → Ctrl+C 복사 · Ctrl+X 잘라내기. 탭·줄바꿈 형식이라 엑셀과 주고받을 수 있습니다 */
+let dgSel=null, dgDrag=false;
+const dgCell=el=>{ const i=el&&el.closest&&el.closest("[data-grid] input"); return i&&i.dataset.c!=null?i:null; };
+function dgRange(){ const s=dgSel; if(!s||(s.r0===s.r1&&s.c0===s.c1)) return null;
+  return {r1:Math.min(s.r0,s.r1),r2:Math.max(s.r0,s.r1),c1:Math.min(s.c0,s.c1),c2:Math.max(s.c0,s.c1)}; }
+function dgPaint(){ const tb=gridEl(); if(!tb) return; const R=dgRange();
+  tb.querySelectorAll("input[data-c]").forEach(x=>{ const r=+x.dataset.r, c=+x.dataset.c; x.parentElement.classList.toggle("sel",!!R&&r>=R.r1&&r<=R.r2&&c>=R.c1&&c<=R.c2); }); }
+function dgUnsel(){ if(dgSel){ dgSel=null; dgPaint(); } }
+app.addEventListener("mousedown",e=>{ const x=dgCell(e.target); if(!x){ dgUnsel(); return; } if(e.button!==0||view!=="student") return;
+  const r=+x.dataset.r, c=+x.dataset.c;
+  if(e.shiftKey&&dgSel){ e.preventDefault(); dgSel.r1=r; dgSel.c1=c; dgPaint(); return; }
+  dgSel={r0:r,c0:c,r1:r,c1:c}; dgDrag=true; dgPaint(); });
+app.addEventListener("mouseover",e=>{ if(!dgDrag||!dgSel) return; const x=dgCell(e.target); if(!x) return; const r=+x.dataset.r, c=+x.dataset.c;
+  if(r===dgSel.r1&&c===dgSel.c1) return; dgSel.r1=r; dgSel.c1=c; dgPaint(); });
+document.addEventListener("mouseup",()=>{ dgDrag=false; });
+app.addEventListener("keydown",e=>{ if(dgSel&&!e.ctrlKey&&!e.metaKey&&e.key!=="Shift") dgUnsel(); });
+function dgCopy(e,cut){ const R=dgRange(); if(!R||!e.target.closest||!e.target.closest("[data-grid]")) return; e.preventDefault();
+  const g=me.data.grid||(me.data.grid=gridRows(me)), lines=[];
+  for(let r=R.r1;r<=R.r2;r++){ const row=[]; for(let c=R.c1;c<=R.c2;c++) row.push(String(((g[r]||[])[c])??"")); lines.push(row.join("\t")); }
+  e.clipboardData.setData("text/plain",lines.join("\n")); const n=(R.r2-R.r1+1)*(R.c2-R.c1+1);
+  if(!cut) return setSave("ok",`${n}칸을 복사했습니다`);
+  if(locked()) return; for(let r=R.r1;r<=R.r2&&r<g.length;r++) for(let c=R.c1;c<=R.c2;c++) g[r][c]="";
+  syncGrid(); redrawGrid([R.r1,R.c1]); afterGrid(); setSave("ok",`${n}칸을 잘라냈습니다`); }
+app.addEventListener("copy",e=>dgCopy(e,false));
+app.addEventListener("cut",e=>dgCopy(e,true));
 app.addEventListener("input",e=>{ const t=e.target; if(!t.closest||!t.closest("[data-grid]")||view!=="student"||locked()) return; dgInput(t); });
 app.addEventListener("keydown",e=>{ const t=e.target; if(t.tagName!=="INPUT"||!t.closest("[data-grid]")) return; const r=+t.dataset.r, c=+t.dataset.c;
   if(e.key==="Enter"||e.key==="ArrowDown"){ e.preventDefault();
@@ -1629,6 +1676,8 @@ app.addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t||!ME
   if(act==="dgAdd"){ dgExtra+=5; redrawGrid(); return; }
   if(act==="dgClear"){ if(!t.dataset.sure){ t.dataset.sure=1; t.textContent="정말 비울까요? 한 번 더 누르기"; setTimeout(()=>{ delete t.dataset.sure; t.textContent="표 비우기"; },4000); return; }
     me.data.grid=[]; dgExtra=0; dgUndo=null; syncGrid(); redrawGrid(); afterGrid(); showDgUndo(); return; }
+  if(act==="dgIns"){ const g=me.data.grid||(me.data.grid=gridRows(me)), i=+t.dataset.r; while(g.length<=i) g.push(["",""]);
+    g.splice(i+1,0,["",""]); if(dgUndo&&dgUndo.i>i) dgUndo.i++; syncGrid(); redrawGrid([i+1,1]); afterGrid(); setSave("ok",`${i+1}번째 줄 아래에 줄을 넣었습니다`); return; }
   if(act==="dgDel"){ const g=me.data.grid||(me.data.grid=gridRows(me)), i=+t.dataset.r; if(!(i<g.length)) return;
     dgUndo={i,row:g.splice(i,1)[0]}; syncGrid(); redrawGrid([Math.min(i,g.length),1]); afterGrid(); showDgUndo(); setSave("ok",`${i+1}번째 줄을 지웠습니다`); return; }
   if(act==="dgUndo"){ if(!dgUndo) return; const g=me.data.grid||(me.data.grid=gridRows(me)), {i,row}=dgUndo; while(g.length<i) g.push(["",""]);

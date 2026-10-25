@@ -1778,7 +1778,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610251327"; // build:80f3a73e  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610251339"; // build:1a7c6cc5  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -1787,7 +1787,7 @@ const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.
   NO_SETUP:"선생님이 아직 초기 설정(setup)을 하지 않았습니다.",NETWORK:"저장 서버에 연결하지 못했습니다. 잠시 뒤 다시 해 주세요.",SELF:"내 계정은 지울 수 없습니다.",
   BAD_EMAIL:"구글 계정 이메일 주소를 정확히 써 주세요.",SHARE:"폴더를 공유하지 못했습니다. 구글 계정 이메일이 맞는지 확인해 주세요.",BAD_DOC:"문서를 만들 수 없는 내용입니다. 잠시 뒤 다시 시도해 주세요.",
   BAD_FILE:"올릴 수 없는 파일입니다. 다른 파일을 골라 주세요.",BIG_FILE:"파일이 너무 큽니다 (원본 자료 10MB, 풀이 사진 50KB 이하).",
-  CORRUPT:"저장된 기록을 읽지 못했습니다. 기록을 지키려고 화면을 열지 않았습니다. 선생님께 알려 주세요.",BAD_NOTICE:"공지는 1~1000자로 써 주세요.",CONFLICT:"다른 창이나 기기에서 더 최근에 저장했습니다.",UNKNOWN_ACTION:"앱이 새 버전으로 바뀌었습니다. 새로고침(F5)해 주세요.",
+  BUSY:"방금 백업했습니다. 1분 뒤에 다시 눌러 주세요.",CORRUPT:"저장된 기록을 읽지 못했습니다. 기록을 지키려고 화면을 열지 않았습니다. 선생님께 알려 주세요.",BAD_NOTICE:"공지는 1~1000자로 써 주세요.",CONFLICT:"다른 창이나 기기에서 더 최근에 저장했습니다.",UNKNOWN_ACTION:"앱이 새 버전으로 바뀌었습니다. 새로고침(F5)해 주세요.",
   NO_API:"config.js에 구글 Apps Script 웹 앱 주소(apiUrl)를 아직 넣지 않았습니다.",ACCESS:"저장 서버가 로그인 화면을 돌려주었습니다. 구글 Apps Script를 '모든 사용자'로 배포했는지 확인해 주세요."};
 const errMsg=e=>ERR[e&&e.error]||("문제가 생겼습니다"+(e&&e.message?": "+e.message:"."));
 async function api(action,payload){
@@ -2224,6 +2224,8 @@ function teacherClick(t){
   if(act==="docAll") return docAll(t);
   if(act==="organize"){ const m=document.getElementById("orgMsg"); t.disabled=true; if(m) m.textContent="정리하는 중… (창을 닫지 마세요)";
     api("organize").then(r=>{ if(m) m.textContent=`완료: 학생 폴더 ${r.folders}개 · 옮긴 파일 ${r.moved}개 · 평가 결과 문서 ${r.graded}개`; t.disabled=false; }).catch(e=>{ if(m) m.textContent=errMsg(e); t.disabled=false; }); return; }
+  if(act==="backupNow"){ const m=document.getElementById("bkMsg"); t.disabled=true; if(m) m.textContent="백업하는 중… (10~30초)";
+    api("backupNow").then(r=>{ if(share) share.backup=r.backup; renderShare(); const m2=document.getElementById("bkMsg"); if(m2) m2.textContent="백업했습니다: "+r.made.name+(r.made.removed?` · 오래된 사본 ${r.made.removed}개 정리`:""); }).catch(e=>{ t.disabled=false; if(m) m.textContent=errMsg(e); }); return; }
   if(act==="shareGo"){ const em=document.getElementById("shareEm").value.trim(), self=document.getElementById("shareSelf").checked, er=document.getElementById("shareErr"); t.disabled=true; er.textContent="공유하는 중…";
     api("shareFolder",{email:em,self}).then(r=>{ share=r; renderShare(em+" 계정에 폴더를 공유했습니다. 구글에서 초대 메일이 갑니다."); }).catch(e=>{ t.disabled=false; er.textContent=errMsg(e); }); return; }
   if(act==="reopen"){ t.disabled=true; api("reopen",{id:sel}).then(pollRoster).catch(e=>{ t.disabled=false; alertMsg(errMsg(e)); }); return; }
@@ -2259,12 +2261,19 @@ function renderShare(note){ const b=document.getElementById("shareBox"); if(!b||
     <b style="font-size:14px">가입한 교사</b><ul>${share.teachers.map(t=>`<li>${esc(t.name||t.id)} (${esc(t.id)}) · ${t.email?esc(t.email)+(mails.has(t.email.toLowerCase())?" ✓ 공유됨":" · 아직 공유 안 됨"):"이메일 없음 (아래에 내 이메일을 넣고 공유하세요)"}</li>`).join("")}</ul>
     <div class="row2"><input id="shareEm" type="email" placeholder="초대할 구글 계정 이메일" aria-label="초대할 이메일"><button class="btn pri" type="button" data-act="shareGo">폴더 공유하기</button><label class="toggle"><input type="checkbox" id="shareSelf"> 내 계정 이메일로도 기록</label></div>
     <div class="sub" id="shareErr" style="color:var(--bad)"></div></div>
+  ${backupHTML(share.backup)}
   <div class="sharebox"><h3>학생별 폴더로 정리</h3>
     <p class="sub" style="margin:0">예전에 만든 보고서 문서와 '탐구자료' 폴더의 파일을 학생마다 [학번_이름] 폴더로 옮기고, 채점한 학생은 평가 결과 문서를 만듭니다. 한 번만 누르면 됩니다(학생 수에 따라 1~3분).</p>
     <div class="row2"><button class="btn pri" type="button" data-act="organize">학생별 폴더로 정리</button><span class="sub" id="orgMsg"></span></div></div>
   <div class="sharebox"><h3>학생 문서 한꺼번에 만들기</h3>
     <p class="sub" style="margin:0">학생이 로그인해서 쓰면 문서는 자동으로 만들어집니다. 이미 써 둔 내용의 문서가 아직 없을 때, 또는 지금 상태로 모두 새로 맞추고 싶을 때 누릅니다. 학생 한 명에 10~30초쯤 걸립니다.</p>
     <div class="row2"><button class="btn pri" type="button" data-act="docAll">모든 학생 문서 만들기·갱신</button><span class="sub" id="bulkMsg"></span></div></div>`; }
+function backupHTML(b){ if(!b) return ""; const tz={timeZone:"Asia/Seoul",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"};
+  const trig=b.trigger===true?`✓ 매일 새벽 ${b.hour}시쯤 자동 백업`:b.trigger===false?"자동 백업이 아직 설치되지 않았습니다 — 소유자가 시트 메뉴 [수행평가 앱 → 매일 백업 설치]를 한 번 실행하세요":"자동 백업 설치 여부를 확인하지 못했습니다(소유자의 권한 허용 필요)";
+  return `<div class="sharebox"><h3>데이터 백업</h3>
+    <p class="sub" style="margin:0">기록 스프레드시트(계정·기록·채점 등) 전체를 하루 한 번 '모델링탐구_백업' 폴더에 사본으로 남기고, 최근 ${b.keepDays}일치만 보관합니다. 폴더는 소유자만 열 수 있습니다(비밀번호 해시가 들어 있음). 풀이 사진·원본 자료 파일은 학생별 폴더에 그대로 있고 백업에는 들어가지 않습니다.</p>
+    <ul><li>${esc(trig)}</li><li>마지막 백업: ${b.last?esc(new Date(b.last).toLocaleString("ko-KR",tz))+" ("+esc(b.lastName)+")":"아직 없음"} · 보관 중인 사본 ${b.count}개</li>${b.err?`<li style="color:var(--bad)">최근 실패: ${esc(b.err)}</li>`:""}</ul>
+    <div class="row2"><button class="btn pri" type="button" data-act="backupNow">지금 백업</button>${b.folderUrl?`<a class="btn" style="text-decoration:none" href="${esc(b.folderUrl)}" target="_blank" rel="noopener">백업 폴더 열기 ↗</a>`:""}<span class="sub" id="bkMsg"></span></div></div>`; }
 async function docAll(btn){ const ids=[...roster.keys()].filter(id=>roster.get(id).doc), msg=document.getElementById("bulkMsg"); btn.disabled=true; let ok=0,bad=0;
   for(let k=0;k<ids.length;k++){ const id=ids[k], s=roster.get(id); if(msg) msg.textContent=`${k+1} / ${ids.length} 만드는 중… (${s.name||id})`;
     try{ const r=await makeDoc(s.doc,id,false,{sid:s.sid,name:s.name}); docs[id]={url:r.url,at:r.docAt}; ok++; }catch(e){ bad++; if(e.error==="SESSION") break; } }

@@ -36,7 +36,8 @@ function doPost(e) {
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
 function onOpen() {
-  SpreadsheetApp.getUi().createMenu('수행평가 앱').addItem('초기 설정 (처음 한 번)', 'setup').addToUi();
+  SpreadsheetApp.getUi().createMenu('수행평가 앱').addItem('초기 설정 (처음 한 번)', 'setup').addSeparator()
+    .addItem('매일 백업 설치 (처음 한 번)', 'installBackup').addItem('지금 백업', 'backupMenu_').addToUi();
 }
 
 /** 시트와 머리글을 만들고, 교사 가입 코드가 비어 있으면 새로 정합니다. */
@@ -80,7 +81,7 @@ function api(action, payload, token) {
     if (!user) return { ok: false, error: 'SESSION' };
     const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, upload: apiUpload_, getFile: apiGetFile_ };
     if (mine[action]) return Object.assign({ ok: true }, mine[action](user, payload, token));
-    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, organize: apiOrganize_, addNotice: apiAddNotice_, delNotice: apiDelNotice_ };  // 교사만
+    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, organize: apiOrganize_, addNotice: apiAddNotice_, delNotice: apiDelNotice_, backupNow: apiBackupNow_ };  // 교사만
     if (teach[action]) {
       if (user.role !== 'teacher') return { ok: false, error: 'FORBIDDEN' };
       return Object.assign({ ok: true }, teach[action](user, payload));

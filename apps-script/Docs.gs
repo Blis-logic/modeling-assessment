@@ -31,7 +31,7 @@ function apiDriveInfo_() {
   let owner = ''; try { owner = f.getOwner().getEmail(); } catch (e) {}
   const teachers = sheet_(SHEETS.acc).getDataRange().getValues().slice(1).filter(r => r[0] && String(r[1]) === 'teacher')
     .map(r => ({ id: String(r[0]), name: String(r[3]), email: String(r[9] || '') }));
-  return { url: f.getUrl(), owner: owner, editors: f.getEditors().map(u => u.getEmail()), teachers: teachers };
+  return { url: f.getUrl(), owner: owner, editors: f.getEditors().map(u => u.getEmail()), teachers: teachers, backup: backupInfo_() };  // backup: Backup.gs
 }
 /** 교사가 다른 교사(또는 내 다른 구글 계정)를 공유 폴더에 초대합니다. self:true 이면 내 계정의 이메일로도 기록합니다. */
 function apiShareFolder_(user, p) {

@@ -665,12 +665,6 @@ details.help ul{margin:6px 0 0;padding-left:18px}
 
 .foot-nav{display:flex;justify-content:space-between;gap:8px;padding:12px 18px;border-top:1px solid var(--line);background:var(--bg)}
 .submitbox{border:2px solid var(--accent);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:8px}
-.fb{margin-top:16px;border:1px solid var(--good);background:var(--good-soft);border-radius:var(--r);padding:14px 16px}
-.fb h3{margin:0 0 6px;font-size:15px}
-.fbgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-@media (max-width:640px){.fbgrid{grid-template-columns:1fr 1fr}}
-.fbgrid div{background:var(--paper);border-radius:6px;padding:8px 10px;font-size:13px}
-.fbgrid b{display:block;font-family:var(--f-mono);font-size:18px}
 
 /* teacher */
 .stats{margin-top:16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
@@ -767,6 +761,15 @@ details.help ul{margin:6px 0 0;padding-left:18px}
 .ntm-meta .btn.danger{border-color:#EF4444;color:#EF4444}
 .ntm-empty{margin:8px 0;text-align:center}
 .ntm-foot{padding:12px 16px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
+.ntm-item.ntm-grade{border-left-color:var(--good);background:color-mix(in srgb,var(--good) 6%,var(--paper))}
+.ntg-h{display:flex;align-items:baseline;gap:8px;justify-content:space-between}.ntg-h b{font-size:15.5px}.ntg-tot{font:700 17px var(--f-mono);color:var(--good)}
+.ntg-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.ntg-row{border-top:1px dashed var(--line);padding-top:6px}.ntg-top{display:flex;gap:8px;align-items:center;font-size:13.5px}.ntg-top>span:first-child{flex:1}.ntg-top .gchg{flex:none}.ntg-top b{font-family:var(--f-mono)}
+.ntg-row p,.ntg-all p{margin:3px 0 0;font-size:14px;white-space:pre-wrap;word-break:break-word}
+.ntg-all{border-top:1px solid var(--line);margin-top:8px;padding-top:6px}
+.ntg-what{margin:6px 0 0;font-size:13.5px;color:var(--ink)}.ntg-go{margin:6px 0 0;font-size:14px;font-weight:600;color:var(--accent);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.ntg-ico{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--accent);color:#fff}.ntg-ico svg{width:14px;height:14px}
+.gchg{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;vertical-align:1px}
 a.btn{color:var(--ink)}
 .docbar{margin-top:12px;border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap}
 .docbar .grow{flex:1 1 220px;min-width:0;font-size:13px}
@@ -1803,7 +1806,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610260835"; // build:fe145aa2  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610260908"; // build:963d1658  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",CONSENT_SIGN:"서명을 저장하지 못했습니다. [다시 쓰기]를 누르고 서명해 주세요.",CONSENT_VER:"동의서가 바뀌었습니다. 새로고침한 뒤 다시 동의해 주세요.",CONSENT_AGREE:"동의 칸에 체크해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -1837,29 +1840,55 @@ const seenKey=()=>"mt_seen_n_"+(ME?ME.id:"");
 function seenSet(){ if(seenMem&&seenMem.k===seenKey()) return seenMem.s; let a=[]; try{ a=JSON.parse(localStorage.getItem(seenKey())||"[]"); }catch(e){} seenMem={k:seenKey(),s:new Set(a)}; return seenMem.s; }
 function markSeen(ids){ const s=seenSet(); ids.forEach(i=>s.add(i)); try{ localStorage.setItem(seenKey(),JSON.stringify([...s].slice(-200))); }catch(e){} }  // 예비 주소(iframe)에서 막히면 이 창에서만 기억
 const unseenN=()=>{ const s=seenSet(); return ntList().filter(n=>!s.has(n.id)); };
+/* 학생: 공개된 평가 결과(점수·피드백)는 학생 화면에 펼쳐 두지 않고 확성기 알림판 맨 위 카드에 둡니다.
+   공개·수정되면 같은 카드(바뀐 칸에 수정 표시)를 팝업으로 띄웁니다. mt_seen_g_<아이디> = 마지막으로 본 내용(배지·팝업·수정 표시 기준) */
+const gMem={};
+function gradeSnap(g){ if(!g||!g.released) return null; const sc=g.scores||{}, no=g.notes||{}, o={o:String(g.overall||"").trim()};
+  [1,2,3,4].forEach(i=>{ o["s"+i]=isNum(sc["s"+i])?String(+sc["s"+i]):""; o["n"+i]=String(no["s"+i]||"").trim(); }); return o; }
+function gRead(kind){ const k=`mt_${kind}_g_${ME?ME.id:""}`; if(k in gMem) return gMem[k]; let v=null; try{ v=JSON.parse(localStorage.getItem(k)||"null"); }catch(e){} return (gMem[k]=v); }
+function gWrite(kind){ const s=gradeSnap(myGrade); if(!s) return; const k=`mt_${kind}_g_${ME?ME.id:""}`; gMem[k]=s; try{ localStorage.setItem(k,JSON.stringify(s)); }catch(e){} }  // 예비 주소(iframe)에서 막히면 이 창에서만 기억
+const gSame=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const gradeSeen=()=>gRead("seen"), markGradeSeen=()=>gWrite("seen");
+const gradeUnseen=()=>{ if(!ME||ME.role!=="student") return false; const s=gradeSnap(myGrade); return !!s&&!gSame(s,gradeSeen()); };
+function gradeChanges(prev,s){ const out=[];
+  ELEMENTS.forEach((e,i)=>{ const k=i+1; if(prev["s"+k]!==s["s"+k]) out.push(e[0]+" 점수"); if(prev["n"+k]!==s["n"+k]) out.push(e[0]+" 피드백"); });
+  if(prev.o!==s.o) out.push("종합 피드백"); return out; }
+let ntGradeBase=null;   // 알림판을 열 때의 '마지막으로 본 내용' — 그 뒤 바뀐 칸에 수정 표시
+/** 평가 결과 카드(점수·피드백 전체). isNew = 자동 팝업(공개·수정 알림), 아니면 확성기 알림판 */
+function gradeCardHTML(isNew){ const g=myGrade, s=gradeSnap(g); if(!s) return ""; const prev=isNew?gradeSeen():ntGradeBase, chg=k=>prev&&prev[k]!==s[k]?'<span class="gchg">수정</span>':"";
+  const tot=[1,2,3,4].reduce((a,i)=>a+(s["s"+i]!==""?+s["s"+i]:0),0), ch=prev&&!gSame(prev,s)?gradeChanges(prev,s):null;
+  const head=isNew?(prev?"평가 결과가 수정되었습니다":"평가 결과가 올라왔습니다"):`내 평가 결과${ch?' <span class="gchg">수정됨</span>':""}`;
+  return `<article class="ntm-item ntm-grade"><div class="ntg-h"><b>${head}</b><span class="ntg-tot">${tot} / 40점</span></div>
+    ${isNew&&ch&&ch.length?`<p class="ntg-what">바뀐 항목: ${esc(ch.join(", "))}</p>`:""}
+    <div class="ntg-list">${ELEMENTS.map((e,i)=>{ const k=i+1; return `<div class="ntg-row"><div class="ntg-top"><span>${esc(e[0])}</span><b>${s["s"+k]!==""?esc(s["s"+k]):"–"} / 10</b>${chg("s"+k)}</div>${s["n"+k]?`<p>${esc(s["n"+k])}${chg("n"+k)}</p>`:(chg("n"+k)?`<p class="sub">(피드백 지움)${chg("n"+k)}</p>`:"")}</div>`; }).join("")}</div>
+    ${s.o?`<div class="ntg-all"><span class="sub">종합 피드백</span>${chg("o")}<p>${esc(s.o)}</p></div>`:""}
+    <div class="ntm-meta"><span>${g.updatedAt?"채점 "+ntWhen(g.updatedAt):""}${g.by?" · "+esc(g.by):""}</span></div>
+    ${isNew?`<p class="ntg-go"><span class="ntg-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span> 이 내용은 위쪽 확성기 단추를 눌러 언제든 다시 볼 수 있습니다.</p>`:""}</article>`; }
 function ntBadge(){ const b=document.getElementById("noticeBtn"); if(!b) return; b.hidden=!ME; if(!ME) return;
-  const u=unseenN().length, bd=document.getElementById("noticeBadge"); bd.hidden=!u; bd.textContent=u>9?"9+":String(u);
-  b.classList.toggle("has",ntList().length>0); b.setAttribute("aria-label","공지"+(u?` · 새 공지 ${u}개`:"")); }
+  const gu=gradeUnseen()?1:0, u=unseenN().length+gu, bd=document.getElementById("noticeBadge"); bd.hidden=!u; bd.textContent=u>9?"9+":String(u);
+  b.classList.toggle("has",ntList().length>0||!!gradeSnap(myGrade)); b.setAttribute("aria-label","알림판"+(u?` · 새 알림 ${u}개`:"")+(gu?" (평가 결과)":"")); }
 function noticeSync(){ ntBadge(); if(!ME||ME.mustChange) return;
   if(ntOpen){ renderNotices(); return; }
-  if(unseenN().length) openNotices(true); }
-function openNotices(isNew){ ntMode=isNew?"new":"all"; ntDel=null; ntNote=""; ntOpen=true; if(!isNew) markSeen(ntList().map(n=>n.id)); renderNotices(); ntBadge();
+  if(unseenN().length||gradeUnseen()) openNotices(true); }
+function openNotices(isNew){ ntMode=isNew?"new":"all"; ntDel=null; ntNote=""; ntOpen=true;
+  if(!isNew){ markSeen(ntList().map(n=>n.id)); ntGradeBase=gradeSeen(); markGradeSeen(); } renderNotices(); ntBadge();
   const el=document.getElementById("ntModal"), f=el&&el.querySelector(isNew?"[data-nt=ok]":"#ntText,[data-nt=close]"); if(f) f.focus(); }
 function closeNotices(){ const el=document.getElementById("ntModal"); if(!el||!ntOpen) return;
-  if(ntMode==="new") markSeen(ntList().map(n=>n.id));
+  if(ntMode==="new"){ markSeen(ntList().map(n=>n.id)); markGradeSeen(); }
   ntOpen=false; el.hidden=true; ntBadge(); }
 function ntWhen(t){ if(!t) return ""; const d=new Date(t); return `${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
 function renderNotices(){ let el=document.getElementById("ntModal");
   if(!el){ el=document.createElement("div"); el.id="ntModal"; el.className="ntm"; document.body.appendChild(el);
     el.addEventListener("click",ntClick); el.addEventListener("submit",ntSubmit); }
   const T=ME&&ME.role==="teacher"&&ntMode==="all", list=ntMode==="new"?unseenN():ntList(), draft=(document.getElementById("ntText")||{}).value||"";
-  if(ntMode==="new"&&!list.length){ ntOpen=false; el.hidden=true; return; }
+  const S=ME&&ME.role==="student", gc=!S?"":ntMode==="all"?gradeCardHTML(false):gradeUnseen()?gradeCardHTML(true):"";
+  if(ntMode==="new"&&!list.length&&!gc){ ntOpen=false; el.hidden=true; return; }
   el.innerHTML=`<div class="ntm-box" role="dialog" aria-modal="true" aria-labelledby="ntTitle">
-    <div class="ntm-head"><span class="ntm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span><b id="ntTitle">${ntMode==="new"?"새 공지가 있습니다":"공지"}</b><button class="ntm-x" type="button" data-nt="close" aria-label="닫기">×</button></div>
+    <div class="ntm-head"><span class="ntm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span><b id="ntTitle">${ntMode==="new"?(gc&&!list.length?"평가 결과 알림":gc?"새 알림이 있습니다":"새 공지가 있습니다"):S?"알림판":"공지"}</b><button class="ntm-x" type="button" data-nt="close" aria-label="닫기">×</button></div>
     ${T?`<form class="ntm-form" id="ntForm"><textarea id="ntText" rows="3" maxlength="1000" placeholder="학생과 선생님 화면에 팝업으로 보일 공지 (예: 4교시 끝나기 전에 3단계까지 쓰기)">${esc(draft)}</textarea>
       <div class="ntm-row"><span class="sub" id="ntMsg">${esc(ntNote)}</span><button class="btn pri" type="submit">📢 공지 올리기</button></div></form>`:""}
-    <div class="ntm-list">${list.length?list.map(n=>`<article class="ntm-item"><p>${esc(n.text)}</p><div class="ntm-meta"><span>${ntWhen(n.at)}${n.by?" · "+esc(n.by):""}</span>
-      ${T?`<button class="btn${ntDel===n.id?" danger":""}" type="button" data-nt="del" data-id="${esc(n.id)}">${ntDel===n.id?"정말 삭제":"삭제"}</button>`:""}</div></article>`).join(""):`<p class="sub ntm-empty">올라온 공지가 없습니다.</p>`}</div>
+    <div class="ntm-list">${gc}${list.length?list.map(n=>`<article class="ntm-item"><p>${esc(n.text)}</p><div class="ntm-meta"><span>${ntWhen(n.at)}${n.by?" · "+esc(n.by):""}</span>
+      ${T?`<button class="btn${ntDel===n.id?" danger":""}" type="button" data-nt="del" data-id="${esc(n.id)}">${ntDel===n.id?"정말 삭제":"삭제"}</button>`:""}</div></article>`).join(""):(gc&&ntMode==="new"?"":`<p class="sub ntm-empty">올라온 공지가 없습니다.</p>`)}</div>
     ${ntMode==="new"?`<div class="ntm-foot"><button class="btn pri" type="button" data-nt="ok">확인했습니다</button></div>`:""}</div>`;
   el.hidden=false; }
 function ntClick(e){ const el=document.getElementById("ntModal"); if(e.target===el){ closeNotices(); return; }
@@ -2008,10 +2037,8 @@ function submitHTML(doc){ const p=progress(doc), avg=Math.round(p.reduce((a,b)=>
   if(doc.status==="submitted") return `<b>제출했습니다</b><span class="sub">${doc.submittedAt?ago(doc.submittedAt):""} 제출 · 선생님이 바로 볼 수 있습니다.</span>${cfg.locked?"":`<div><button class="btn" type="button" data-act="unsubmit">제출 취소하고 고치기</button></div>`}`;
   if(confirmSubmit) return `<b>정말 제출할까요?</b><span class="sub">제출하면 고칠 수 없게 잠깁니다. 선생님이 마감하기 전까지는 제출을 취소하고 다시 고칠 수 있습니다.</span><div style="display:flex;gap:8px"><button class="btn submit-btn" type="button" data-act="submit2">제출하기</button><button class="btn" type="button" data-act="cancelSubmit">돌아가기</button></div>`;
   return `<b>보고서 제출</b><span class="sub">전체 작성률 ${avg}% · 쓰는 내용은 제출 전에도 자동 저장되어 선생님 화면에 보입니다.</span><div><button class="btn submit-btn" type="button" data-act="submit1"${locked()?" disabled":""}>제출하기</button></div>`; }
-function feedbackHTML(){ const g=myGrade; if(!g||!g.released) return ""; const sc=g.scores||{}, tot=[1,2,3,4].reduce((s,i)=>s+(isNum(sc["s"+i])?+sc["s"+i]:0),0);
-  return `<section class="fb"><h3>선생님 피드백 · ${tot} / 40점</h3><div class="fbgrid">${ELEMENTS.map((e,i)=>`<div>${esc(e[0])}<b>${isNum(sc["s"+(i+1)])?sc["s"+(i+1)]:"–"} / 10</b>${(g.notes||{})["s"+(i+1)]?`<span class="sub">${esc(g.notes["s"+(i+1)])}</span>`:""}</div>`).join("")}</div>${g.overall?`<p style="margin:8px 0 0;white-space:pre-wrap">${esc(g.overall)}</p>`:""}</section>`; }
-function bannersHTML(){ let b=""; if(cfg.locked) b+=`<div class="banner warn">선생님이 작성을 마감했습니다. 지금은 읽기만 할 수 있습니다.</div>`;
-  return b+feedbackHTML(); }
+// 공개된 점수·피드백은 학생 화면에 펼쳐 두지 않고 확성기 알림판에서만 보여 줍니다(gradeCardHTML)
+function bannersHTML(){ return cfg.locked?`<div class="banner warn">선생님이 작성을 마감했습니다. 지금은 읽기만 할 수 있습니다.</div>`:""; }
 function renderTopBits(){ const t=document.getElementById("topBits"); if(t) t.innerHTML=bannersHTML(); }
 function renderStudent(){
   const p=progress(me), ro=locked(), y=window.scrollY;

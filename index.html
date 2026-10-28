@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>삼각함수·미적분 수학적 모델링 탐구</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%234F46E5%22/%3E%3Cpath d=%22M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
-<script src="config.js?v=202610260908"></script>
-<script src="mathtool.js?v=202610260908"></script>
+<script src="config.js?v=202610281407"></script>
+<script src="mathtool.js?v=202610281407"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -1315,7 +1315,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610260908"; // build:963d1658  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202610281407"; // build:32102441  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",CONSENT_SIGN:"서명을 저장하지 못했습니다. [다시 쓰기]를 누르고 서명해 주세요.",CONSENT_VER:"동의서가 바뀌었습니다. 새로고침한 뒤 다시 동의해 주세요.",CONSENT_AGREE:"동의 칸에 체크해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -1543,7 +1543,9 @@ async function pollStatus(){ if(!ME||document.visibilityState!=="visible") retur
 
 /* ───────── 학생 화면 ───────── */
 function submitHTML(doc){ const p=progress(doc), avg=Math.round(p.reduce((a,b)=>a+b,0)/5*100);
-  if(doc.status==="submitted") return `<b>제출했습니다</b><span class="sub">${doc.submittedAt?ago(doc.submittedAt):""} 제출 · 선생님이 바로 볼 수 있습니다.</span>${cfg.locked?"":`<div><button class="btn" type="button" data-act="unsubmit">제출 취소하고 고치기</button></div>`}`;
+  // 제출한 학생은 여기서 바로 보고서 PDF를 받습니다(마감 뒤에도). [나의 수행] ③의 단추와 같은 동작(data-act="pdf")
+  const pdf=ME&&ME.role==="student"&&view==="student"&&doc===me?`<div class="docbar" style="margin-top:4px"><div class="grow"><small id="docSt"></small><small id="pdfLink"></small></div><button class="btn pri" type="button" data-act="pdf">⬇ 제출한 보고서 PDF로 받기</button></div>`:"";
+  if(doc.status==="submitted") return `<b>제출했습니다</b><span class="sub">${doc.submittedAt?ago(doc.submittedAt):""} 제출 · 선생님이 바로 볼 수 있습니다.</span>${pdf}${cfg.locked?"":`<div><button class="btn" type="button" data-act="unsubmit">제출 취소하고 고치기</button></div>`}`;
   if(confirmSubmit) return `<b>정말 제출할까요?</b><span class="sub">제출하면 고칠 수 없게 잠깁니다. 선생님이 마감하기 전까지는 제출을 취소하고 다시 고칠 수 있습니다.</span><div style="display:flex;gap:8px"><button class="btn submit-btn" type="button" data-act="submit2">제출하기</button><button class="btn" type="button" data-act="cancelSubmit">돌아가기</button></div>`;
   return `<b>보고서 제출</b><span class="sub">전체 작성률 ${avg}% · 쓰는 내용은 제출 전에도 자동 저장되어 선생님 화면에 보입니다.</span><div><button class="btn submit-btn" type="button" data-act="submit1"${locked()?" disabled":""}>제출하기</button></div>`; }
 // 공개된 점수·피드백은 학생 화면에 펼쳐 두지 않고 확성기 알림판에서만 보여 줍니다(gradeCardHTML)

@@ -104,19 +104,22 @@ function buildDoc_(id, spec, images) {
   if (rec.hash === hash) return { docId: rec.docId, url: rec.url, at: rec.at, skipped: true };
   const doc = DocumentApp.openById(rec.docId);
   if (doc.getName() !== name) doc.setName(name);
-  renderSpec_(doc, spec, images, id);
+  const missing = renderSpec_(doc, spec, images, id);
   doc.saveAndClose();
   const at = Date.now();
   withLock_(() => {
     const sh = sheet_(SHEETS.doc), row = findRow_(sh, id);
-    if (row > 0) { sh.getRange(row, 2, 1, 2).setValues([[String(info.sid || ''), String(info.name || '')]]); sh.getRange(row, 6, 1, 2).setValues([[new Date(at), hash]]); }
+    // 그래프가 빠졌으면 해시를 남기지 않아 다음 반영·PDF 때 다시 그립니다
+    if (row > 0) { sh.getRange(row, 2, 1, 2).setValues([[String(info.sid || ''), String(info.name || '')]]); sh.getRange(row, 6, 1, 2).setValues([[new Date(at), missing ? '' : hash]]); }
   });
   return { docId: rec.docId, url: rec.url, at: at, skipped: false };
 }
 
 /* ───── 활동지 서식으로 그리기 ───── */
+/** 활동지를 그립니다. 그래프를 끝내 넣지 못한 개수를 돌려줍니다(0이 아니면 다음 반영 때 다시 그림). */
 function renderSpec_(doc, spec, images, ownerId) {
   const A = DocumentApp.Attribute, body = doc.getBody(), math = spec.math || {};
+  let missing = 0;
   body.clear();
   body.setPageWidth(595).setPageHeight(842).setMarginTop(40).setMarginBottom(40).setMarginLeft(40).setMarginRight(40);
   const txt = (o) => {
@@ -198,8 +201,14 @@ function renderSpec_(doc, spec, images, ownerId) {
           const b64 = images[pt.i];
           if (b64) {
             const p = body.appendParagraph(' '); p.setAlignment(DocumentApp.HorizontalAlignment.CENTER).setSpacingAfter(2);
-            const img = p.appendInlineImage(Utilities.newBlob(Utilities.base64Decode(b64), 'image/png', 'graph.png'));
-            img.setWidth(440).setHeight(220);
+            // 구글 문서 서비스가 잠깐 '사용할 수 없음'을 내면 쉬었다 다시 넣고, 끝내 안 되면 안내 글자를 넣고 나머지를 계속 그립니다
+            let img = null;
+            for (let k = 0; k < 3 && !img; k++) {
+              try { img = p.appendInlineImage(Utilities.newBlob(Utilities.base64Decode(b64), 'image/png', 'graph.png')); }
+              catch (e) { if (k < 2) Utilities.sleep(1500 * (k + 1)); }
+            }
+            if (img) img.setWidth(440).setHeight(220);
+            else { missing++; p.appendText('(그래프를 넣지 못했습니다 · 다시 반영하면 들어갑니다)').setAttributes(txt({ size: 9, color: C_MUTED })); }
             if (pt.caption) { const c = para(pt.caption, { size: 8.5, color: C_MUTED, after: 4 }); c.setAlignment(DocumentApp.HorizontalAlignment.CENTER); }
           } else para('(그래프를 그릴 자료가 아직 없습니다)', { size: 9, color: C_MUTED, after: 4 });
         }
@@ -210,4 +219,5 @@ function renderSpec_(doc, spec, images, ownerId) {
       }
     });
   });
+  return missing;
 }

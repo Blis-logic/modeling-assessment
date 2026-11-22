@@ -14,7 +14,6 @@
 (function () {
   "use strict";
   const ALGEO_HOME = "https://www.algeomath.kr/";
-  const ALGEO_EX = "https://www.algeomath.kr/algeo/algeomath/app/view?id=8c331e3287992230396e4fea65ef4353";
   // 이차곡선 종류: 타원 ((x-c)/a)^2+((y-d)/b)^2=1 을 기준으로
   const CONIC_TYPES = ["타원", "원", "쌍곡선 (좌우)", "쌍곡선 (상하)", "포물선 (위아래)", "포물선 (좌우)"];
   const normType = t => CONIC_TYPES.includes(t) ? t : t === "포물선" ? "포물선 (위아래)" : t === "쌍곡선" ? "쌍곡선 (좌우)" : t === "원" ? "원" : "타원";
@@ -29,7 +28,7 @@
     { name: "이차곡선 모델링", time: "2차시 · 2시간", goal: "계수와 범위를 바꿔 가며 원·타원·포물선·쌍곡선을 사진의 윤곽에 맞춥니다." },
     { name: "벡터 모델링", time: "3차시 · 1~2시간", goal: "직선 부분을 시점과 성분으로 정한 벡터로 나타냅니다." },
     { name: "정확도·수학적 해석", time: "4차시 · 1~2시간", goal: "고른 꼭짓점으로 모델의 정확도를 확인하고, 곡선의 연결·대칭과 벡터의 역할, 한계를 수학적 근거로 설명합니다." },
-    { name: "최종 성과 정리", time: "5단계", goal: "작품 링크를 붙이고, 보고서를 점검해 제출합니다." }
+    { name: "최종 성과 정리", time: "5단계", goal: "탐구 과정을 돌아보고, 작품과 모델링 결과에 대한 나의 의견과 도구 활용을 정리한 뒤 보고서를 점검해 제출합니다." }
   ];
   // 단계 머리 색·아이콘: 나의 수행, 1~5단계 (도형 과제는 초록색 계열)
   const LOOK = [
@@ -54,6 +53,15 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
     ["sh_a1", "[1] 이차곡선의 연결과 대칭성에 대한 수학적 근거"],
     ["sh_a2", "[2] 벡터의 시점·종점과 성분을 활용한 구조적 해석"],
     ["sh_a3", "[3] 모델링 결과의 타당성 및 한계 (거리·각도 정확도를 근거로)"]
+  ];
+  /* 5단계 최종 성과 정리: 과정 돌아보기 · 작품과 결과에 대한 의견 (칸 이름 sh_r*) */
+  const REFLECT = [["sh_r1", "수행 과정에서 어려웠던 점과 해결 과정"], ["sh_r2", "작품과 모델링 결과에 대한 나의 의견"]];
+  const TOOL_GUIDE = [
+    "<b>이 웹앱의 좌표평면</b>: 사진을 좌표평면에 맞추고, 계수·범위·성분을 넣어 곡선과 벡터를 그리며, 위치·방향 정확도를 계산합니다.",
+    "<b>공학용 계산기</b>: 끝점을 식에 대입하거나 벡터의 크기·내적·사이각을 직접 계산해 앱이 보여 준 값을 확인합니다.",
+    "<b>그래프 도구</b> (알지오매스·데스모스·지오지브라, 선택): 곡선을 따로 그려 비교합니다. 만든 화면은 아래에 캡처해 올릴 수 있습니다.",
+    "<b>스프레드시트</b> (선택): 꼭짓점 좌표와 정확도 값을 표로 정리합니다.",
+    "<b>AI</b> (챗GPT·제미나이·클로드 등): <b>사용 금지</b>입니다. 쓰면 감점하고, 제출 후 인터뷰로 확인합니다."
   ];
   /* AI 활용 금지 (이 과제만): 모든 곡선의 선택과 계수는 학생이 스스로 결정 · 적발 시 감점 · 제출한 결과물로 인터뷰 */
   const AI_BAN = `<b>🚫 AI 활용 절대 금지</b><ul><li>챗GPT·제미나이·클로드 등 <b>AI를 쓰면 안 됩니다.</b> 적발되면 <b>감점</b>합니다.</li><li><b>모든 곡선의 종류와 계수, 벡터, 꼭짓점은 내가 직접 결정</b>합니다.</li><li>제출한 결과물로 <b>선생님과 인터뷰</b>를 합니다. 곡선을 왜 그렇게 정했는지, 식이 무엇을 뜻하는지 내 말로 설명할 수 있어야 합니다.</li></ul>`;
@@ -85,10 +93,12 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
     sh_a1: "곡선이 이어지는 점의 좌표가 같은지(연속), 어떤 축·점에 대해 대칭인지 식과 좌표로 보입니다.",
     sh_a2: "벡터의 시점·종점, 성분, 크기 $|\\vec v|=\\sqrt{v_1^2+v_2^2}$ 등을 써서 벡터가 구조에서 하는 역할을 설명합니다.",
     sh_a3: "위치 정확도(벡터의 거리)와 방향 정확도(내적으로 구한 각도)를 근거로 모델이 실제 물체와 얼마나 닮았는지, 어긋난 점과 그 이유, 고칠 방법을 씁니다.",
-    sh_url: "알지오매스 2D 등에서 만든 작품이 있으면 [공유] 링크를 붙여 넣습니다(선택).",
-    sh_shot: "다른 도구로 만든 작품 화면을 캡처해 올립니다(선택, 흑백 50KB 이하로 줄여 보고서에 들어갑니다).",
+    sh_url: "예전에 입력한 작품 공유 링크입니다. 지금은 이 칸을 쓰지 않습니다.",
+    sh_shot: "다른 도구로 만든 화면을 캡처해 올립니다(선택, 흑백 50KB 이하로 줄여 보고서에 들어갑니다).",
+    sh_r1: "가장 어려웠던 장면을 하나 이상 골라 ① 몇 단계, 어느 부위(곡선·벡터·꼭짓점)에서 ② 무엇이 왜 어려웠는지 ③ 계수·범위·성분을 어떻게 바꿔 보며 해결했는지(바꾸기 전과 후의 값, 정확도의 변화) ④ 그 과정에서 새로 알게 된 수학 개념을 씁니다.",
+    sh_r2: "① 작품에서 가장 잘 표현된 부분과 그 이유 ② 실제 물체와 가장 달라 보이는 부분과 그 원인(위치·방향 일치율, 평균 거리·각도 차를 근거로) ③ 다시 만든다면 바꿀 곡선·벡터와 그때 기대되는 변화 ④ 이차곡선과 벡터로 실생활 물체를 표현해 보며 생각한 점을 씁니다.",
     sh_src: "참고한 자료(사진, 사이트, 책)와 그 주소를 적습니다. 물체 사진을 직접 찍지 않았다면 출처를 꼭 적습니다.",
-    sh_tool: "어떤 도구를 어느 차시에 어떻게 썼는지 씁니다. 이 과제는 AI를 쓸 수 없습니다."
+    sh_tool: "체크한 도구마다 ① 몇 단계에서 ② 무엇을 하려고 ③ 어떻게 썼는지 ④ 도구가 보여 준 결과를 손 계산이나 다른 방법으로 어떻게 확인했는지 씁니다. 이 과제는 AI를 쓸 수 없습니다."
   };
 
   /* ───── 숫자 ───── */
@@ -339,7 +349,7 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
     const s1 = listFrac(doc.conics || [], GOAL.conics, [it => conicK(it).ok, it => filled(it.role)]);
     const s2 = listFrac(doc.vecs || [], GOAL.vecs, [it => vecK(it).ok, it => filled(it.meaning), it => !!(ptByName(doc, it.pa) && ptByName(doc, it.pb))]);
     const s3 = (ANALYSIS.filter(([k]) => filled(a[k])).length + (accuracy(doc) ? 1 : 0) + (angleAcc(doc) ? 1 : 0)) / (ANALYSIS.length + 2);
-    const s4 = CHECKS.filter(([k]) => ck[k]).length / CHECKS.length;
+    const s4 = (CHECKS.filter(([k]) => ck[k]).length / CHECKS.length + [a.sh_r1, a.sh_r2, a.sh_tool].filter(filled).length) / 4;
     return [s0, s1, s2, s3, s4];
   }
   function homeProgress(doc) { const a = doc.ans || {}; return [a.sh_obj, a.sh_src, a.sh_tool].filter(filled).length / 3; }
@@ -389,6 +399,7 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
 .sh-par input{width:74px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--fill);color:var(--ink);font:inherit;font-size:13px}
 .sh-par input:placeholder-shown{background:var(--good-soft)}.sh-par .sep{align-self:center;color:var(--muted);font-size:12px}
 .sh-auto{font-size:13px;padding:6px 10px;background:var(--label);border-radius:6px;overflow-x:auto}
+.sh-tools{padding:8px 12px;font-size:14px;line-height:1.6;min-width:0}.sh-toolguide{margin:0;padding-left:18px}.sh-toolguide li{margin:3px 0}
 .sh-add{justify-self:start}.sh-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .sh-shot img{max-width:100%;border:1px solid var(--line);border-radius:8px}
 .sh-plane{position:relative}.sh-plane svg{width:100%;height:auto;display:block;border-radius:10px;background:#fff;touch-action:manipulation}
@@ -498,7 +509,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
   const numIn = (path, v, label, ro, ph) => `<label>${tx(label)}<input data-p="${path}" value="${esc(v == null ? "" : v)}" inputmode="decimal" placeholder="${esc(ph || " ")}" aria-label="${esc(plain(label))}" autocomplete="off"${ro ? " disabled" : ""}></label>`;
   const delBtn = (k, i, ro) => ro ? "" : `<button class="btn" type="button" data-act="shDel" data-list="${k}" data-i="${i}">삭제</button>`;
   const addBtn = (k, label, ro) => ro ? "" : `<button class="btn pri sh-add" type="button" data-act="shAdd" data-list="${k}">＋ ${esc(label)}</button>`;
-  const algeoLinks = () => `<div class="sh-links"><a class="btn" style="text-decoration:none" href="${ALGEO_HOME}" target="_blank" rel="noopener">알지오매스 열기 ↗</a><a class="btn" style="text-decoration:none" href="${ALGEO_EX}" target="_blank" rel="noopener">알지오매스 예시 작품 보기 ↗</a></div>`;
+  const algeoLinks = () => `<div class="sh-links"><a class="btn" style="text-decoration:none" href="${ALGEO_HOME}" target="_blank" rel="noopener">알지오매스 열기 ↗</a></div>`;
   const help = items => `<details class="help"><summary>💡 막히면 보세요 (감점 없음)</summary><ul>${items.map(h => `<li>${tx(h)}</li>`).join("")}</ul></details>`;
   function photoBox(doc, key, ro) {
     const ph = (doc.photos || {})[key];
@@ -603,10 +614,15 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
         + ANALYSIS.map(([k, l], i) => card(["②", "③", "④"][i], l, HELP[k], ansRow(doc, k, l, "longmath", ro))).join("")
         + `<div class="card low hint">${help(["연결: 두 곡선이 만나는 점을 두 식에 모두 넣어 성립하는지 보이면 매끄럽게 이어진다는 근거가 됩니다.", "대칭: $x$ 대신 $-x$를 넣어도 식이 같으면 $y$축 대칭, $y$ 대신 $-y$를 넣어도 같으면 $x$축 대칭입니다.", "정확도가 낮다면: 어느 점이 벗어났는지 보고 그 부위의 계수·범위를 고치거나, 곡선을 나눠 더 그립니다."])}</div>`;
     }
-    const ck = doc.checks || {};
-    return card("①", "작품 공유 링크 (선택)", "알지오매스 2D 등 다른 도구로도 만들었다면 링크를 붙여 넣습니다.", ansRow(doc, "sh_url", "작품 공유 링크 (URL)", "link", ro) + algeoLinks())
-      + card("②", "다른 도구의 작품 화면 (선택)", "캡처해 올리면 보고서에 들어갑니다.",
-        row("작품 화면 캡처", "sh_shot", `${ro ? "" : `<div style="padding:6px 10px"><button type="button" class="btn" data-photo="sh_shot">📷 화면 사진 올리기</button></div>`}${photoBox(doc, "sh_shot", ro)}`))
+    const ck = doc.checks || {}, T = doc.tools || {}, oldUrl = String((doc.ans || {}).sh_url || "").trim();
+    return card("①", REFLECT[0][1], "선생님은 '어려웠다'는 말보다 무엇을 시도하고 어떻게 판단했는지를 봅니다. 실제로 바꾼 값과 그 결과를 넣어 내 과정이 드러나게 씁니다.", ansRow(doc, "sh_r1", REFLECT[0][1], "longmath", ro))
+      + card("②", REFLECT[1][1], "느낌만 쓰지 말고 4단계의 정확도 수치와 좌표평면 그림을 근거로 내 작품을 스스로 평가합니다. 잘된 점과 부족한 점을 모두 씁니다.", ansRow(doc, "sh_r2", REFLECT[1][1], "longmath", ro))
+      + card("③", "사용한 도구와 활용 설명", "도구는 계산과 그리기를 돕는 수단이고, 곡선의 종류·계수와 벡터를 정하는 판단은 내가 합니다. 도구가 보여 준 값을 그대로 믿지 말고 확인한 방법까지 씁니다.",
+        `<div class="row"><div class="lab">쓸 수 있는 도구</div><div class="sh-tools"><ul class="sh-toolguide">${TOOL_GUIDE.map(t => `<li>${t}</li>`).join("")}</ul>${ro ? "" : algeoLinks()}</div></div>
+        <div class="row">${labHTML("사용한 도구", "sh_tool")}<div class="toolchk">${TOOLS_SH().map(([k, l]) => `<label><input type="checkbox" data-p="tools.${k}"${T[k] ? " checked" : ""}${ro ? " disabled" : ""}> ${esc(l)}</label>`).join("")}</div></div>
+        ${ansRow(doc, "sh_tool", "도구를 어디에, 어떻게 썼고 결과를 어떻게 확인했는지", "long", ro)}
+        ${row("다른 도구로 만든 화면 (선택)", "sh_shot", `${ro ? "" : `<div style="padding:6px 10px"><button type="button" class="btn" data-photo="sh_shot">📷 화면 사진 올리기</button></div>`}${photoBox(doc, "sh_shot", ro)}`)}
+        ${oldUrl ? `<div class="row"><div class="lab">예전에 입력한 작품 링크</div><div class="ro">${esc(oldUrl)}</div></div>` : ""}`)
       + `<div class="card"><div class="blk"><div class="no">✓</div><div><h3>제출 전 자기 점검</h3></div><div class="body checks">${CHECKS.map(([k, t]) => `<label><input type="checkbox" id="c_${k}" data-p="checks.${k}"${ck[k] ? " checked" : ""}${ro ? " disabled" : ""}> <span>${esc(t)}</span></label>`).join("")}</div></div></div>`
       + `<div class="card"><div class="submitbox" data-out="submit"></div></div>`;
   }
@@ -632,7 +648,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
   <div class="dlog"><small>최근 활동 기록</small>${logs.length ? `<ul>${logs.map(s => `<li><b>${new Date(s.s).getMonth() + 1}/${new Date(s.s).getDate()} ${hhmm(s.s)}–${hhmm(s.e)}</b><span>탐구 ${tmFmt(s.x)} · 입력 ${tmFmt(s.i)}${s.n ? ` · <em>활동 없음 ${s.n}회 (${tmFmt(s.d)})</em>` : ""}</span></li>`).join("")}</ul>` : '<p class="sub">아직 기록이 없습니다.</p>'}</div></div>
   </div>`;
   }
-  const PHOTO_LABEL = Object.assign({ sh_shot: "다른 도구의 작품 화면" }, Object.fromEntries(ANALYSIS));
+  const PHOTO_LABEL = Object.assign({ sh_shot: "다른 도구로 만든 화면" }, Object.fromEntries(ANALYSIS), Object.fromEntries(REFLECT));
   function filesHTML(doc) {
     const P = doc.photos || {}, isT = ME && ME.role === "teacher", pk = Object.keys(P), I = cv(doc).img;
     const item = (ic, t, sub, url) => `<li><span class="fi">${ic}</span><div><b>${t}</b><small>${sub}</small></div>${url && isT ? `<a class="btn" style="text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">열기 ↗</a>` : ""}</li>`;
@@ -757,10 +773,11 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
           .concat(G ? [{ t: "table", cols: ["벡터", "$\\vec u=\\overrightarrow{AB}$", "$\\vec v$", "$\\vec u\\cdot\\vec v$", "$|\\vec u|,\\ |\\vec v|$", "$\\cos\\theta$", "$\\theta$", "일치"], rows: G.rows.map(r => [`v${r.i + 1} (${r.a}→${r.b})`, `$${vt(r.u1, r.u2)}$`, `$${vt(r.v1, r.v2)}$`, fm(r.dot), `${fm(r.lu)}, ${fm(r.lv)}`, fm(r.cos, 5), `${fm(r.th, 2)}°`, r.ok ? "일치" : "벗어남"]) }] : [])
           .concat(A || G ? [IMG(1, "초록·빨강 선분: 거리 벡터 QP · 점선 화살표: 사진 기준선 AB와 사이각 θ")] : []) }]
         .concat(ANALYSIS.map(([k, l], i) => ({ no: ["②", "③", "④"][i], title: l, parts: [{ t: "fields", rows: [[l, v(a[k])]] }].concat(photo(k, "풀이 사진 · " + l)) }))),
-      (filled(a.sh_url) ? [{ no: "①", title: "작품 공유 링크", parts: [{ t: "fields", rows: [["공유 링크 (URL)", v(a.sh_url)]] }] }] : [])
-        .concat(P.sh_shot ? [{ no: "②", title: "다른 도구의 작품 화면", parts: photo("sh_shot", "작품 화면") }] : [])
+      REFLECT.map(([k, l], i) => ({ no: ["①", "②"][i], title: l, parts: [{ t: "fields", rows: [[l, v(a[k])]] }].concat(photo(k, "풀이 사진 · " + l)) }))
+        .concat([{ no: "③", title: "사용한 도구와 활용 설명", parts: [{ t: "fields", rows: [["사용한 도구", TOOLS_SH().filter(([k]) => (doc.tools || {})[k]).map(([, l]) => l).join(", ")], ["도구를 어디에, 어떻게 썼고 결과를 어떻게 확인했는지", v(a.sh_tool)]]
+          .concat(filled(a.sh_url) ? [["예전에 입력한 작품 링크", v(a.sh_url)]] : []) }].concat(photo("sh_shot", "다른 도구로 만든 화면")) }])
         .concat([{ check: "제출 전 자기 점검", items: CHECKS.map(([k, t]) => [t, !!ck[k]]) },
-          { no: "⑤", title: "출처와 도구", parts: [{ t: "fields", rows: [["참고 자료 출처", v(a.sh_src)], ["사용한 도구", TOOLS_SH().filter(([k]) => (doc.tools || {})[k]).map(([, l]) => l).join(", ")], ["도구를 어디에 어떻게 썼는지", v(a.sh_tool)]] }] }])
+          { no: "④", title: "참고 자료 출처", parts: [{ t: "fields", rows: [["참고 자료 출처", v(a.sh_src)]] }] }])
     ];
     const empty = { 2: "(아직 벡터가 없습니다)" };
     return { spec: { header: ["2026학년도 2학기 전문 수학 · 수행평가", "실생활 도형 디자인 보고서", "사진 위 좌표평면에서 이차곡선·벡터로 모델링 · 활동지 겸 보고서"],

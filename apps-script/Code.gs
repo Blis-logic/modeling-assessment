@@ -13,6 +13,22 @@ const REC_HEAD = ['아이디', '학번', '이름', '탐구 제목', '상태', '�
 const GRD_HEAD = ['아이디', '학번', '이름', '실험 설계 및 자료 수집', '자료 처리 및 수학적 표현', '수학적 모델링', '결과 분석·검증 및 성찰', '총점', '학생 공개', '종합 피드백', '최근 채점', '데이터'];
 const REC_DATA_COL = REC_HEAD.length;   // 12번째 열부터 JSON 조각
 const GRD_DATA_COL = GRD_HEAD.length;
+/* ───── 과제(수행평가) 두 가지: 계정·세션·동의·공지는 함께 쓰고, 기록·문서·Drive 폴더·마감은 과제마다 따로 ─────
+ * 화면이 'shape.save'처럼 앞에 'shape.'를 붙여 부르면 실생활 도형 디자인 보고서, 그냥 부르면 지금까지의 모델링 탐구입니다.
+ * 옛 서버는 'shape.…'를 모르므로 UNKNOWN_ACTION으로 거절합니다 → 도형 기록이 모델링 '기록' 시트에 들어갈 수 없습니다. */
+const SHAPE_REC_HEAD = ['아이디', '학번', '이름', '탐구 대상', '상태', '최근 저장', '제출 시각', '작성률(%)', '곡선 수', '벡터 수', '꼭짓점 수', '위치 일치율(%)', '평균 거리', '방향 일치율(%)', '평균 각도 차(°)', '알지오매스 링크', '데이터'];
+const blank_ = v => v == null ? '' : v;
+const TASKS = {
+  model: { key: 'model', title: '삼각함수·미적분 수학적 모델링', rec: SHEETS.rec, grd: SHEETS.grd, doc: SHEETS.doc, recHead: REC_HEAD,
+    folderName: FOLDER_NAME, folderProp: 'FOLDER_ID', folderUrlProp: 'FOLDER_URL', sf: 'SF_', gd: 'GD_', lockLabel: '작성 마감', docName: '모델링 탐구 보고서', photoPrefix: '풀이사진_',
+    summary: s => [blank_(s.progress), blank_(s.n), s.formA || '', blank_(s.errA)] },
+  shape: { key: 'shape', title: '실생활 도형 디자인 보고서', rec: '기록_도형', grd: null, doc: '문서_도형', recHead: SHAPE_REC_HEAD,
+    folderName: '실생활 도형 디자인 보고서', folderProp: 'FOLDER_ID_SHAPE', folderUrlProp: 'FOLDER_URL_SHAPE', sf: 'SF2_', gd: 'GD2_', lockLabel: '작성 마감_도형', docName: '도형 디자인 보고서', photoPrefix: '도형사진_',
+    summary: s => [blank_(s.progress), blank_(s.nConic), blank_(s.nVec), blank_(s.nPt), blank_(s.acc), blank_(s.dist), blank_(s.accA), blank_(s.ang), String(s.url || '').slice(0, 300)] }
+};
+const SHAPE_ACTIONS = { me: 1, save: 1, status: 1, syncDoc: 1, pdf: 1, upload: 1, getFile: 1, roster: 1, reopen: 1, setConfig: 1 };
+let TASK = TASKS.model;   // 요청 하나를 처리하는 동안의 과제(api 가 정함). 트리거·편집기 실행은 늘 모델링
+const recCol_ = t => t.recHead.length;   // '데이터' 열 기본 위치
 const CHUNK = 40000;                    // 셀 하나에 5만 자까지 들어가므로 4만 자씩 나눕니다
 const SESSION_SEC = 21600;              // 6시간
 const HASH_ROUNDS = 200;
@@ -22,7 +38,7 @@ const HASH_ROUNDS = 200;
 function doGet(e) {
   if (!(e && e.parameter && e.parameter.ping)) {
     try {
-      return HtmlService.createHtmlOutputFromFile('app').setTitle('모델링 탐구 수행평가')
+      return HtmlService.createHtmlOutputFromFile('app').setTitle('전문수학 수행평가 도구')
         .addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
     } catch (x) { /* app.html 이 없으면 아래 상태 응답 */ }
   }
@@ -74,11 +90,15 @@ function setup() {
 /* ───── 하나의 입구: 화면이 POST {action, payload, token} 으로 부릅니다 ───── */
 function api(action, payload, token) {
   payload = payload || {};
+  TASK = TASKS.model;
   try {
+    const sm = /^shape\.(\w+)$/.exec(String(action || ''));
+    if (sm) { if (!SHAPE_ACTIONS[sm[1]]) return { ok: false, error: 'UNKNOWN_ACTION' }; TASK = TASKS.shape; action = sm[1]; }
     const pub = { config: apiConfig_, signup: apiSignup_, login: apiLogin_ };
     if (pub[action]) return Object.assign({ ok: true }, pub[action](payload));
     const user = sessionUser_(token);
     if (!user) return { ok: false, error: 'SESSION' };
+    if (TASK.key === 'shape') ensureTaskSheets_(TASK);   // 로그인한 요청만 도형 과제 시트를 준비합니다
     const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, upload: apiUpload_, getFile: apiGetFile_, consent: apiConsent_ };
     if (mine[action]) return Object.assign({ ok: true }, mine[action](user, payload, token));
     const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, organize: apiOrganize_, addNotice: apiAddNotice_, delNotice: apiDelNotice_, backupNow: apiBackupNow_ };  // 교사만
@@ -90,7 +110,7 @@ function api(action, payload, token) {
   } catch (e) {
     if (e && e.code) return { ok: false, error: e.code };
     return { ok: false, error: 'SERVER', message: String(e && e.message || e) + (e && e.stack ? ' @ ' + String(e.stack).split('\n').slice(1, 4).map(s => s.trim()).join(' | ') : '') };  // 어느 파일 몇째 줄인지 함께 알려 줍니다
-  }
+  } finally { TASK = TASKS.model; }
 }
 function fail_(code) { const e = new Error(code); e.code = code; throw e; }
 
@@ -101,12 +121,16 @@ function readConfig_() {
   return {
     teacherCode: String(m['교사 가입 코드'] || '').trim(),
     classCode: String(m['학급 코드'] || '').trim(),
-    locked: m['작성 마감'] === true || String(m['작성 마감']).toUpperCase() === 'TRUE',
+    locked: isTrue_(m[TASKS.model.lockLabel]),
+    lockedShape: isTrue_(m[TASKS.shape.lockLabel]),   // 도형 과제 마감은 따로(설정 시트 '작성 마감_도형', 없으면 열림)
     notice: String(m['공지'] || ''),
     notices: parseNotices_(m['공지 목록'], m['공지'])
   };
 }
-function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, notice: c.notices.length ? c.notices[0].text : '', notices: c.notices, appVer: typeof APP_VER === 'undefined' ? '' : APP_VER }; }  // appVer: Version.gs(자동 생성) — 열려 있는 옛 화면에 새로고침 안내
+const isTrue_ = v => v === true || String(v).toUpperCase() === 'TRUE';
+/** 지금 과제(TASK)가 마감되었는지 */
+function taskLocked_(c) { c = c || readConfig_(); return TASK.key === 'shape' ? c.lockedShape : c.locked; }
+function publicConfig_() { const c = readConfig_(); return { needClassCode: !!c.classCode, locked: c.locked, lockedShape: c.lockedShape, tasks: ['model', 'shape'],notice: c.notices.length ? c.notices[0].text : '', notices: c.notices, appVer: typeof APP_VER === 'undefined' ? '' : APP_VER }; }  // appVer: Version.gs(자동 생성) — 열려 있는 옛 화면에 새로고침 안내
 /* ───── 공지: 설정 시트 '공지 목록' 칸에 JSON [{id,text,at,by}] (최신이 앞). 예전 '공지' 한 줄은 처음 읽을 때 목록 하나로 봅니다 ───── */
 const NOTICE_MAX = 30;
 function parseNotices_(list, legacy) {
@@ -166,7 +190,8 @@ function apiSignup_(p) {
     return { token: token, user: { id: id, role: role, sid: sid, name: name, mustChange: false, email: role === 'teacher' ? email : '' } };
   });
   if (role === 'teacher') {  // 교사로 가입하면 학생 결과물 폴더를 바로 공유받습니다
-    try { rootFolder_().addEditor(email); res.shared = true; } catch (e) { res.shared = false; }
+    try { rootFolderOf_(TASKS.model).addEditor(email); res.shared = true; } catch (e) { res.shared = false; }
+    try { rootFolderOf_(TASKS.shape).addEditor(email); } catch (e) {}   // 실생활 도형 디자인 보고서 폴더도
   }
   return res;
 }
@@ -209,19 +234,21 @@ function sessionUser_(token) {
 /* ───── 학생 기록 ───── */
 function apiMe_(user) {
   const d = docRecord_(user.id);
-  return { user: user, doc: readJson_(SHEETS.rec, user.id, REC_DATA_COL, true), grade: releasedGrade_(user.id), config: publicConfig_(), docAt: d ? d.at : 0, consent: consentInfo_(user) };
+  return { user: user, task: TASK.key, doc: readJson_(TASK.rec, user.id, recCol_(TASK), true), grade: releasedGrade_(user.id), config: publicConfig_(), docAt: d ? d.at : 0, consent: consentInfo_(user) };
 }
 function apiStatus_(user) {
-  const doc = readJson_(SHEETS.rec, user.id, REC_DATA_COL) || {};
+  const doc = readJson_(TASK.rec, user.id, recCol_(TASK)) || {};
   return { config: publicConfig_(), grade: releasedGrade_(user.id), status: doc.status || 'draft', reopenAt: doc.reopenAt || null, updatedAt: doc.updatedAt || 0 };
 }
-function releasedGrade_(id) { const g = readJson_(SHEETS.grd, id, GRD_DATA_COL); return g && g.released ? g : null; }
+/** 채점은 아직 모델링 과제만 있습니다(도형 과제는 2단계에서) */
+function releasedGrade_(id) { if (!TASK.grd) return null; const g = readJson_(TASK.grd, id, GRD_DATA_COL); return g && g.released ? g : null; }
 function apiSave_(user, p) {
   const doc = p.doc;
   if (!doc || typeof doc !== 'object') fail_('BAD_DOC');
-  if (readConfig_().locked && user.role !== 'teacher') fail_('LOCKED');
+  if ((doc.kind === 'shape' ? 'shape' : 'model') !== TASK.key) fail_('BAD_DOC');   // 다른 과제의 기록을 이 과제 시트에 쓰지 않습니다
+  if (taskLocked_() && user.role !== 'teacher') fail_('LOCKED');
   return withLock_(() => {
-    const prev = readJson_(SHEETS.rec, user.id, REC_DATA_COL, true);  // 저장된 기록을 읽지 못하면 덮어쓰지 않습니다(CORRUPT)
+    const prev = readJson_(TASK.rec, user.id, recCol_(TASK), true);  // 저장된 기록을 읽지 못하면 덮어쓰지 않습니다(CORRUPT)
     // 다른 창·기기가 더 최근에 저장했으면 거절합니다. base 가 없는 요청(옛 화면, '이 창 내용으로 저장')과 교사가 다시 연 직후는 통과
     if (prev && p.base != null && prev.updatedAt && Number(p.base) !== prev.updatedAt && prev.updatedAt !== prev.reopenAt) fail_('CONFLICT');
     if (prev && prev.reopenAt && prev.reopenAt !== doc.reopenAt) { doc.reopenAt = prev.reopenAt; }  // 교사가 다시 연 기록은 유지
@@ -229,8 +256,8 @@ function apiSave_(user, p) {
     if (user.role === 'student') doc.info = Object.assign({}, doc.info || {}, { sid: user.sid, name: user.name });  // 학번·이름은 가입 정보로 고정
     const s = p.summary || {};
     const info = doc.info || {};
-    writeJson_(SHEETS.rec, user.id, REC_DATA_COL, doc, [user.id, info.sid || user.sid, info.name || user.name, info.title || '', doc.status === 'submitted' ? '제출' : '작성 중',
-      new Date(doc.updatedAt), doc.submittedAt ? new Date(doc.submittedAt) : '', s.progress == null ? '' : s.progress, s.n == null ? '' : s.n, s.formA || '', s.errA == null ? '' : s.errA]);
+    writeJson_(TASK.rec, user.id, recCol_(TASK), doc, [user.id, info.sid || user.sid, info.name || user.name, info.title || '', doc.status === 'submitted' ? '제출' : '작성 중',
+      new Date(doc.updatedAt), doc.submittedAt ? new Date(doc.submittedAt) : ''].concat(TASK.summary(s)));
     return { updatedAt: doc.updatedAt, reopenAt: doc.reopenAt || null };
   });
 }
@@ -239,12 +266,12 @@ function apiSave_(user, p) {
 function apiRoster_(user, p) {
   const since = Number(p.since || 0);
   const accs = sheet_(SHEETS.acc).getDataRange().getValues().slice(1).filter(r => r[0] && String(r[1]) !== 'teacher');
-  const recs = mapJson_(SHEETS.rec, REC_DATA_COL, true), grades = mapJson_(SHEETS.grd, GRD_DATA_COL);
+  const recs = mapJson_(TASK.rec, recCol_(TASK), true), grades = TASK.grd ? mapJson_(TASK.grd, GRD_DATA_COL) : {};
   const students = accs.map(r => {
     const id = String(r[0]), bad = recs[id] === CORRUPT, doc = bad ? null : recs[id] || null, upd = doc && doc.updatedAt || 0;
     return { id: id, sid: String(r[2]), name: String(r[3]), lastLogin: r[7] ? new Date(r[7]).getTime() : 0, updatedAt: upd, doc: upd > since ? doc : undefined, corrupt: bad || undefined };
   });
-  return { students: students, grades: grades, config: publicConfig_(), sheetUrl: SpreadsheetApp.getActive().getUrl(), docs: docMap_(), folderUrl: PropertiesService.getScriptProperties().getProperty('FOLDER_URL') || '', serverTime: Date.now() };
+  return { students: students, grades: grades, config: publicConfig_(), sheetUrl: SpreadsheetApp.getActive().getUrl(), docs: docMap_(), folderUrl: PropertiesService.getScriptProperties().getProperty(TASK.folderUrlProp) || '', task: TASK.key, serverTime: Date.now() };
 }
 function apiSaveGrade_(user, p) {
   const id = String(p.id || ''), g = p.grade || {};
@@ -264,18 +291,18 @@ function apiSaveGrade_(user, p) {
 }
 function apiSetConfig_(user, p) {
   return withLock_(() => {
-    if ('locked' in p) writeConfigValue_('작성 마감', !!p.locked);
+    if ('locked' in p) writeConfigValue_(TASK.lockLabel, !!p.locked);   // 'shape.setConfig' 이면 '작성 마감_도형'
     if ('notice' in p) { const t = String(p.notice || '').trim(); writeNotices_(t ? [{ id: makeCode_(10), text: t.slice(0, 1000), at: Date.now(), by: user.name || user.id }] : []); }  // 예전 화면의 [공지 올리기]
     return { config: publicConfig_() };
   });
 }
 function apiReopen_(user, p) {
   return withLock_(() => {
-    const doc = readJson_(SHEETS.rec, String(p.id), REC_DATA_COL, true);
+    const doc = readJson_(TASK.rec, String(p.id), recCol_(TASK), true);
     if (!doc) fail_('NOT_FOUND');
     const t = Date.now(); doc.status = 'draft'; doc.reopenAt = t; doc.updatedAt = t;  // 같은 시각: 학생 창의 저장 충돌 검사에서 통과
-    writeJson_(SHEETS.rec, String(p.id), REC_DATA_COL, doc, null);
-    const sh = sheet_(SHEETS.rec), row = findRow_(sh, String(p.id)); sh.getRange(row, 5, 1, 2).setValues([['작성 중', new Date()]]);
+    writeJson_(TASK.rec, String(p.id), recCol_(TASK), doc, null);
+    const sh = sheet_(TASK.rec), row = findRow_(sh, String(p.id)); sh.getRange(row, 5, 1, 2).setValues([['작성 중', new Date()]]);
     return {};
   });
 }
@@ -299,24 +326,42 @@ function apiResetPw_(user, p) {
 function apiDeleteAccount_(user, p) {
   const id = String(p.id || '');
   if (id === user.id) fail_('SELF');
-  const props = PropertiesService.getScriptProperties();
-  ['SF_', 'GD_'].forEach(k => { const fid = props.getProperty(k + id); if (fid) { try { (k === 'SF_' ? DriveApp.getFolderById(fid) : DriveApp.getFileById(fid)).setTrashed(true); } catch (e) {} props.deleteProperty(k + id); } });
+  const props = PropertiesService.getScriptProperties(), all = [TASKS.model, TASKS.shape];
+  all.forEach(t => [t.sf, t.gd].forEach(k => { const fid = props.getProperty(k + id); if (fid) { try { (k === t.sf ? DriveApp.getFolderById(fid) : DriveApp.getFileById(fid)).setTrashed(true); } catch (e) {} props.deleteProperty(k + id); } }));
   return withLock_(() => {
-    const dr = docRecord_(id);
-    if (dr && dr.docId) { try { DriveApp.getFileById(dr.docId).setTrashed(true); } catch (e) {} }  // 휴지통으로 보냅니다
-    [SHEETS.acc, SHEETS.rec, SHEETS.grd, SHEETS.doc].forEach(n => { const sh = sheet_(n), row = findRow_(sh, id); if (row > 0) sh.deleteRow(row); });
+    all.forEach(t => {   // 두 과제의 보고서 문서를 휴지통으로 보냅니다
+      const sh = SpreadsheetApp.getActive().getSheetByName(t.doc), row = sh ? findRow_(sh, id) : -1;
+      if (row > 0) { const d = docFromRow_(sh.getRange(row, 1, 1, DOC_HEAD.length).getValues()[0]); if (d.docId) { try { DriveApp.getFileById(d.docId).setTrashed(true); } catch (e) {} } }
+    });
+    const names = [SHEETS.acc].concat(...all.map(t => [t.rec, t.grd, t.doc])).filter(Boolean);
+    names.forEach(n => { const sh = SpreadsheetApp.getActive().getSheetByName(n), row = sh ? findRow_(sh, id) : -1; if (row > 0) sh.deleteRow(row); });
     return {};
   });
 }
 
 /* ───── 시트 도우미 ───── */
 function sheet_(name) {
-  let sh = SpreadsheetApp.getActive().getSheetByName(name);
-  if (!sh && name === SHEETS.doc) {  // 문서 시트는 예전 설정에는 없으므로 필요할 때 만듭니다
-    sh = SpreadsheetApp.getActive().insertSheet(name); sh.appendRow(DOC_HEAD); sh.setFrozenRows(1); sh.getRange(1, 1, 1, DOC_HEAD.length).setFontWeight('bold').setBackground('#E1EFF0');
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(name);
+  // 문서 시트와 도형 과제 시트는 예전 설정에는 없으므로 처음 쓸 때 만듭니다(setup 을 다시 실행할 필요 없음)
+  const head = name === SHEETS.doc || name === TASKS.shape.doc ? DOC_HEAD : name === TASKS.shape.rec ? SHAPE_REC_HEAD : null;
+  if (!sh && head) {
+    try { sh = ss.insertSheet(name); } catch (e) { sh = ss.getSheetByName(name); if (!sh) throw e; return sh; }  // 같은 때 다른 요청이 먼저 만들었으면 그것을 씁니다
+    sh.appendRow(head); sh.setFrozenRows(1); sh.getRange(1, 1, 1, head.length).setFontWeight('bold').setBackground('#E1EFF0');
   }
   if (!sh) fail_('NO_SETUP');
   return sh;
+}
+/** 과제 시트가 없으면 잠금 안에서 머리글까지 만들어 둡니다(두 요청이 동시에 처음 쓸 때 머리글 없는 시트에 기록이 먼저 들어가는 일을 막음). */
+function ensureTaskSheets_(t) {
+  const ss = SpreadsheetApp.getActive(), need = [t.rec, t.doc].filter(n => n && !ss.getSheetByName(n));
+  if (need.length) withLock_(() => need.forEach(n => sheet_(n)));
+  // 머리글(recHead)이 바뀐 뒤 아직 기록이 없는 시트는 머리글을 새로 맞춥니다. 기록이 있으면 손대지 않습니다(writeJson_ 가 요약 열을 '데이터' 열 앞까지만 씀).
+  const rec = ss.getSheetByName(t.rec), head = t.recHead;
+  if (rec && rec.getLastRow() <= 1) {
+    const cur = rec.getRange(1, 1, 1, Math.max(rec.getLastColumn(), 1)).getValues()[0].map(v => String(v).trim());
+    if (cur.join('|') !== head.join('|')) withLock_(() => { if (rec.getLastRow() <= 1) { rec.getRange(1, 1, 1, Math.max(cur.length, head.length)).clearContent(); rec.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setBackground('#E1EFF0'); } });
+  }
 }
 function findRow_(sh, id) {
   const n = sh.getLastRow(); if (n < 2) return -1;
@@ -360,7 +405,7 @@ function writeJson_(name, id, dataCol, obj, headVals) {
   for (let i = 0; i < s.length; i += CHUNK) chunks.push(s.slice(i, i + CHUNK));
   let row = findRow_(sh, id);
   if (row < 0) { row = sh.getLastRow() + 1; sh.getRange(row, 1).setValue(id); }
-  if (headVals) sh.getRange(row, 1, 1, headVals.length).setValues([headVals]);
+  if (headVals) { const hv = headVals.slice(0, Math.max(dataCol - 1, 1)); sh.getRange(row, 1, 1, hv.length).setValues([hv]); }   // 요약 열은 '데이터' 열 앞까지만(머리글이 옛 구성이어도 기록 조각을 덮지 않음)
   const oldW = Math.max(sh.getLastColumn() - dataCol + 1, 0), w = Math.max(chunks.length, oldW, 1);
   const line = []; for (let i = 0; i < w; i++) line.push(chunks[i] || '');
   const rg = sh.getRange(row, dataCol, 1, w); rg.setNumberFormat('@'); rg.setValues([line]);

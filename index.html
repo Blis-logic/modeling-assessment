@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>삼각함수·미적분 수학적 모델링 탐구</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%234F46E5%22/%3E%3Cpath d=%22M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
-<script src="config.js?v=202610281407"></script>
-<script src="mathtool.js?v=202610281407"></script>
+<title>전문수학 수행평가 도구</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%234F46E5%22/%3E%3Cpath d=%22M5 18c2.5-9 5.5-12 8-12s4.5 3 6 7%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M7 15l9-7M16 8h-3M16 8v3%22 fill=%22none%22 stroke=%22white%22 stroke-width=%221.8%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<script src="config.js?v=202611220938"></script>
+<script src="mathtool.js?v=202611220938"></script>
+<script src="shape.js?v=202611220938"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -584,12 +585,12 @@ ul.files li.go:hover{border-color:var(--accent);background:var(--accent-soft)}
 <body>
 <header class="top" id="top">
   <div class="wrap">
-    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12c1.7-5 3.3-5 5 0s3.3 5 5 0 3.3-5 5 0 3.3 5 5 0" stroke-width="2.3"/><path d="M2 17.5c1.7-2.6 3.3-2.6 5 0s3.3 2.6 5 0 3.3-2.6 5 0 3.3 2.6 5 0" stroke-width="1.4" opacity=".55"/></svg></span><span class="bt"><b><span class="tl-long">삼각함수·미적분 </span>수학적 모델링 탐구</b><span>전문 수학 수행평가</span></span><button class="iconbtn ntbtn" type="button" id="noticeBtn" hidden aria-label="공지" title="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><span class="nbadge" id="noticeBadge" hidden></span></button></div>
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M3 21V3" stroke-width="1.6" opacity=".6"/><path d="M5 18c2.5-9 5.5-12 8-12s4.5 3 6 7" stroke-width="2.3"/><path d="M7 15l9-7M16 8h-3.2M16 8v3.2" stroke-width="1.8"/></svg></span><span class="bt"><b>전문수학 수행평가 도구</b><span id="taskName">전문 수학 수행평가</span></span><button class="iconbtn ntbtn" type="button" id="noticeBtn" hidden aria-label="공지" title="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><span class="nbadge" id="noticeBadge" hidden></span></button></div>
     <div class="seg" id="roleSeg" hidden>
       <button id="roleT" type="button" aria-pressed="true">교사 대시보드</button>
       <button id="roleS" type="button" aria-pressed="false">학생 화면 미리보기</button>
     </div>
-    <div class="userbox" id="userBox" hidden><span id="whoami"></span><button class="btn" type="button" id="pwBtn" title="비밀번호 바꾸기" aria-label="비밀번호 바꾸기"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2 2"/></svg><span class="tx">비밀번호 바꾸기</span></button><button class="btn" type="button" id="logoutBtn" title="로그아웃" aria-label="로그아웃"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="tx">로그아웃</span></button></div>
+    <div class="userbox" id="userBox" hidden><span id="whoami"></span><button class="btn" type="button" id="taskBtn" hidden title="과제 바꾸기" aria-label="과제 바꾸기"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span class="tx">과제 바꾸기</span></button><button class="btn" type="button" id="pwBtn" title="비밀번호 바꾸기" aria-label="비밀번호 바꾸기"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2 2"/></svg><span class="tx">비밀번호 바꾸기</span></button><button class="btn" type="button" id="logoutBtn" title="로그아웃" aria-label="로그아웃"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="tx">로그아웃</span></button></div>
     <div class="savest" id="saveSt"><span class="dot"></span><span>연결 중</span></div>
   </div>
 </header>
@@ -883,13 +884,13 @@ function formulaTex(m){ if(!m.ok) return ""; const n=v=>fmt(v,4).replace("−","
 function esc(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function getP(o,p){ return p.split(".").reduce((a,k)=>a==null?undefined:a[k],o); }
 function setP(o,p,v){ const ks=p.split("."); let a=o; ks.slice(0,-1).forEach(k=>{ if(a[k]==null||typeof a[k]!=="object") a[k]={}; a=a[k]; }); a[ks[ks.length-1]]=v; }
-function blankDoc(){ return {v:1,info:{},ans:{},data:{},models:{A:{t:"코사인"},B:{t:"사인"}},calc:{x:["","","",""]},checks:{},status:"draft"}; }
+function blankDoc(){ if(TASK==="shape") return Shape.blank(); return {v:1,info:{},ans:{},data:{},models:{A:{t:"코사인"},B:{t:"사인"}},calc:{x:["","","",""]},checks:{},status:"draft"}; }
 function axisLabel(doc,k){ const a=doc.ans||{}; const n=a["s1_"+k+"n"], u=a["s1_"+k+"u"]; return n?(u?`${n} (${u})`:n):k; }
 function ago(t){ if(!t) return "–"; const s=(Date.now()-t)/1000; if(s<60) return "방금"; if(s<3600) return Math.floor(s/60)+"분 전"; if(s<86400) return Math.floor(s/3600)+"시간 전";
   const d=new Date(t); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
 function stageFields(si){ const out=[]; STAGES[si].blocks.forEach(b=>{ if(b.opt) return;
   (b.f||[]).forEach(f=>out.push(f[0])); if(b.table) b.table.rows.forEach(r=>r.slice(1).forEach(k=>out.push(k.split(":")[0]))); if(b.tool==="integral") {} }); return out; }
-function progress(doc){ const a=doc.ans||{}, an=analyze(doc);
+function progress(doc){ if(TASK==="shape") return Shape.progress(doc); const a=doc.ans||{}, an=analyze(doc);
   return STAGES.map((s,si)=>{ const ks=stageFields(si); let have=ks.filter(k=>String(a[k]??"").trim()!=="").length, tot=ks.length;
     if(si===1){ tot++; if(an.pts.length>=DATA_GOAL) have++; } if(si===2){ tot++; if(an.A.ok) have++; }
     if(si===3){ tot+=2; const c=doc.calc||{}; if((c.x||[]).some(isNum)) have++; if(isNum(c.p)&&isNum(c.q)) have++; }
@@ -1001,7 +1002,7 @@ function toolHTML(doc,tool,ro){ const d=doc.data||{}, M=doc.models||{}, c=doc.ca
   case "submit": return `<div class="submitbox" data-out="submit"></div>`;
   } return ""; }
 
-function updateOutputs(root,doc,owner){ const an=analyze(doc), $=s=>root.querySelectorAll(`[data-out="${s}"]`), put=(s,h)=>$(s).forEach(e=>e.innerHTML=h);
+function updateOutputs(root,doc,owner){ if(TASK==="shape") return Shape.outputs(root,doc,owner); const an=analyze(doc), $=s=>root.querySelectorAll(`[data-out="${s}"]`), put=(s,h)=>$(s).forEach(e=>e.innerHTML=h);
   const xl=axisLabel(doc,"x"), yl=axisLabel(doc,"y"), editing=root===app&&doc===me&&view==="student"&&!locked();
   put("chartData",chartSVG(an,{xl,yl,id:"d1"})); put("chartData2",chartSVG(an,{xl,yl,id:"d2"}));
   const f=an.feat; put("feat", f?`<dt>자료 개수</dt><dd>${f.n}</dd><dt>최댓값 (그때의 x)</dt><dd>${fmt(f.max)} (${fmt(f.maxX)})</dd><dt>최솟값 (그때의 x)</dt><dd>${fmt(f.min)} (${fmt(f.minX)})</dd><dt>${tx("변화 폭의 절반 ($a$ 후보)")}</dt><dd>${fmt(f.aC)}</dd><dt>${tx("가운데 값 ($d$ 후보)")}</dt><dd>${fmt(f.dC)}</dd><dt>${tx("$b$ 후보 $=\\dfrac{2\\pi}{T}$")}</dt><dd>${fmt(f.bC)}</dd>`:"");
@@ -1284,7 +1285,8 @@ function svgToPng(svg){ return new Promise(res=>{ if(!/^<svg/.test(svg)) return 
   const im=new Image(); im.onload=()=>{ try{ const cv=document.createElement("canvas"); cv.width=1280; cv.height=640; cv.getContext("2d").drawImage(im,0,0,1280,640); res(cv.toDataURL("image/png").split(",")[1]); }catch(e){ res(""); } };
   im.onerror=()=>res(""); im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(s); }); }
 /** 문서(구글 문서)를 만들거나 갱신합니다. pdf=true 이면 PDF(base64)도 받아 옵니다. 교사는 id로 학생을 지정합니다. */
-async function makeDoc(doc,id,pdf,acct){ const built=buildSpec(doc,acct), svgs=built.svgs, images=await Promise.all(svgs.map(svgToPng));
+async function makeDoc(doc,id,pdf,acct){ const built=TASK==="shape"?Shape.spec(doc,acct,id):buildSpec(doc,acct), svgs=built.svgs, images=await Promise.all(svgs.map(svgToPng));
+  if(built.pngs) images.push(...await built.pngs);   // 도형 과제: 좌표평면 그림(PNG)을 화면에서 그려 보냅니다
   // 긴 수식은 +·− 자리에서 조각 그림 여러 개로 나눠(사이에 폭 없는 빈칸) 문서 칸 안에서 줄이 바뀌게 합니다
   const spec=JSON.parse(JSON.stringify(built.spec,(k,v)=>typeof v==="string"?v.replace(/\$([^$\n]+?)\$/g,(m,t)=>{ const ps=MathTool.splitLong(t.trim()); return ps.length>1?ps.map(p=>`$${p}$`).join("​"):m; }):v));
   // $LaTeX$ 수식은 그림으로 바꿔 보냅니다 → 문서에 깨지지 않게 들어가고, 그림의 대체 텍스트에 LaTeX 원문이 남습니다
@@ -1309,13 +1311,13 @@ async function syncDocNow(){ if(!ME||ME.role!=="student"||!docDirty) return;
 async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; btn.textContent="PDF 만드는 중… (최대 1분)"; docErr="";
   try{ await flush(); if(docBusy) await new Promise(r=>{ const t=setInterval(()=>{ if(!docBusy){ clearInterval(t); r(); } },500); });
     const r=await makeDoc(me,null,true); docAt=r.docAt||docAt; docDirty=false;
-    const i=me.info||{}, nm=`${i.sid||""}_${i.name||ME.id}_모델링탐구보고서.pdf`.replace(/[\\/:*?"<>|\s]+/g,"_");
+    const i=me.info||{}, nm=`${i.sid||""}_${i.name||ME.id}_${TASK==="shape"?Shape.fileName:"모델링탐구보고서"}.pdf`.replace(/[\\/:*?"<>|\s]+/g,"_");
     saveB64(r.b64,nm,"application/pdf"); }
   catch(e){ docErr="PDF를 만들지 못했습니다: "+errMsg(e); }
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202610281407"; // build:32102441  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202611220938"; // build:0aceab2b  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",CONSENT_SIGN:"서명을 저장하지 못했습니다. [다시 쓰기]를 누르고 서명해 주세요.",CONSENT_VER:"동의서가 바뀌었습니다. 새로고침한 뒤 다시 동의해 주세요.",CONSENT_AGREE:"동의 칸에 체크해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -1327,8 +1329,21 @@ const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.
   BUSY:"방금 백업했습니다. 1분 뒤에 다시 눌러 주세요.",CORRUPT:"저장된 기록을 읽지 못했습니다. 기록을 지키려고 화면을 열지 않았습니다. 선생님께 알려 주세요.",BAD_NOTICE:"공지는 1~1000자로 써 주세요.",CONFLICT:"다른 창이나 기기에서 더 최근에 저장했습니다.",UNKNOWN_ACTION:"앱이 새 버전으로 바뀌었습니다. 새로고침(F5)해 주세요.",
   NO_API:"config.js에 구글 Apps Script 웹 앱 주소(apiUrl)를 아직 넣지 않았습니다.",ACCESS:"저장 서버가 로그인 화면을 돌려주었습니다. 구글 Apps Script를 '모든 사용자'로 배포했는지 확인해 주세요."};
 const errMsg=e=>ERR[e&&e.error]||("문제가 생겼습니다"+(e&&e.message?": "+e.message:"."));
+/* ───────── 과제: "model"(삼각함수·미적분 수학적 모델링) | "shape"(실생활 도형 디자인 보고서) | null(로그인 뒤 고르기 전) ─────────
+ * 도형 과제는 같은 계정·서버를 쓰고, 기록·문서·Drive 폴더·마감만 따로입니다. 아래 동작은 앞에 "shape."를 붙여 보냅니다.
+ * 옛 서버는 "shape.…"를 모르므로 거절합니다(도형 기록이 모델링 기록을 덮어쓸 수 없음). 고른 과제는 이 창(탭)에서만 기억합니다. */
+let TASK=null; try{ const t=sessionStorage.getItem("mt_task"); if(t==="model"||t==="shape") TASK=t; }catch(e){}
+const TASK_ACTS=new Set(["me","save","status","syncDoc","pdf","upload","getFile","roster","reopen","setConfig"]);
+function setTask(t){ TASK=t; if(t==="shape") document.documentElement.dataset.task="shape"; else delete document.documentElement.dataset.task;   // 도형 과제는 초록색 테마(shape.js)
+  try{ t?sessionStorage.setItem("mt_task",t):sessionStorage.removeItem("mt_task"); }catch(e){}
+  const n=document.getElementById("taskName"); if(n) n.textContent=t==="shape"?"2 · 실생활 도형 디자인 보고서":t==="model"?"1 · 삼각함수·미적분 수학적 모델링":"전문 수학 수행평가";
+  const b=document.getElementById("taskBtn"); if(b) b.hidden=!t; }
+/** 지금 과제의 작성 마감 (서버: locked = 모델링, lockedShape = 도형) */
+const cfgLocked=()=>TASK==="shape"?!!cfg.lockedShape:!!cfg.locked;
+function setCfgLocked(v){ if(TASK==="shape") cfg.lockedShape=v; else cfg.locked=v; }
 async function api(action,payload){
   if(!API_URL) throw {error:"NO_API"};
+  if(TASK==="shape"&&TASK_ACTS.has(action)) action="shape."+action;
   let r; try{ r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,payload:payload||{},token:TOKEN}),redirect:"follow"}); }
   catch(e){ throw {error:"NETWORK",message:String(e&&e.message||e)}; }
   const txt=await r.text(); let j; try{ j=JSON.parse(txt); }catch(e){ throw {error:"ACCESS"}; }
@@ -1427,8 +1442,8 @@ let rFilter="", rStatus="all", pollT=null, pendingNote="";
 let docAt=0, docDirty=false, docBusy=false, docTimer=null, docs={}, folderUrl="", share=null, bulk=null;
 const app=document.getElementById("app");
 function setSave(state,text){ document.getElementById("saveSt").innerHTML=`<span class="dot ${state}"></span><span>${esc(text)}</span>`; }
-function locked(){ return cfg.locked || me.status==="submitted"; }
-function sessionLost(){ if(!ME) return; ME=null; closeNotices(); ntBadge(); setToken(null); clearInterval(pollT); renderAuth("로그인이 끝났습니다. 다시 로그인해 주세요."); }
+function locked(){ return cfgLocked() || me.status==="submitted"; }
+function sessionLost(){ if(!ME) return; ME=null; setTask(null); closeNotices(); ntBadge(); setToken(null); clearInterval(pollT); renderAuth("로그인이 끝났습니다. 다시 로그인해 주세요."); }
 
 /* ───────── 로그인 · 가입 ───────── */
 function renderAuth(msg){ document.getElementById("roleSeg").hidden=true; document.getElementById("userBox").hidden=true; setSave("", "로그인 전"); measureTop();
@@ -1465,7 +1480,7 @@ app.addEventListener("submit",async e=>{ e.preventDefault(); const f=e.target, f
     btn.disabled=true; err.textContent=S?"가입하는 중…":"로그인하는 중…";
     try{ const r=await api(S?"signup":"login",S?{id:v("a_id"),pw:v("a_pw"),sid:v("a_sid"),name:v("a_id"),classCode:v("a_cc"),teacherCode:v("a_tc"),email:v("a_em")}:{id:v("a_id"),pw:v("a_pw")});
       if(S&&r.user&&r.user.role==="teacher") pendingNote=r.shared?"가입했습니다. 학생 결과물 폴더를 내 구글 계정으로 공유했습니다.":"가입했습니다. 폴더 공유에는 실패했으니 '교사 공유·문서' 탭에서 이메일을 다시 넣어 주세요.";
-      setToken(r.token); authMode="login"; await loadMe(); }
+      setToken(r.token); authMode="login"; setTask(null); await loadMe(); }   // 새로 로그인하면 늘 과제 고르기부터
     catch(x){ err.textContent=errMsg(x); btn.disabled=false; }
   }
   if(fid==="pwForm"){
@@ -1476,9 +1491,31 @@ app.addEventListener("submit",async e=>{ e.preventDefault(); const f=e.target, f
   } });
 async function loadMe(){ setSave("wait","불러오는 중"); conflict=false; forceSave=false; sysBar("conflict",null);
   const r=await api("me"); ME=r.user; cfg=Object.assign(cfg,r.config||{}); myGrade=r.grade||null;
-  me=Object.assign(blankDoc(),r.doc||{}); me.info=Object.assign({},me.info||{},ME.role==="student"?{sid:ME.sid,name:ME.name}:{}); if(!me.ans.s1_topic&&topicOf(me)) me.ans.s1_topic=topicOf(me); if(me.ans.s1_topic) me.info.title=me.ans.s1_topic; docAt=r.docAt||0;
+  me=Object.assign(blankDoc(),r.doc||{}); me.info=Object.assign({},me.info||{},ME.role==="student"?{sid:ME.sid,name:ME.name}:{}); docAt=r.docAt||0;
+  if(TASK==="shape") Shape.afterLoad(me); else { if(!me.ans.s1_topic&&topicOf(me)) me.ans.s1_topic=topicOf(me); if(me.ans.s1_topic) me.info.title=me.ans.s1_topic; }
   if(ME.mustChange) return renderPwChange(true);
-  enterApp(); if(ME.role==="student"&&r.consent&&r.consent.need&&r.consent.text) openConsent(r.consent.text); }
+  enterApp(); const cm=document.getElementById("cstModal"); if(ME.role==="student"&&r.consent&&r.consent.need&&r.consent.text&&!(cm&&!cm.hidden)) openConsent(r.consent.text); }
+/* 로그인 뒤 과제 고르기: 1. 삼각함수·미적분 수학적 모델링 / 2. 실생활 도형 디자인 보고서 */
+const shapeReady=()=>Array.isArray(cfg.tasks)&&cfg.tasks.includes("shape");   // 서버가 도형 과제를 지원할 때만(옛 서버면 2번을 막음)
+function renderChooser(){ setTask(null); clearInterval(pollT); document.getElementById("roleSeg").hidden=true; document.getElementById("userBox").hidden=false;
+  document.getElementById("whoami").textContent=`${ME.name||ME.id}${ME.role==="teacher"?" 선생님":""}`; setSave("ok","과제를 고르세요"); measureTop();
+  app.innerHTML=Shape.chooserHTML(shapeReady()); }
+async function pickTask(t){ if(t!=="model"&&t!=="shape") return; if(t==="shape"&&!shapeReady()) return;
+  const loadedModel=me&&me.kind!=="shape"&&!!me.updatedAt||false;
+  setTask(t); stage=-1; selStage=-1;
+  if(t==="model"&&loadedModel){ enterApp(); return; }   // 로그인 때 받은 모델링 기록을 그대로 씁니다
+  setSave("wait","불러오는 중"); try{ await loadMe(); }catch(e){ setTask(null); renderChooser(); setSave("err",errMsg(e)); } }
+/** [과제 바꾸기]: 저장을 끝낸 뒤에만 옮겨 갑니다(저장 안 된 내용이 다른 과제로 섞이거나 사라지지 않게). */
+async function switchTask(){ if(!ME) return;
+  // 교사가 저장하지 않은 채점이 있으면 한 번 멈춥니다(5초 안에 한 번 더 누르면 저장하지 않고 바꿈)
+  if(gradeDirty&&!switchTask.sure){ switchTask.sure=true; setTimeout(()=>{ switchTask.sure=false; },5000); setSave("err","저장하지 않은 채점이 있습니다 · [채점 저장] 후 바꾸거나, 버리려면 [과제 바꾸기]를 한 번 더 누르세요"); return; }
+  switchTask.sure=false;
+  await flush(); if(saving) await new Promise(r=>{ const t=setInterval(()=>{ if(!saving){ clearInterval(t); r(); } },300); });
+  if(dirty||conflict){ setSave("err",conflict?"저장 충돌을 먼저 해결한 뒤 과제를 바꾸세요":"아직 저장되지 않은 내용이 있습니다. 잠시 뒤 다시 누르세요"); return; }
+  if(docDirty&&ME.role==="student"){ clearTimeout(docTimer); setSave("wait","구글 문서에 반영하는 중…"); try{ await syncDocNow(); }catch(e){} }
+  clearTimeout(saveTimer); clearTimeout(docTimer); clearInterval(pollT); docDirty=false; docAt=0; docErr=""; actChanged=false; confirmSubmit=false;
+  roster=new Map(); grades={}; sel=null; lastSince=0; docs={}; folderUrl=""; myGrade=null; gradeDraft=null; gradeDirty=false; sysBar("corrupt",null);
+  setTask(null); me=blankDoc(); renderChooser(); }
 /* 개인정보 수집·이용 동의(학생만): 서버가 동의서 문구를 보낼 때만 띄웁니다. 체크 + 서명 판에 직접 서명 → 서버가 구글 문서로 저장 */
 function openConsent(t){ let el=document.getElementById("cstModal"); if(!el){ el=document.createElement("div"); el.id="cstModal"; el.className="cst"; document.body.appendChild(el); }
   el.innerHTML=`<div class="cst-box" role="dialog" aria-modal="true" aria-labelledby="cstT"><div class="cst-head"><b id="cstT">${esc(t.title)}</b><span class="sub">${esc((t.org?t.org+" · ":"")+"수학적 모델링 탐구 수행평가 · 동의서 판 "+t.ver)}</span></div>
@@ -1508,28 +1545,29 @@ function openConsent(t){ let el=document.getElementById("cstModal"); if(!el){ el
     try{ await api("consent",{ver:t.ver,agree:true,sign:out.toDataURL("image/png").split(",")[1]}); el.hidden=true; setSave("ok","개인정보 동의를 저장했습니다"); }
     catch(x){ er.textContent=errMsg(x); btn.disabled=false; btn.textContent="동의하고 시작하기"; } };
   main(); }
-function enterApp(note){ const ub=document.getElementById("userBox"); ub.hidden=false;
+function enterApp(note){ if(!TASK) return renderChooser(); setTask(TASK); const ub=document.getElementById("userBox"); ub.hidden=false;
   document.getElementById("whoami").textContent=`${ME.name||ME.id}${ME.role==="teacher"?" 선생님":""}`;
   setSave("ok",note||pendingNote||"연결됨"); pendingNote=""; clearInterval(pollT);
   if(ME.role==="teacher"){ document.getElementById("roleSeg").hidden=false; measureTop(); setView(view==="student"&&!roster.size?"teacher":view); pollRoster(); pollT=setInterval(()=>{ if(document.visibilityState==="visible") pollRoster(); },10000); }
   else { document.getElementById("roleSeg").hidden=true; measureTop(); view="student"; renderStudent(); pollT=setInterval(pollStatus,45000);
     if(ME.role==="student"&&me.updatedAt&&!docAt){ docDirty=true; scheduleDocSync(2000); } }
   noticeSync(); }
-document.getElementById("logoutBtn").onclick=async()=>{ const cm=document.getElementById("cstModal"); if(cm) cm.hidden=true; await flush(); try{ await api("logout"); }catch(e){} ME=null; authMode="login"; setToken(null); clearInterval(pollT); conflict=false; sysBar("conflict",null); sysBar("corrupt",null); closeNotices(); ntBadge(); clearTimeout(docTimer); docs={}; share=null; roster=new Map(); grades={}; sel=null; lastSince=0; renderAuth(); };
+document.getElementById("logoutBtn").onclick=async()=>{ const cm=document.getElementById("cstModal"); if(cm) cm.hidden=true; await flush(); try{ await api("logout"); }catch(e){} ME=null; authMode="login"; setToken(null); setTask(null); me=blankDoc(); clearInterval(pollT); conflict=false; sysBar("conflict",null); sysBar("corrupt",null); closeNotices(); ntBadge(); clearTimeout(docTimer); docs={}; share=null; roster=new Map(); grades={}; sel=null; lastSince=0; renderAuth(); };
+document.getElementById("taskBtn").onclick=()=>{ switchTask(); };
 document.getElementById("pwBtn").onclick=()=>{ flush(); renderPwChange(false); };
 
 /* ───────── 저장 ───────── */
 let saveTimer=null, saving=false, dirty=false, conflict=false, forceSave=false;
 function scheduleSave(){ dirty=true; if(conflict) return; if(ME&&ME.role==="student") docDirty=true; setSave("wait","저장 대기"); clearTimeout(saveTimer); saveTimer=setTimeout(flush,2500); }
 async function flush(){ clearTimeout(saveTimer); if(!dirty||!ME||conflict) return; if(saving){ saveTimer=setTimeout(flush,800); return; }
-  saving=true; dirty=false; const body=JSON.parse(JSON.stringify(me)), an=analyze(me), p=progress(me);
-  const summary={progress:Math.round(p.reduce((a,b)=>a+b,0)/5*100),n:an.pts.length,formA:formulaText(an.A),errA:an.eA?+an.eA.mean.toFixed(2):null};
+  saving=true; dirty=false; const body=JSON.parse(JSON.stringify(me));
+  let summary; if(TASK==="shape") summary=Shape.summary(me); else { const an=analyze(me), p=progress(me); summary={progress:Math.round(p.reduce((a,b)=>a+b,0)/5*100),n:an.pts.length,formA:formulaText(an.A),errA:an.eA?+an.eA.mean.toFixed(2):null}; }
   const base=forceSave?undefined:(me.updatedAt||0); forceSave=false;   // base: 이 창이 마지막으로 받은 저장 시각 — 서버가 더 최근이면 CONFLICT
   try{ const r=await api("save",{doc:body,summary,base}); me.updatedAt=r.updatedAt; if(r.reopenAt) me.reopenAt=r.reopenAt;
     const t=new Date(); setSave("ok",`저장됨 ${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}`); }
   catch(e){ if(e.error==="CONFLICT"){ dirty=true; showConflict(); }
     else if(e.error==="CORRUPT"){ dirty=false; conflict=true; setSave("err","기록 보호 · 저장 멈춤"); sysBar("conflict",`<div class="banner bad"><span>${esc(ERR.CORRUPT)}</span></div>`); }
-    else if(e.error==="LOCKED"){ cfg.locked=true; setSave("err","마감되어 저장 안 됨"); if(view==="student") renderStudent(); }
+    else if(e.error==="LOCKED"){ setCfgLocked(true); setSave("err","마감되어 저장 안 됨"); if(view==="student") renderStudent(); }
     else if(e.error!=="SESSION"){ dirty=true; setSave("err","저장 실패 · 다시 시도 중"); saveTimer=setTimeout(flush,4000+Math.random()*3000); } }
   saving=false; if(docDirty) scheduleDocSync(); }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden"){ flush(); if(docDirty) scheduleDocSync(500); } });
@@ -1545,22 +1583,27 @@ async function pollStatus(){ if(!ME||document.visibilityState!=="visible") retur
 function submitHTML(doc){ const p=progress(doc), avg=Math.round(p.reduce((a,b)=>a+b,0)/5*100);
   // 제출한 학생은 여기서 바로 보고서 PDF를 받습니다(마감 뒤에도). [나의 수행] ③의 단추와 같은 동작(data-act="pdf")
   const pdf=ME&&ME.role==="student"&&view==="student"&&doc===me?`<div class="docbar" style="margin-top:4px"><div class="grow"><small id="docSt"></small><small id="pdfLink"></small></div><button class="btn pri" type="button" data-act="pdf">⬇ 제출한 보고서 PDF로 받기</button></div>`:"";
-  if(doc.status==="submitted") return `<b>제출했습니다</b><span class="sub">${doc.submittedAt?ago(doc.submittedAt):""} 제출 · 선생님이 바로 볼 수 있습니다.</span>${pdf}${cfg.locked?"":`<div><button class="btn" type="button" data-act="unsubmit">제출 취소하고 고치기</button></div>`}`;
+  if(doc.status==="submitted") return `<b>제출했습니다</b><span class="sub">${doc.submittedAt?ago(doc.submittedAt):""} 제출 · 선생님이 바로 볼 수 있습니다.</span>${pdf}${cfgLocked()?"":`<div><button class="btn" type="button" data-act="unsubmit">제출 취소하고 고치기</button></div>`}`;
   if(confirmSubmit) return `<b>정말 제출할까요?</b><span class="sub">제출하면 고칠 수 없게 잠깁니다. 선생님이 마감하기 전까지는 제출을 취소하고 다시 고칠 수 있습니다.</span><div style="display:flex;gap:8px"><button class="btn submit-btn" type="button" data-act="submit2">제출하기</button><button class="btn" type="button" data-act="cancelSubmit">돌아가기</button></div>`;
   return `<b>보고서 제출</b><span class="sub">전체 작성률 ${avg}% · 쓰는 내용은 제출 전에도 자동 저장되어 선생님 화면에 보입니다.</span><div><button class="btn submit-btn" type="button" data-act="submit1"${locked()?" disabled":""}>제출하기</button></div>`; }
 // 공개된 점수·피드백은 학생 화면에 펼쳐 두지 않고 확성기 알림판에서만 보여 줍니다(gradeCardHTML)
-function bannersHTML(){ return cfg.locked?`<div class="banner warn">선생님이 작성을 마감했습니다. 지금은 읽기만 할 수 있습니다.</div>`:""; }
+function bannersHTML(){ return cfgLocked()?`<div class="banner warn">선생님이 작성을 마감했습니다. 지금은 읽기만 할 수 있습니다.</div>`:""; }
 function renderTopBits(){ const t=document.getElementById("topBits"); if(t) t.innerHTML=bannersHTML(); }
-function renderStudent(){
-  const p=progress(me), ro=locked(), y=window.scrollY;
-  app.innerHTML = `<div class="labbar"><nav class="steps" role="tablist" id="steps">${stepsHTML(p)}</nav><div class="status" id="labStatus">${statusHTML(p)}</div></div>
+/** 학생 화면 틀(단계 막대·상황판·배너·본문·수식 키보드) — 모델링과 도형 과제가 함께 씁니다 */
+function studentFrameHTML(steps,status,body,ro){ return `<div class="labbar"><nav class="steps" role="tablist" id="steps">${steps}</nav><div class="status" id="labStatus">${status}</div></div>
   <div id="topBits">${bannersHTML()}</div>
-  <div id="stageBox">${stage<0?homeHTML(me,false,ME):stageHTML(me,stage,false)}</div>
-  ${ro?"":`<div class="dock" aria-label="수식 키보드"><button type="button" class="big" data-mtlast>${MathTool.iconSVG||""} 수식 입력기</button><button type="button" class="big alt" data-mtlast data-mode="hw">✍ 기호 그리기</button><span class="lab">기호 넣기</span>${SYMS.map(s=>`<button type="button" data-sym="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}`;
-  if(ro) app.querySelectorAll("#stageBox [data-p], #stageBox [data-grid] input, #stageBox [data-grid] button").forEach(e=>e.disabled=true);
-  updateOutputs(app,me); updateDocSt();
+  <div id="stageBox">${body}</div>
+  ${ro?"":`<div class="dock" aria-label="수식 키보드"><button type="button" class="big" data-mtlast>${MathTool.iconSVG||""} 수식 입력기</button><button type="button" class="big alt" data-mtlast data-mode="hw">✍ 기호 그리기</button><span class="lab">기호 넣기</span>${SYMS.map(s=>`<button type="button" data-sym="${esc(s)}">${esc(s)}</button>`).join("")}</div>`}`; }
+/** 그린 뒤 마무리: 휴대폰에서 지금 단계가 보이게, [사진]·[항목 추가] 뒤에는 스크롤 위치 유지 */
+function finishStudentRender(y){
   const sb=document.getElementById("steps"), cur=sb&&sb.querySelector("[aria-selected=true]"); if(cur&&sb.scrollWidth>sb.clientWidth) sb.scrollLeft=Math.max(0,cur.offsetLeft-(sb.clientWidth-cur.offsetWidth)/2);  // 휴대폰: 지금 단계가 보이게
   if(renderStudent.keepScroll){ renderStudent.keepScroll=false; window.scrollTo({top:y}); } }
+function renderStudent(){ if(TASK==="shape") return Shape.renderStudent();
+  const p=progress(me), ro=locked(), y=window.scrollY;
+  app.innerHTML = studentFrameHTML(stepsHTML(p), statusHTML(p), stage<0?homeHTML(me,false,ME):stageHTML(me,stage,false), ro);
+  if(ro) app.querySelectorAll("#stageBox [data-p], #stageBox [data-grid] input, #stageBox [data-grid] button").forEach(e=>e.disabled=true);
+  updateOutputs(app,me); updateDocSt();
+  finishStudentRender(y); }
 const SHORT=["설계","자료","모델","미분·적분","검증"];
 function homeProgress(doc){ const i=doc.info||{}, a=doc.ans||{}; const parts=[topicOf(doc),a.s5_src,a.s5_tool].filter(v=>String(v||"").trim()).length; return parts/3; }
 function stepsHTML(p){ const hp=homeProgress(me);
@@ -1569,7 +1612,7 @@ function stepsHTML(p){ const hp=homeProgress(me);
 function statusHTML(p){ const s=STAGES[stage], an=analyze(me), avg=Math.round(p.reduce((a,b)=>a+b,0)/5*100), A=me.act||{};
   return `${stage<0?`<span><b>나의 수행</b></span><span>탐구 ${tmFmt(A.explore)} · 입력 ${tmFmt(A.input)}</span>`:`<span><b>${stage+1}단계 · ${esc(s.name)}</b></span><span>⏱ ${esc(s.time)}</span><span>평가요소 ${esc(s.el)}</span>`}<span class="sep"></span>
     <span>작성률 <span class="k">${avg}%</span></span><span>오차율 A <span class="k acc">${an.eA?fmt(an.eA.mean,2)+"%":"–"}</span></span><span>자료 <span class="k">${an.pts.length}</span></span>`; }
-function refreshTabs(){ const p=progress(me), st=document.getElementById("steps"), ls=document.getElementById("labStatus"); if(st) st.innerHTML=stepsHTML(p); if(ls) ls.innerHTML=statusHTML(p); }
+function refreshTabs(){ if(TASK==="shape") return Shape.refresh(); const p=progress(me), st=document.getElementById("steps"), ls=document.getElementById("labStatus"); if(st) st.innerHTML=stepsHTML(p); if(ls) ls.innerHTML=statusHTML(p); }
 let lastField=null;
 app.addEventListener("focusin",e=>{ const t=e.target; if(t.matches("textarea[data-p],input.fld[data-p],.cell input[data-p]")) lastField=t; });
 app.addEventListener("input",e=>{ const t=e.target; if(view!=="student"||!ME||!t.dataset.p||t.type==="checkbox") return; if(locked()) return;
@@ -1582,6 +1625,7 @@ app.addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t) ret
   if(t.dataset.auth){ authMode=t.dataset.auth; renderAuth(); return; }
   if(t.dataset.act==="pwCancel"){ enterApp(); return; }
   if(!ME) return;
+  if(t.dataset.task){ pickTask(t.dataset.task); return; }
   if(view==="teacher") return teacherClick(t,e);
   if(t.dataset.mtOpen){ openMath(document.getElementById("f_"+t.dataset.mtOpen)); return; }
   if(t.hasAttribute("data-mtlast")){ const f=lastField&&document.body.contains(lastField)&&/^f_/.test(lastField.id)?lastField:null;
@@ -1603,7 +1647,7 @@ app.addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t) ret
   if(act==="submit1"){ confirmSubmit=true; updateOutputs(app,me); return; }
   if(act==="cancelSubmit"){ confirmSubmit=false; updateOutputs(app,me); return; }
   if(act==="submit2"){ confirmSubmit=false; me.status="submitted"; me.submittedAt=Date.now(); dirty=true; docDirty=true; flush(); renderStudent(); return; }
-  if(act==="unsubmit"){ if(cfg.locked) return; me.status="draft"; dirty=true; docDirty=true; flush(); renderStudent(); return; }
+  if(act==="unsubmit"){ if(cfgLocked()) return; me.status="draft"; dirty=true; docDirty=true; flush(); renderStudent(); return; }
 });
 
 
@@ -1616,7 +1660,7 @@ let lastAct=Date.now(), lastInput=0, wasIdle=false, actChanged=false, lastMove=0
 function actMark(e){ lastAct=Date.now(); if(e&&(e.type==="input"||e.type==="keydown")) lastInput=lastAct; }
 ["pointerdown","keydown","input","wheel","touchstart","scroll"].forEach(t=>document.addEventListener(t,actMark,{passive:true,capture:true}));
 document.addEventListener("pointermove",e=>{ const n=Date.now(); if(n-lastMove>5000){ lastMove=n; actMark(e); } },{passive:true});
-function actTick(){ if(!ME||ME.role!=="student"||view!=="student"||cfg.locked) return;
+function actTick(){ if(!ME||!TASK||ME.role!=="student"||view!=="student"||cfgLocked()) return;
   const now=Date.now(), A=me.act||(me.act={explore:0,input:0,st:{},days:{},log:[],idleN:0,idleSec:0}), sec=ACT_TICK/1000;
   const vis=document.visibilityState==="visible", active=vis&&now-lastAct<IDLE_MS, typing=vis&&now-lastInput<INPUT_MS;
   if(!active&&now-lastAct>30*60000) return;
@@ -1625,10 +1669,10 @@ function actTick(){ if(!ME||ME.role!=="student"||view!=="student"||cfg.locked) r
   if(active){ A.explore+=sec; s.x+=sec; A.st[stage]=(A.st[stage]||0)+sec; const d=dayKey(); A.days[d]=(A.days[d]||0)+sec; if(typing){ A.input+=sec; s.i+=sec; } wasIdle=false; }
   else { if(!wasIdle){ s.n++; A.idleN=(A.idleN||0)+1; wasIdle=true; } s.d+=sec; A.idleSec=(A.idleSec||0)+sec; }
   actChanged=true;
-  if(stage<0){ const d=app.querySelector('[data-out="dash"]'); if(d){ d.innerHTML=dashHTML(me); mathPass(d); } } }
+  if(stage<0){ const d=app.querySelector('[data-out="dash"]'); if(d){ d.innerHTML=TASK==="shape"?Shape.dashHTML(me):dashHTML(me); mathPass(d); } } }
 setInterval(actTick,ACT_TICK);
 // 시간 기록만 바뀐 경우: 1분마다 저장(구글 문서는 다시 만들지 않음)
-setInterval(()=>{ if(actChanged&&ME&&ME.role==="student"&&!locked()){ actChanged=false; dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(flush,1500); } },60000);
+setInterval(()=>{ if(actChanged&&ME&&TASK&&ME.role==="student"&&!locked()){ actChanged=false; dirty=true; clearTimeout(saveTimer); saveTimer=setTimeout(flush,1500); } },60000);
 
 /* ───────── 자료 입력표 ───────── */
 function syncGrid(){ const g=me.data.grid||[], xs=[], ys=[];
@@ -1804,12 +1848,13 @@ function renderTeacher(){
   <div class="controls">
     <input type="search" id="rq" placeholder="학번·이름·제목·아이디 검색" value="${esc(rFilter)}" aria-label="학생 검색">
     <select id="rs" aria-label="상태로 거르기"><option value="all"${rStatus==="all"?" selected":""}>전체</option><option value="draft"${rStatus==="draft"?" selected":""}>작성 중</option><option value="sub"${rStatus==="sub"?" selected":""}>제출함</option><option value="ungraded"${rStatus==="ungraded"?" selected":""}>채점 안 함</option></select>
-    <label class="toggle"><input type="checkbox" id="lockT"${cfg.locked?" checked":""}> 작성 마감 (학생 입력 잠금)</label>
+    <label class="toggle"><input type="checkbox" id="lockT"${cfgLocked()?" checked":""}> 작성 마감 (${TASK==="shape"?"도형 과제":"모델링 과제"} 학생 입력 잠금)</label>
   </div>
   <div class="controls"><button class="btn" type="button" data-act="noticeMgr">📢 공지 올리기·삭제</button><span class="sub">올린 공지는 학생·교사 화면에 팝업으로 뜨고, 제목 옆 확성기에서 언제든 다시 볼 수 있습니다.</span></div>
   <div class="roster" id="rosterBox"></div><div id="detailBox"></div>`}`;
   if(tView==="acc") loadAccounts(); else if(tView==="share") loadShare(); else { renderRoster(); renderDetail(true); } }
 function renderRoster(){ const box=document.getElementById("rosterBox"); if(!box) return; const rows=rosterRows();
+  if(roster.size&&TASK==="shape") return Shape.renderRoster(box,rows);
   if(!roster.size){ box.innerHTML=`<div class="empty-note" style="border:0">아직 가입한 학생이 없습니다. 웹 앱 주소를 학생에게 보내면, 학생이 가입하고 쓰는 내용이 여기에 10초마다 새로 나타납니다.</div>`; return; }
   box.innerHTML=`<table><thead><tr><th>학번</th><th>이름</th><th>탐구 제목 · 카드</th><th>단계별 작성 (1~5)</th><th>자료</th><th>모델 A 오차율</th><th>상태</th><th>최근 저장</th><th>점수</th></tr></thead><tbody>
   ${rows.map(r=>`<tr data-sel="${esc(r.id)}" aria-selected="${r.id===sel}"><td class="num">${esc(r.sid)||"–"}</td><td>${esc(r.name)||'<span class="sub">이름 없음</span>'}<div class="sub">${esc(r.login)}</div></td>
@@ -1826,12 +1871,15 @@ function gradeForm(){ const g=gradeDraft||{scores:{},notes:{}}; const sc=g.score
   <label class="mini">종합 피드백<textarea id="g_overall" data-go2="1" style="min-height:80px">${esc(g.overall||"")}</textarea></label>
   <label class="toggle" style="justify-content:flex-start"><input type="checkbox" id="g_rel"${g.released?" checked":""} style="accent-color:var(--accent)"> 학생에게 점수와 피드백 보여 주기</label>
   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="btn pri" type="button" data-act="saveGrade">채점 저장</button><span class="sub" id="gMsg">${gradeDirty?"저장하지 않은 변경이 있습니다":(g.updatedAt?ago(g.updatedAt)+" 저장됨":"")}</span></div>`; }
+/** 교사 상세 보기 머리(이름·학번·문서·제출 상태) — 모델링과 도형 과제가 함께 씁니다 */
+function detailHeadHTML(r,doc){ return `<div class="dhead"><h2>${esc(r.name)||"이름 없음"}</h2><span class="num sub">${esc(r.sid)} · ${esc(r.login)}</span><span>${esc(r.title)}</span>
+    ${docs[sel]?`<a class="btn" style="text-decoration:none" href="${esc(docs[sel].url)}" target="_blank" rel="noopener">구글 문서 열기 ↗</a>`:""}<button class="btn" type="button" data-act="docOne">${docs[sel]?"구글 문서 다시 만들기":"구글 문서 만들기"}</button>
+    ${doc.status==="submitted"?`<span class="pill sub">제출함 · ${ago(doc.submittedAt)}</span><button class="btn" type="button" data-act="reopen">다시 고치게 열기</button>`:`<span class="pill${r.live?" live":""}">${r.live?"작성 중":r.upd?"미제출":"시작 전"} · ${ago(r.upd)}</span>`}</div>`; }
 function renderDetail(full){ const box=document.getElementById("detailBox"); if(!box) return; const s=sel&&roster.get(sel);
   if(!s){ box.innerHTML=roster.size?`<p class="sub" style="margin-top:12px">학생 줄을 누르면 활동지 전체와 채점 칸이 열립니다.</p>`:""; return; }
   const r=rowInfo(sel,s), doc=r.doc;
-  const left=`<div style="min-width:0"><div class="dhead"><h2>${esc(r.name)||"이름 없음"}</h2><span class="num sub">${esc(r.sid)} · ${esc(r.login)}</span><span>${esc(r.title)}</span>
-    ${docs[sel]?`<a class="btn" style="text-decoration:none" href="${esc(docs[sel].url)}" target="_blank" rel="noopener">구글 문서 열기 ↗</a>`:""}<button class="btn" type="button" data-act="docOne">${docs[sel]?"구글 문서 다시 만들기":"구글 문서 만들기"}</button>
-    ${doc.status==="submitted"?`<span class="pill sub">제출함 · ${ago(doc.submittedAt)}</span><button class="btn" type="button" data-act="reopen">다시 고치게 열기</button>`:`<span class="pill${r.live?" live":""}">${r.live?"작성 중":r.upd?"미제출":"시작 전"} · ${ago(r.upd)}</span>`}</div>
+  if(TASK==="shape") return Shape.renderDetail(box,r);
+  const left=`<div style="min-width:0">${detailHeadHTML(r,doc)}
     <div class="dtabs"><button type="button" data-dst="-1" aria-pressed="${selStage<0}">나의 수행</button>${STAGES.map((st,k)=>`<button type="button" data-dst="${k}" aria-pressed="${k===selStage}">${k+1}. ${esc(st.name)} ${Math.round(r.p[k]*100)}%</button>`).join("")}</div>
     <div id="dStage">${selStage<0?homeHTML(doc,true,{sid:r.sid,name:r.name}):stageHTML(doc,selStage,true)}</div></div>`;
   if(full||!document.getElementById("gradeBox")) box.innerHTML=`<div class="detail">${left}<aside class="grade" id="gradeBox">${gradeForm()}</aside></div>`;
@@ -1844,11 +1892,11 @@ async function pollRoster(){ if(!ME||ME.role!=="teacher") return; try{ const r=a
     const next=new Map(); r.students.forEach(s=>{ const prev=roster.get(s.id); next.set(s.id,Object.assign({},s,{doc:s.doc!==undefined?s.doc:(prev?prev.doc:null)})); });
     const bad=r.students.filter(s=>s.corrupt); sysBar("corrupt",bad.length?`<div class="banner warn"><span><b>기록을 읽지 못한 학생: ${esc(bad.map(s=>s.name||s.id).join(", "))}</b> — 이 학생 화면은 기록 보호로 열리지 않습니다. 스프레드시트 '기록' 시트의 해당 줄('데이터' 열부터)을 [파일 → 버전 기록]에서 되돌려 주세요. 기록·채점 시트에는 열을 끼워 넣거나 데이터 칸을 고치지 마세요.</span></div>`:null);
     roster=next; grades=r.grades||{}; sheetUrl=r.sheetUrl||""; docs=r.docs||{}; folderUrl=r.folderUrl||""; lastSince=r.serverTime-15000;
-    const oldLock=cfg.locked; cfg=Object.assign(cfg,r.config||{});
+    const oldLock=cfgLocked(); cfg=Object.assign(cfg,r.config||{});
     const sl=document.getElementById("sheetLink"), shl=sheetLinkHTML(); if(sl&&sl.innerHTML!==shl) sl.innerHTML=shl;
     if(view!=="teacher"||tView!=="roster") return;
     if(!document.getElementById("rosterBox")) return renderTeacher();
-    document.getElementById("statsBox").innerHTML=statsHTML(); const l=document.getElementById("lockT"); if(l&&oldLock!==cfg.locked) l.checked=cfg.locked;
+    document.getElementById("statsBox").innerHTML=statsHTML(); const l=document.getElementById("lockT"); if(l&&oldLock!==cfgLocked()) l.checked=cfgLocked();
     renderRoster(); if(sel) renderDetail(false);
   }catch(e){ if(e.error!=="SESSION") setSave("err","새로 고치지 못함 · 다시 시도 중"); } }
 function teacherClick(t){
@@ -1895,7 +1943,7 @@ function renderShare(note){ const b=document.getElementById("shareBox"); if(!b||
   b.innerHTML=`${note?`<div class="banner info" style="margin:0 0 10px">${esc(note)}</div>`:""}
   <div class="sharebox"><h3>학생 결과물 공유 폴더</h3>
     <p class="sub" style="margin:0">학생마다 이 폴더 안에 <b>[학번_이름] 폴더</b>가 생기고, 그 안에 보고서 구글 문서(활동지 서식, 쓰고 20초쯤 뒤 반영)·원본 자료·풀이 사진·평가 결과 문서가 모입니다. 보고서는 반영됩니다. 교사로 가입하면서 쓴 이메일은 자동으로 이 폴더를 공유받고, 아래에서 더 초대할 수도 있습니다.</p>
-    <div class="row2"><a class="btn" style="text-decoration:none" href="${esc(share.url)}" target="_blank" rel="noopener">폴더 열기 ↗</a><span class="sub">소유자: ${esc(share.owner||"–")}</span></div>
+    <div class="row2"><a class="btn" style="text-decoration:none" href="${esc(share.url)}" target="_blank" rel="noopener">모델링 폴더 열기 ↗</a>${share.shapeUrl?`<a class="btn" style="text-decoration:none" href="${esc(share.shapeUrl)}" target="_blank" rel="noopener">실생활 도형 디자인 보고서 폴더 열기 ↗</a>`:""}<span class="sub">소유자: ${esc(share.owner||"–")}</span></div>
     <b style="font-size:14px">폴더를 공유받은 계정 (편집 가능)</b><ul>${share.editors.length?share.editors.map(x=>`<li>${esc(x)}</li>`).join(""):"<li>소유자 외에는 없습니다</li>"}</ul>
     <b style="font-size:14px">가입한 교사</b><ul>${share.teachers.map(t=>`<li>${esc(t.name||t.id)} (${esc(t.id)}) · ${t.email?esc(t.email)+(mails.has(t.email.toLowerCase())?" ✓ 공유됨":" · 아직 공유 안 됨"):"이메일 없음 (아래에 내 이메일을 넣고 공유하세요)"}</li>`).join("")}</ul>
     <div class="row2"><input id="shareEm" type="email" placeholder="초대할 구글 계정 이메일" aria-label="초대할 이메일"><button class="btn pri" type="button" data-act="shareGo">폴더 공유하기</button><label class="toggle"><input type="checkbox" id="shareSelf"> 내 계정 이메일로도 기록</label></div>
@@ -1943,7 +1991,8 @@ window.addEventListener("resize",measureTop); measureTop();
 async function boot(){
   try{ const r=await api("config"); cfg=Object.assign(cfg,r.config||{}); }
   catch(e){ app.innerHTML=`<div class="banner bad" style="margin-top:24px"><b>${esc(errMsg(e))}</b><br><span class="sub">선생님 확인 사항: ① config.js의 apiUrl이 /exec로 끝나는 웹 앱 주소인지 ② 구글 Apps Script 배포의 액세스 권한이 '모든 사용자'인지 ③ 학교 Workspace 계정이 외부 접근을 막고 있지 않은지</span></div>`; setSave("err","연결 안 됨"); return; }
-  if(TOKEN){ try{ await loadMe(); return; }catch(e){ setToken(null); } }
+  if(TASK==="shape"&&!shapeReady()) setTask(null);   // 서버가 도형 과제를 모르면(옛 서버) 과제 고르기부터
+  if(TOKEN){ try{ await loadMe(); return; }catch(e){ setToken(null); setTask(null); } }
   renderAuth(); }
 boot();
 

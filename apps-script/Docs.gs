@@ -8,17 +8,19 @@ const DOC_FONT = 'Nanum Gothic';
 
 /* ───── 공유 폴더 ───── */
 /** 폴더가 없으면 만들고, 이미 가입한 교사(이메일이 있는 계정)에게 편집 권한을 줍니다. withLock_ 안에서 부르지 마세요. */
-function rootFolder_() {
+/** 지금 과제(TASK)의 상위 폴더: 모델링 = 모델링탐구_학생결과물, 도형 = 실생활 도형 디자인 보고서 (따로 운영) */
+function rootFolder_() { return rootFolderOf_(TASK); }
+function rootFolderOf_(t) {
   const props = PropertiesService.getScriptProperties();
   const find = () => {
-    const id = props.getProperty('FOLDER_ID'); if (!id) return null;
+    const id = props.getProperty(t.folderProp); if (!id) return null;
     try { const f = DriveApp.getFolderById(id); return f.isTrashed() ? null : f; } catch (e) { return null; }
   };
   const have = find(); if (have) return have;
   return withLock_(() => {
     const again = find(); if (again) return again;
-    const f = DriveApp.createFolder(FOLDER_NAME);
-    props.setProperties({ FOLDER_ID: f.getId(), FOLDER_URL: f.getUrl() });
+    const f = DriveApp.createFolder(t.folderName), kv = {};
+    kv[t.folderProp] = f.getId(); kv[t.folderUrlProp] = f.getUrl(); props.setProperties(kv);
     sheet_(SHEETS.acc).getDataRange().getValues().slice(1).forEach(r => {
       const em = String(r[9] || '').trim();
       if (String(r[1]) === 'teacher' && validEmail_(em)) { try { f.addEditor(em); } catch (e) {} }
@@ -27,17 +29,19 @@ function rootFolder_() {
   });
 }
 function apiDriveInfo_() {
-  const f = rootFolder_();
+  const f = rootFolderOf_(TASKS.model);
+  let shapeUrl = ''; try { shapeUrl = rootFolderOf_(TASKS.shape).getUrl(); } catch (e) {}
   let owner = ''; try { owner = f.getOwner().getEmail(); } catch (e) {}
   const teachers = sheet_(SHEETS.acc).getDataRange().getValues().slice(1).filter(r => r[0] && String(r[1]) === 'teacher')
     .map(r => ({ id: String(r[0]), name: String(r[3]), email: String(r[9] || '') }));
-  return { url: f.getUrl(), owner: owner, editors: f.getEditors().map(u => u.getEmail()), teachers: teachers, backup: backupInfo_() };  // backup: Backup.gs
+  return { url: f.getUrl(), shapeUrl: shapeUrl, owner: owner, editors: f.getEditors().map(u => u.getEmail()), teachers: teachers, backup: backupInfo_() };  // backup: Backup.gs
 }
 /** 교사가 다른 교사(또는 내 다른 구글 계정)를 공유 폴더에 초대합니다. self:true 이면 내 계정의 이메일로도 기록합니다. */
 function apiShareFolder_(user, p) {
   const email = String(p.email || '').trim().toLowerCase();
   if (!validEmail_(email)) fail_('BAD_EMAIL');
-  try { rootFolder_().addEditor(email); } catch (e) { fail_('SHARE'); }
+  try { rootFolderOf_(TASKS.model).addEditor(email); } catch (e) { fail_('SHARE'); }
+  try { rootFolderOf_(TASKS.shape).addEditor(email); } catch (e) {}   // 실생활 도형 디자인 보고서 폴더도 함께
   if (p.self) withLock_(() => { const sh = sheet_(SHEETS.acc), row = findRow_(sh, user.id); if (row > 0) sh.getRange(row, 10).setValue(email); });
   return apiDriveInfo_();
 }
@@ -45,12 +49,12 @@ function apiShareFolder_(user, p) {
 /* ───── 문서 기록(문서 시트) ───── */
 function docFromRow_(r) { return { docId: String(r[3] || ''), url: String(r[4] || ''), at: r[5] ? new Date(r[5]).getTime() : 0, hash: String(r[6] || '') }; }
 function docRecord_(id) {
-  const sh = sheet_(SHEETS.doc), row = findRow_(sh, id); if (row < 0) return null;
+  const sh = sheet_(TASK.doc), row = findRow_(sh, id); if (row < 0) return null;
   const d = docFromRow_(sh.getRange(row, 1, 1, DOC_HEAD.length).getValues()[0]); d.row = row; return d;
 }
 function docMap_() {
   const out = {};
-  sheet_(SHEETS.doc).getDataRange().getValues().slice(1).forEach(r => { if (r[0] && r[3]) { const d = docFromRow_(r); out[String(r[0])] = { url: d.url, at: d.at }; } });
+  sheet_(TASK.doc).getDataRange().getValues().slice(1).forEach(r => { if (r[0] && r[3]) { const d = docFromRow_(r); out[String(r[0])] = { url: d.url, at: d.at }; } });
   return out;
 }
 
@@ -84,11 +88,11 @@ function md5_(s) { return Utilities.base64Encode(Utilities.computeDigest(Utiliti
 /** 내용이 바뀐 경우에만 문서를 새로 그립니다. 같은 학생 문서를 동시에 그리지 않도록 화면에서 한 번에 하나씩 보냅니다. */
 function buildDoc_(id, spec, images) {
   const info = spec.info || {};
-  const name = (String(info.sid || '') + ' ' + String(info.name || id) + ' 모델링 탐구 보고서').trim().slice(0, 120);
+  const name = (String(info.sid || '') + ' ' + String(info.name || id) + ' ' + TASK.docName).trim().slice(0, 120);
   const hash = md5_(JSON.stringify(spec) + '|' + images.map(md5_).join(','));
   const folder = studentFolder_(id);   // [학번_이름] 폴더
   const rec = withLock_(() => {
-    const sh = sheet_(SHEETS.doc); let row = findRow_(sh, id);
+    const sh = sheet_(TASK.doc); let row = findRow_(sh, id);
     if (row > 0) {
       const d = docFromRow_(sh.getRange(row, 1, 1, DOC_HEAD.length).getValues()[0]);
       let alive = false; if (d.docId) { try { alive = !DriveApp.getFileById(d.docId).isTrashed(); } catch (e) {} }
@@ -108,7 +112,7 @@ function buildDoc_(id, spec, images) {
   doc.saveAndClose();
   const at = Date.now();
   withLock_(() => {
-    const sh = sheet_(SHEETS.doc), row = findRow_(sh, id);
+    const sh = sheet_(TASK.doc), row = findRow_(sh, id);
     // 그래프가 빠졌으면 해시를 남기지 않아 다음 반영·PDF 때 다시 그립니다
     if (row > 0) { sh.getRange(row, 2, 1, 2).setValues([[String(info.sid || ''), String(info.name || '')]]); sh.getRange(row, 6, 1, 2).setValues([[new Date(at), missing ? '' : hash]]); }
   });
@@ -207,7 +211,9 @@ function renderSpec_(doc, spec, images, ownerId) {
               try { img = p.appendInlineImage(Utilities.newBlob(Utilities.base64Decode(b64), 'image/png', 'graph.png')); }
               catch (e) { if (k < 2) Utilities.sleep(1500 * (k + 1)); }
             }
-            if (img) img.setWidth(440).setHeight(220);
+            // 크기: 명세에 w·h가 있으면 그 크기(도형 과제의 정사각형 좌표평면), 없으면 모델링 그래프처럼 440×220
+            const iw = Math.min(Math.max(Number(pt.w) || 440, 60), 515), ih = Math.min(Math.max(Number(pt.h) || 220, 60), 700);
+            if (img) img.setWidth(iw).setHeight(ih);
             else { missing++; p.appendText('(그래프를 넣지 못했습니다 · 다시 반영하면 들어갑니다)').setAttributes(txt({ size: 9, color: C_MUTED })); }
             if (pt.caption) { const c = para(pt.caption, { size: 8.5, color: C_MUTED, after: 4 }); c.setAlignment(DocumentApp.HorizontalAlignment.CENTER); }
           } else para('(그래프를 그릴 자료가 아직 없습니다)', { size: 9, color: C_MUTED, after: 4 });

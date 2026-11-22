@@ -6,14 +6,15 @@
  */
 const DATA_MAX_B64 = 14000000;   // 원본 자료: 약 10MB
 const PHOTO_MAX_B64 = 80000;     // 풀이 사진: 50KB(+base64 여유)
+const IMAGE_MAX_B64 = 360000;    // 도형 과제 물체 사진(컬러): 250KB(+base64 여유) — getFile 한도 300KB 안
 const safeName_ = s => String(s || '').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40);
 
-/** 학생의 [학번_이름] 폴더. 폴더 ID는 스크립트 속성 SF_<아이디>에 기억하고, 학번·이름이 바뀌면 폴더 이름도 맞춥니다. withLock_ 안에서 부르지 마세요. */
+/** 학생의 [학번_이름] 폴더(지금 과제의 상위 폴더 안). 폴더 ID는 스크립트 속성 SF_<아이디>(도형 과제는 SF2_)에 기억하고, 학번·이름이 바뀌면 폴더 이름도 맞춥니다. withLock_ 안에서 부르지 마세요. */
 function studentFolder_(id) {
   const acc = sheet_(SHEETS.acc), row = findRow_(acc, id); if (row < 0) fail_('NOT_FOUND');
   const r = acc.getRange(row, 1, 1, 4).getValues()[0];
   const want = safeName_(String(r[2] || '').trim() || id) + '_' + safeName_(String(r[3] || '').trim() || id);
-  const props = PropertiesService.getScriptProperties(), key = 'SF_' + id, fid = props.getProperty(key);
+  const props = PropertiesService.getScriptProperties(), key = TASK.sf + id, fid = props.getProperty(key);   // 과제마다 따로: 모델링 SF_, 도형 SF2_
   if (fid) { try { const f = DriveApp.getFolderById(fid); if (!f.isTrashed()) { if (f.getName() !== want) f.setName(want); return f; } } catch (e) {} }
   const root = rootFolder_(), it = root.getFoldersByName(want), f = it.hasNext() ? it.next() : root.createFolder(want);
   props.setProperty(key, f.getId());
@@ -28,17 +29,20 @@ function inFolder_(file, folder) { const ps = file.getParents(); while (ps.hasNe
 
 function apiUpload_(user, p) {
   if (user.role !== 'student') fail_('FORBIDDEN');
-  if (readConfig_().locked) fail_('LOCKED');
-  const kind = p.kind === 'photo' ? 'photo' : 'data';
-  const key = kind === 'photo' ? String(p.key || '').replace(/[^a-z0-9_]/gi, '').slice(0, 20) : 'data';
+  if (taskLocked_()) fail_('LOCKED');
+  // image: 도형 과제의 모델링할 물체 사진(컬러, 화면에서 250KB 이하로 줄임) — 도형 과제에서만 받습니다
+  if (p.kind === 'image' && TASK.key !== 'shape') fail_('BAD_FILE');   // 모델링 과제로 온 사진을 '탐구자료'로 받아 기존 원본 자료를 덮어쓰지 않게
+  const kind = p.kind === 'photo' ? 'photo' : p.kind === 'image' ? 'image' : 'data';
+  const pic = kind === 'photo' || kind === 'image';
+  const key = pic ? String(p.key || '').replace(/[^a-z0-9_]/gi, '').slice(0, 20) : 'data';
   const b64 = String(p.b64 || '');
   if (!b64 || !/^[A-Za-z0-9+/=]+$/.test(b64)) fail_('BAD_FILE');
-  if (b64.length > (kind === 'photo' ? PHOTO_MAX_B64 : DATA_MAX_B64)) fail_('BIG_FILE');
+  if (b64.length > (kind === 'photo' ? PHOTO_MAX_B64 : kind === 'image' ? IMAGE_MAX_B64 : DATA_MAX_B64)) fail_('BIG_FILE');
   const extM = String(p.name || '').match(/\.([A-Za-z0-9]{1,6})$/);
-  const ext = kind === 'photo' ? 'jpg' : (extM ? extM[1].toLowerCase() : 'bin');
-  const base = kind === 'photo' ? `풀이사진_${safeName_(user.sid)}_${safeName_(user.name)}_${key}` : `탐구자료_${safeName_(user.sid)}_${safeName_(user.name)}`;
+  const ext = pic ? 'jpg' : (extM ? extM[1].toLowerCase() : 'bin');
+  const base = pic ? `${TASK.photoPrefix}${safeName_(user.sid)}_${safeName_(user.name)}_${key}` : `탐구자료_${safeName_(user.sid)}_${safeName_(user.name)}`;
   const fname = base + '.' + ext;
-  const mime = kind === 'photo' ? 'image/jpeg' : (/^[\w.+-]+\/[\w.+-]+$/.test(String(p.mime || '')) ? String(p.mime) : 'application/octet-stream');
+  const mime = pic ? 'image/jpeg' : (/^[\w.+-]+\/[\w.+-]+$/.test(String(p.mime || '')) ? String(p.mime) : 'application/octet-stream');
   const tag = user.id + '|' + kind + '|' + key, folder = studentFolder_(user.id);
   // 같은 칸의 예전 파일은 휴지통으로 (이름을 바꿨을 수도 있으니 설명으로 찾습니다)
   [folder, legacyUploadFolder_()].forEach(fd => { if (!fd) return; const it = fd.getFiles(); while (it.hasNext()) { const f = it.next(); if (String(f.getDescription() || '') === tag) f.setTrashed(true); } });

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>전문수학 수행평가 도구</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230B1846%22%2F%3E%3Cstop%20offset%3D%22.55%22%20stop-color%3D%22%2305424A%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2303925A%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%2224%22%20height%3D%2224%22%20rx%3D%225.4%22%20fill%3D%22url(%23g)%22%2F%3E%3Cpath%20d%3D%22M2.4%2012h19.2M12%203.6v16.6%22%20stroke%3D%22%23E6F7F1%22%20stroke-width%3D%22.75%22%20opacity%3D%22.9%22%2F%3E%3Cpath%20d%3D%22M3.6%2012c1.4-2.6%202.6-4.3%204-4.3s3%201.6%204.4%204.3%202.8%204.3%204.2%204.3%202.6-1.7%203.9-4.3%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M15.9%2018.3l1.4%201.5%202.9-2.9%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E">
-<script src="config.js?v=202611221842"></script>
-<script src="mathtool.js?v=202611221842"></script>
-<script src="shape.js?v=202611221842"></script>
+<script src="config.js?v=202611222002"></script>
+<script src="mathtool.js?v=202611222002"></script>
+<script src="shape.js?v=202611222002"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -1326,7 +1326,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202611221842"; // build:a87ce677  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202611222002"; // build:7098606b  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",CONSENT_SIGN:"서명을 저장하지 못했습니다. [다시 쓰기]를 누르고 서명해 주세요.",CONSENT_VER:"동의서가 바뀌었습니다. 새로고침한 뒤 다시 동의해 주세요.",CONSENT_AGREE:"동의 칸에 체크해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -1762,10 +1762,10 @@ app.addEventListener("keydown",e=>{ const t=e.target; if(t.tagName!=="INPUT"||!t
   else if(e.key==="ArrowUp"&&r>0){ e.preventDefault(); const pv=gridEl().querySelector(`[data-r="${r-1}"][data-c="${c}"]`); if(pv) pv.focus(); } });
 
 /* ───────── 붙여넣기 막기·기록 (AI 활용 의심, 두 과제 공통) ─────────
- * 학생이 글 칸에 PASTE_MIN자 이상을 붙여 넣거나 끌어다 놓으면 막고, 경고 팝업을 띄우고, 기록 doc.pastes 에 남깁니다.
+ * 학생이 글 칸·수식 입력기에 붙여 넣거나 끌어다 놓으면 글자 수와 상관없이 모두 막고, 경고 팝업을 띄우고, 기록 doc.pastes 에 남깁니다.
  * 교사 현황에는 배지·기록 표, 대시보드를 열어 둔 동안 새 기록이 생기면 팝업을 띄웁니다. (옛 기록에는 pastes 가 없어 0회)
  * 빼는 칸: 2단계 자료 표(엑셀 붙여넣기), 출처·링크 칸, 도구 체크 */
-const PASTE_MIN=20, PASTE_FREE=/^ans\.(s1_src|s2_when|s5_src|sh_src|sh_url)$|^tools\./;
+const PASTE_FREE=/^ans\.(s1_src|s2_when|s5_src|sh_src|sh_url)$|^tools\./;
 function pasteAlert(title,body){ let el=document.getElementById("pasteModal");
   if(!el){ el=document.createElement("div"); el.id="pasteModal"; el.className="ntm"; document.body.appendChild(el);
     el.addEventListener("click",e=>{ if(e.target===el||(e.target.closest&&e.target.closest("[data-pm]"))) el.hidden=true; });
@@ -1774,23 +1774,27 @@ function pasteAlert(title,body){ let el=document.getElementById("pasteModal");
     <div class="ntm-list paste-body">${body}</div><div style="display:flex;justify-content:flex-end;padding:10px 16px 14px"><button class="btn pri" type="button" data-pm>확인</button></div></div>`;
   el.hidden=false; const b=el.querySelector(".btn.pri"); if(b) b.focus(); }
 function pasteGuard(e,txt){ const t=e.target;
-  if(!ME||ME.role!=="student"||view!=="student"||!TASK||!t||!t.matches||!t.matches("textarea,input")||t.closest("[data-grid]")) return;
-  const p=t.dataset.p||""; if(!p||PASTE_FREE.test(p)||t.type==="checkbox"||t.type==="hidden") return;
-  txt=String(txt||"").trim(); const n=txt.replace(/\s+/g,"").length; if(n<PASTE_MIN) return;
-  e.preventDefault(); e.stopImmediatePropagation(); if(locked()) return;
-  const L=me.pastes||(me.pastes=[]); L.push({k:p,l:(t.getAttribute("aria-label")||p).slice(0,60),n,at:Date.now(),t:txt.replace(/\s+/g," ").slice(0,80),st:stage,how:e.type==="drop"?"drop":"paste"});
+  if(!ME||ME.role!=="student"||view!=="student"||!TASK||!t||!t.closest) return;
+  const inMath=!!t.closest(".mt-dlg"); let p, label;
+  if(inMath){ p="math"; label="수식 입력기"; }
+  else { if(!app.contains(t)||!t.matches("textarea,input")||t.closest("[data-grid]")) return;
+    p=t.dataset.p||""; if(!p||PASTE_FREE.test(p)||t.type==="checkbox"||t.type==="hidden") return;
+    label=t.getAttribute("aria-label")||p; }
+  e.preventDefault(); e.stopImmediatePropagation();
+  txt=String(txt||"").trim(); const n=txt.replace(/\s+/g,"").length; if(!n||locked()) return;
+  const L=me.pastes||(me.pastes=[]); L.push({k:p,l:label.slice(0,60),n,at:Date.now(),t:txt.replace(/\s+/g," ").slice(0,80),st:stage,how:e.type==="drop"?"drop":"paste"});
   if(L.length>100) L.splice(0,L.length-100);
   dirty=true; if(!conflict){ clearTimeout(saveTimer); saveTimer=setTimeout(flush,800); }
-  pasteAlert("붙여넣기를 막았습니다",`<p><b>${n}자</b>를 ${e.type==="drop"?"끌어다 놓으려고":"붙여 넣으려고"} 했습니다. ${PASTE_MIN}자 이상 붙여넣기는 <b>AI 활용 의심</b>으로 기록되고 <b>선생님께 알려집니다.</b></p>
+  pasteAlert("붙여넣기를 막았습니다",`<p><b>${n}자</b>를 ${e.type==="drop"?"끌어다 놓으려고":"붙여 넣으려고"} 했습니다. 이 칸에는 <b>붙여넣기를 쓸 수 없고</b>, 붙여넣기 시도는 <b>AI 활용 의심</b>으로 기록되어 <b>선생님께 알려집니다.</b></p>
     <p>${TASK==="shape"?"이 과제는 <b>AI 활용이 금지</b>되어 있고, 적발되면 감점합니다.":"AI로 얻은 내용도 정확히 이해한 뒤 <b>내 말로 직접</b> 써야 합니다."} 제출한 뒤 인터뷰에서 내가 쓴 내용을 설명해야 합니다.</p>
     <p class="sub">${TASK==="shape"?"출처 칸":"출처·링크 칸과 2단계 자료 표"}는 붙여넣기를 쓸 수 있습니다.</p>`); }
-app.addEventListener("paste",e=>pasteGuard(e,(e.clipboardData||window.clipboardData||{getData:()=>""}).getData("text")),true);
-app.addEventListener("drop",e=>pasteGuard(e,e.dataTransfer&&e.dataTransfer.getData("text")),true);
+document.addEventListener("paste",e=>pasteGuard(e,(e.clipboardData||window.clipboardData||{getData:()=>""}).getData("text")),true);
+document.addEventListener("drop",e=>pasteGuard(e,e.dataTransfer&&e.dataTransfer.getData("text")),true);
 /* 교사: 붙여넣기 배지·기록 표·새 기록 팝업 */
 const pasteN=doc=>((doc&&doc.pastes)||[]).length;
-function pasteBadge(doc){ const n=pasteN(doc); return n?` <span class="pill paste" title="${PASTE_MIN}자 이상 붙여넣기 시도 ${n}회 (모두 막힘)">📋 붙여넣기 ${n}</span>`:""; }
+function pasteBadge(doc){ const n=pasteN(doc); return n?` <span class="pill paste" title="붙여넣기 시도 ${n}회 (모두 막힘)">📋 붙여넣기 ${n}</span>`:""; }
 function pasteLogHTML(doc){ const L=(doc&&doc.pastes)||[]; if(!L.length) return "";
-  return `<details class="paste-log" open><summary><b>⚠ AI 활용 의심 · 붙여넣기 시도 ${L.length}회</b> <span class="sub">(${PASTE_MIN}자 이상, 모두 막혀 활동지에는 들어가지 않음)</span></summary>
+  return `<details class="paste-log" open><summary><b>⚠ AI 활용 의심 · 붙여넣기 시도 ${L.length}회</b> <span class="sub">(모두 막혀 활동지에는 들어가지 않음)</span></summary>
     <div style="overflow-x:auto;margin-top:8px"><table><thead><tr><th>시각</th><th>칸</th><th>글자 수</th><th>붙여 넣으려던 글 (앞부분)</th></tr></thead><tbody>${L.slice().reverse().map(x=>`<tr><td class="num">${ntWhen(x.at)}</td><td>${esc(x.l||x.k)}</td><td class="num">${x.n}</td><td style="white-space:normal;min-width:220px">${esc(x.t||"")}${(x.t||"").length>=80?"…":""}</td></tr>`).join("")}</tbody></table></div></details>`; }
 let pasteMem={};
 function pasteWatch(){ if(!ME||ME.role!=="teacher"||!TASK) return; const key=`mt_seen_p_${ME.id}_${TASK}`;
@@ -1798,7 +1802,7 @@ function pasteWatch(){ if(!ME||ME.role!=="teacher"||!TASK) return; const key=`mt
   const news=[]; roster.forEach((s,id)=>{ const L=(s.doc&&s.doc.pastes)||[], o=seen[id]||0; if(L.length>o) news.push({s,id,list:L.slice(Math.max(o,L.length-3))}); seen[id]=L.length; });
   pasteMem[key]=seen; try{ localStorage.setItem(key,JSON.stringify(seen)); }catch(e){}
   if(!news.length) return;
-  pasteAlert(`AI 활용 의심 · 붙여넣기 시도 ${news.length}명`,`<p>학생이 ${PASTE_MIN}자 이상을 붙여 넣으려 했습니다(모두 막혔고 학생에게도 경고가 떴습니다).</p>
+  pasteAlert(`AI 활용 의심 · 붙여넣기 시도 ${news.length}명`,`<p>학생이 글·수식 칸에 붙여 넣으려 했습니다(모두 막혔고 학생에게도 경고가 떴습니다).</p>
     <ul style="margin:8px 0;padding-left:20px">${news.slice(0,12).map(x=>{ const d=x.s.doc||{}, i=d.info||{}; return `<li><b>${esc(i.sid||x.s.sid||"")} ${esc(i.name||x.s.name||x.id)}</b> — ${x.list.map(p=>`${esc(p.l||p.k)} ${p.n}자 (${ntWhen(p.at)})`).join(", ")}</li>`; }).join("")}</ul>
     <p class="sub">학생 줄을 누르면 붙여 넣으려던 글의 앞부분까지 볼 수 있습니다.</p>`); }
 app.addEventListener("paste",e=>{ const t=e.target; if(!t.closest||!t.closest("[data-grid]")||locked()) return;

@@ -693,7 +693,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
   function renderRoster(box, rows) {
     box.innerHTML = `<table><thead><tr><th>학번</th><th>이름</th><th>탐구 대상</th><th>단계별 작성 (1~5)</th><th>곡선·벡터·점</th><th>위치 · 방향 일치율</th><th>상태</th><th>최근 저장</th></tr></thead><tbody>
   ${rows.map(r => { const d = r.doc, A = accuracy(d), G = angleAcc(d);
-    return `<tr data-sel="${esc(r.id)}" aria-selected="${r.id === sel}"><td class="num">${esc(r.sid) || "–"}</td><td>${esc(r.name) || '<span class="sub">이름 없음</span>'}<div class="sub">${esc(r.login)}</div></td>
+    return `<tr data-sel="${esc(r.id)}" aria-selected="${r.id === sel}"><td class="num">${esc(r.sid) || "–"}</td><td>${esc(r.name) || '<span class="sub">이름 없음</span>'}${pasteBadge(r.doc)}<div class="sub">${esc(r.login)}</div></td>
   <td style="white-space:normal;min-width:160px">${esc(r.title) || '<span class="sub">아직 정하지 않음</span>'}${cv(d).img ? ' <span class="pill">사진</span>' : ""}</td>
   <td><div class="prog" title="${r.p.map((v, k) => `${k + 1}단계 ${Math.round(v * 100)}%`).join(", ")}">${r.p.map(v => `<span><i style="width:${Math.round(v * 100)}%"></i></span>`).join("")}</div></td>
   <td class="num">${(d.conics || []).filter(it => conicK(it).ok).length} · ${(d.vecs || []).filter(it => vecK(it).ok).length} · ${ptList(d).length}</td>

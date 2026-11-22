@@ -1207,7 +1207,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
   function renderRoster(box, rows) {
     box.innerHTML = `<table><thead><tr><th>학번</th><th>이름</th><th>탐구 대상</th><th>단계별 작성 (1~5)</th><th>곡선·벡터·점</th><th>위치 · 방향 일치율</th><th>상태</th><th>최근 저장</th></tr></thead><tbody>
   ${rows.map(r => { const d = r.doc, A = accuracy(d), G = angleAcc(d);
-    return `<tr data-sel="${esc(r.id)}" aria-selected="${r.id === sel}"><td class="num">${esc(r.sid) || "–"}</td><td>${esc(r.name) || '<span class="sub">이름 없음</span>'}<div class="sub">${esc(r.login)}</div></td>
+    return `<tr data-sel="${esc(r.id)}" aria-selected="${r.id === sel}"><td class="num">${esc(r.sid) || "–"}</td><td>${esc(r.name) || '<span class="sub">이름 없음</span>'}${pasteBadge(r.doc)}<div class="sub">${esc(r.login)}</div></td>
   <td style="white-space:normal;min-width:160px">${esc(r.title) || '<span class="sub">아직 정하지 않음</span>'}${cv(d).img ? ' <span class="pill">사진</span>' : ""}</td>
   <td><div class="prog" title="${r.p.map((v, k) => `${k + 1}단계 ${Math.round(v * 100)}%`).join(", ")}">${r.p.map(v => `<span><i style="width:${Math.round(v * 100)}%"></i></span>`).join("")}</div></td>
   <td class="num">${(d.conics || []).filter(it => conicK(it).ok).length} · ${(d.vecs || []).filter(it => vecK(it).ok).length} · ${ptList(d).length}</td>
@@ -1512,6 +1512,12 @@ details.help ul{margin:6px 0 0;padding-left:18px}
 .pill{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--label);color:var(--muted)}
 .pill.sub{background:var(--good-soft);color:var(--good)} .pill.live{background:var(--warn-soft);color:var(--warn)}
 .pill.graded{background:var(--accent-soft);color:var(--accent)}
+.pill.paste{background:#FEE2E2;color:#B91C1C;font-weight:600;white-space:nowrap}
+.paste-log{margin:10px 0 4px;border:1.5px solid #FCA5A5;background:#FEF2F2;color:#7F1D1D;border-radius:12px;padding:10px 14px}
+.paste-log summary{cursor:pointer}.paste-log .sub{color:#991B1B}
+.paste-log td:nth-child(-n+3),.paste-log th{white-space:nowrap}
+.paste-log table{font-size:13px;background:var(--paper);color:var(--ink)}
+.paste-body p{margin:0 0 8px;line-height:1.6}
 .sub{font-size:12px;color:var(--muted)}
 .detail{margin-top:16px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start}
 @media (max-width:900px){.detail{grid-template-columns:1fr}}
@@ -2629,7 +2635,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202611221300"; // build:0d29418a  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202611221315"; // build:66554904  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",CONSENT_SIGN:"서명을 저장하지 못했습니다. [다시 쓰기]를 누르고 서명해 주세요.",CONSENT_VER:"동의서가 바뀌었습니다. 새로고침한 뒤 다시 동의해 주세요.",CONSENT_AGREE:"동의 칸에 체크해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
@@ -3049,6 +3055,47 @@ app.addEventListener("keydown",e=>{ const t=e.target; if(t.tagName!=="INPUT"||!t
     if(e.key==="Enter"&&c===0&&!t.value&&t.placeholder.trim()){ t.value=t.placeholder; dgInput(t); }
     let nx=gridEl().querySelector(`[data-r="${r+1}"][data-c="${c}"]`); if(!nx){ dgExtra++; redrawGrid(); nx=gridEl().querySelector(`[data-r="${r+1}"][data-c="${c}"]`); } if(nx) nx.focus(); }
   else if(e.key==="ArrowUp"&&r>0){ e.preventDefault(); const pv=gridEl().querySelector(`[data-r="${r-1}"][data-c="${c}"]`); if(pv) pv.focus(); } });
+
+/* ───────── 붙여넣기 막기·기록 (AI 활용 의심, 두 과제 공통) ─────────
+ * 학생이 글 칸에 PASTE_MIN자 이상을 붙여 넣거나 끌어다 놓으면 막고, 경고 팝업을 띄우고, 기록 doc.pastes 에 남깁니다.
+ * 교사 현황에는 배지·기록 표, 대시보드를 열어 둔 동안 새 기록이 생기면 팝업을 띄웁니다. (옛 기록에는 pastes 가 없어 0회)
+ * 빼는 칸: 2단계 자료 표(엑셀 붙여넣기), 출처·링크 칸, 도구 체크 */
+const PASTE_MIN=20, PASTE_FREE=/^ans\.(s1_src|s2_when|s5_src|sh_src|sh_url)$|^tools\./;
+function pasteAlert(title,body){ let el=document.getElementById("pasteModal");
+  if(!el){ el=document.createElement("div"); el.id="pasteModal"; el.className="ntm"; document.body.appendChild(el);
+    el.addEventListener("click",e=>{ if(e.target===el||(e.target.closest&&e.target.closest("[data-pm]"))) el.hidden=true; });
+    el.addEventListener("keydown",e=>{ if(e.key==="Escape") el.hidden=true; }); }
+  el.innerHTML=`<div class="ntm-box" role="alertdialog" aria-modal="true" aria-labelledby="pmTitle"><div class="ntm-head"><span class="ntm-ico" style="background:#DC2626;font-weight:800">!</span><b id="pmTitle">${title}</b><button class="ntm-x" type="button" data-pm aria-label="닫기">×</button></div>
+    <div class="ntm-list paste-body">${body}</div><div style="display:flex;justify-content:flex-end;padding:10px 16px 14px"><button class="btn pri" type="button" data-pm>확인</button></div></div>`;
+  el.hidden=false; const b=el.querySelector(".btn.pri"); if(b) b.focus(); }
+function pasteGuard(e,txt){ const t=e.target;
+  if(!ME||ME.role!=="student"||view!=="student"||!TASK||!t||!t.matches||!t.matches("textarea,input")||t.closest("[data-grid]")) return;
+  const p=t.dataset.p||""; if(!p||PASTE_FREE.test(p)||t.type==="checkbox"||t.type==="hidden") return;
+  txt=String(txt||"").trim(); const n=txt.replace(/\s+/g,"").length; if(n<PASTE_MIN) return;
+  e.preventDefault(); e.stopImmediatePropagation(); if(locked()) return;
+  const L=me.pastes||(me.pastes=[]); L.push({k:p,l:(t.getAttribute("aria-label")||p).slice(0,60),n,at:Date.now(),t:txt.replace(/\s+/g," ").slice(0,80),st:stage,how:e.type==="drop"?"drop":"paste"});
+  if(L.length>100) L.splice(0,L.length-100);
+  dirty=true; if(!conflict){ clearTimeout(saveTimer); saveTimer=setTimeout(flush,800); }
+  pasteAlert("붙여넣기를 막았습니다",`<p><b>${n}자</b>를 ${e.type==="drop"?"끌어다 놓으려고":"붙여 넣으려고"} 했습니다. ${PASTE_MIN}자 이상 붙여넣기는 <b>AI 활용 의심</b>으로 기록되고 <b>선생님께 알려집니다.</b></p>
+    <p>${TASK==="shape"?"이 과제는 <b>AI 활용이 금지</b>되어 있고, 적발되면 감점합니다.":"AI로 얻은 내용도 정확히 이해한 뒤 <b>내 말로 직접</b> 써야 합니다."} 제출한 뒤 인터뷰에서 내가 쓴 내용을 설명해야 합니다.</p>
+    <p class="sub">${TASK==="shape"?"출처 칸과 작품 링크 칸":"출처·링크 칸과 2단계 자료 표"}는 붙여넣기를 쓸 수 있습니다.</p>`); }
+app.addEventListener("paste",e=>pasteGuard(e,(e.clipboardData||window.clipboardData||{getData:()=>""}).getData("text")),true);
+app.addEventListener("drop",e=>pasteGuard(e,e.dataTransfer&&e.dataTransfer.getData("text")),true);
+/* 교사: 붙여넣기 배지·기록 표·새 기록 팝업 */
+const pasteN=doc=>((doc&&doc.pastes)||[]).length;
+function pasteBadge(doc){ const n=pasteN(doc); return n?` <span class="pill paste" title="${PASTE_MIN}자 이상 붙여넣기 시도 ${n}회 (모두 막힘)">📋 붙여넣기 ${n}</span>`:""; }
+function pasteLogHTML(doc){ const L=(doc&&doc.pastes)||[]; if(!L.length) return "";
+  return `<details class="paste-log" open><summary><b>⚠ AI 활용 의심 · 붙여넣기 시도 ${L.length}회</b> <span class="sub">(${PASTE_MIN}자 이상, 모두 막혀 활동지에는 들어가지 않음)</span></summary>
+    <div style="overflow-x:auto;margin-top:8px"><table><thead><tr><th>시각</th><th>칸</th><th>글자 수</th><th>붙여 넣으려던 글 (앞부분)</th></tr></thead><tbody>${L.slice().reverse().map(x=>`<tr><td class="num">${ntWhen(x.at)}</td><td>${esc(x.l||x.k)}</td><td class="num">${x.n}</td><td style="white-space:normal;min-width:220px">${esc(x.t||"")}${(x.t||"").length>=80?"…":""}</td></tr>`).join("")}</tbody></table></div></details>`; }
+let pasteMem={};
+function pasteWatch(){ if(!ME||ME.role!=="teacher"||!TASK) return; const key=`mt_seen_p_${ME.id}_${TASK}`;
+  let seen=pasteMem[key]; if(!seen){ try{ seen=JSON.parse(localStorage.getItem(key)||"{}"); }catch(e){ seen={}; } }
+  const news=[]; roster.forEach((s,id)=>{ const L=(s.doc&&s.doc.pastes)||[], o=seen[id]||0; if(L.length>o) news.push({s,id,list:L.slice(Math.max(o,L.length-3))}); seen[id]=L.length; });
+  pasteMem[key]=seen; try{ localStorage.setItem(key,JSON.stringify(seen)); }catch(e){}
+  if(!news.length) return;
+  pasteAlert(`AI 활용 의심 · 붙여넣기 시도 ${news.length}명`,`<p>학생이 ${PASTE_MIN}자 이상을 붙여 넣으려 했습니다(모두 막혔고 학생에게도 경고가 떴습니다).</p>
+    <ul style="margin:8px 0;padding-left:20px">${news.slice(0,12).map(x=>{ const d=x.s.doc||{}, i=d.info||{}; return `<li><b>${esc(i.sid||x.s.sid||"")} ${esc(i.name||x.s.name||x.id)}</b> — ${x.list.map(p=>`${esc(p.l||p.k)} ${p.n}자 (${ntWhen(p.at)})`).join(", ")}</li>`; }).join("")}</ul>
+    <p class="sub">학생 줄을 누르면 붙여 넣으려던 글의 앞부분까지 볼 수 있습니다.</p>`); }
 app.addEventListener("paste",e=>{ const t=e.target; if(!t.closest||!t.closest("[data-grid]")||locked()) return;
   const txt=(e.clipboardData||window.clipboardData).getData("text")||""; if(!/[\n\t]/.test(txt.trim())) return; e.preventDefault();
   const lines=txt.replace(/\r/g,"").split("\n"); while(lines.length&&!lines[lines.length-1].trim()) lines.pop();
@@ -3169,7 +3216,7 @@ function renderRoster(){ const box=document.getElementById("rosterBox"); if(!box
   if(roster.size&&TASK==="shape") return Shape.renderRoster(box,rows);
   if(!roster.size){ box.innerHTML=`<div class="empty-note" style="border:0">아직 가입한 학생이 없습니다. 웹 앱 주소를 학생에게 보내면, 학생이 가입하고 쓰는 내용이 여기에 10초마다 새로 나타납니다.</div>`; return; }
   box.innerHTML=`<table><thead><tr><th>학번</th><th>이름</th><th>탐구 제목 · 카드</th><th>단계별 작성 (1~5)</th><th>자료</th><th>모델 A 오차율</th><th>상태</th><th>최근 저장</th><th>점수</th></tr></thead><tbody>
-  ${rows.map(r=>`<tr data-sel="${esc(r.id)}" aria-selected="${r.id===sel}"><td class="num">${esc(r.sid)||"–"}</td><td>${esc(r.name)||'<span class="sub">이름 없음</span>'}<div class="sub">${esc(r.login)}</div></td>
+  ${rows.map(r=>`<tr data-sel="${esc(r.id)}" aria-selected="${r.id===sel}"><td class="num">${esc(r.sid)||"–"}</td><td>${esc(r.name)||'<span class="sub">이름 없음</span>'}${pasteBadge(r.doc)}<div class="sub">${esc(r.login)}</div></td>
   <td style="white-space:normal;min-width:180px">${esc(r.title)||'<span class="sub">제목 없음</span>'} ${(r.doc.ans||{}).s1_card?`<span class="pill">${esc(r.doc.ans.s1_card)}</span>`:""}</td>
   <td><div class="prog" title="${r.p.map((v,k)=>`${k+1}단계 ${Math.round(v*100)}%`).join(", ")}">${r.p.map(v=>`<span><i style="width:${Math.round(v*100)}%"></i></span>`).join("")}</div></td>
   <td class="num">${r.an.pts.length}</td><td class="num">${r.an.eA?fmt(r.an.eA.mean,1)+"%":"–"}</td>
@@ -3186,7 +3233,7 @@ function gradeForm(){ const g=gradeDraft||{scores:{},notes:{}}; const sc=g.score
 /** 교사 상세 보기 머리(이름·학번·문서·제출 상태) — 모델링과 도형 과제가 함께 씁니다 */
 function detailHeadHTML(r,doc){ return `<div class="dhead"><h2>${esc(r.name)||"이름 없음"}</h2><span class="num sub">${esc(r.sid)} · ${esc(r.login)}</span><span>${esc(r.title)}</span>
     ${docs[sel]?`<a class="btn" style="text-decoration:none" href="${esc(docs[sel].url)}" target="_blank" rel="noopener">구글 문서 열기 ↗</a>`:""}<button class="btn" type="button" data-act="docOne">${docs[sel]?"구글 문서 다시 만들기":"구글 문서 만들기"}</button>
-    ${doc.status==="submitted"?`<span class="pill sub">제출함 · ${ago(doc.submittedAt)}</span><button class="btn" type="button" data-act="reopen">다시 고치게 열기</button>`:`<span class="pill${r.live?" live":""}">${r.live?"작성 중":r.upd?"미제출":"시작 전"} · ${ago(r.upd)}</span>`}</div>`; }
+    ${doc.status==="submitted"?`<span class="pill sub">제출함 · ${ago(doc.submittedAt)}</span><button class="btn" type="button" data-act="reopen">다시 고치게 열기</button>`:`<span class="pill${r.live?" live":""}">${r.live?"작성 중":r.upd?"미제출":"시작 전"} · ${ago(r.upd)}</span>`}</div>${pasteLogHTML(doc)}`; }
 function renderDetail(full){ const box=document.getElementById("detailBox"); if(!box) return; const s=sel&&roster.get(sel);
   if(!s){ box.innerHTML=roster.size?`<p class="sub" style="margin-top:12px">학생 줄을 누르면 활동지 전체와 채점 칸이 열립니다.</p>`:""; return; }
   const r=rowInfo(sel,s), doc=r.doc;
@@ -3203,7 +3250,7 @@ function selectStudent(id){ sel=id; selStage=-1; gradeDirty=false; const g=grade
 async function pollRoster(){ if(!ME||ME.role!=="teacher") return; try{ const r=await api("roster",{since:lastSince});
     const next=new Map(); r.students.forEach(s=>{ const prev=roster.get(s.id); next.set(s.id,Object.assign({},s,{doc:s.doc!==undefined?s.doc:(prev?prev.doc:null)})); });
     const bad=r.students.filter(s=>s.corrupt); sysBar("corrupt",bad.length?`<div class="banner warn"><span><b>기록을 읽지 못한 학생: ${esc(bad.map(s=>s.name||s.id).join(", "))}</b> — 이 학생 화면은 기록 보호로 열리지 않습니다. 스프레드시트 '기록' 시트의 해당 줄('데이터' 열부터)을 [파일 → 버전 기록]에서 되돌려 주세요. 기록·채점 시트에는 열을 끼워 넣거나 데이터 칸을 고치지 마세요.</span></div>`:null);
-    roster=next; grades=r.grades||{}; sheetUrl=r.sheetUrl||""; docs=r.docs||{}; folderUrl=r.folderUrl||""; lastSince=r.serverTime-15000;
+    roster=next; pasteWatch(); grades=r.grades||{}; sheetUrl=r.sheetUrl||""; docs=r.docs||{}; folderUrl=r.folderUrl||""; lastSince=r.serverTime-15000;
     const oldLock=cfgLocked(); cfg=Object.assign(cfg,r.config||{});
     const sl=document.getElementById("sheetLink"), shl=sheetLinkHTML(); if(sl&&sl.innerHTML!==shl) sl.innerHTML=shl;
     if(view!=="teacher"||tView!=="roster") return;

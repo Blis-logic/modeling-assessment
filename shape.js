@@ -137,11 +137,15 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
     raw.forEach(s => { let cur = []; s.forEach(([x, y]) => { if (inDom(k, x, y) && Math.abs(x) <= L && Math.abs(y) <= L) cur.push([x, y]); else { if (cur.length > 1) out.push(cur); cur = []; } }); if (cur.length > 1) out.push(cur); });
     return out;
   }
+  /* 벡터 사용 없음(checks.sh_novec): 체크하면 화면·정확도·작성률·보고서에서 벡터를 빼고 "벡터 사용 없음"으로 적습니다. 넣어 둔 벡터(doc.vecs)는 지우지 않고 보관합니다. */
+  const noVec = doc => !!((doc && doc.checks) || {}).sh_novec;
+  const vecsOf = doc => noVec(doc) ? [] : (doc.vecs || []);
+  const NOVEC = "벡터 사용 없음";
   /** 모든 곡선·벡터를 이름과 함께 선분 묶음으로 */
   function allShapes(doc) {
     const R = cv(doc).R, out = [];
     (doc.conics || []).forEach((it, i) => { const k = conicK(it); if (k.ok) out.push({ name: `곡선 #${i + 1}`, segs: conicSegs(k, R) }); });
-    (doc.vecs || []).forEach((it, i) => { const v = vecK(it); if (v.ok) out.push({ name: `벡터 #${i + 1}`, segs: [[[v.x0, v.y0], [v.x1, v.y1]]] }); });
+    vecsOf(doc).forEach((it, i) => { const v = vecK(it); if (v.ok) out.push({ name: `벡터 #${i + 1}`, segs: [[[v.x0, v.y0], [v.x1, v.y1]]] }); });
     return out;
   }
   /** 점 P에서 선분 AB 위의 가장 가까운 점 Q */
@@ -156,7 +160,7 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
   /* 정확도 결과는 곡선·벡터·점·허용값이 그대로면 다시 계산하지 않습니다(한 화면에서 여러 곳이 같은 값을 씀) */
   const memo = new WeakMap();
   function cached(doc, key, fn) {
-    const c = doc.canvas || {}, sig = JSON.stringify([doc.conics, doc.vecs, doc.pts, c.R, c.tol, c.tolA]);
+    const c = doc.canvas || {}, sig = JSON.stringify([doc.conics, doc.vecs, doc.pts, c.R, c.tol, c.tolA, noVec(doc)]);
     let m = memo.get(doc); if (!m) memo.set(doc, m = {});
     if (m[key] && m[key].sig === sig) return m[key].v;
     const v = fn(); m[key] = { sig, v }; return v;
@@ -176,7 +180,7 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
   /** ② 방향 정확도(벡터의 내적): 사진 기준선 u→ = AB→ 와 모델 벡터 v→ 의 사이각 θ, cosθ = (u→·v→)/(|u→||v→|) ≤ 허용 각도이면 일치 */
   function angleAcc0(doc) {
     const C = cv(doc), rows = [];
-    (doc.vecs || []).forEach((it, i) => { it = it || {}; const v = vecK(it), A = ptByName(doc, it.pa), B = ptByName(doc, it.pb);
+    vecsOf(doc).forEach((it, i) => { it = it || {}; const v = vecK(it), A = ptByName(doc, it.pa), B = ptByName(doc, it.pb);
       if (!v.ok || !A || !B) return;
       const u1 = B.x - A.x, u2 = B.y - A.y, lu = Math.hypot(u1, u2); if (!lu) return;
       const dot = u1 * v.v1 + u2 * v.v2, cos = clamp(dot / (lu * v.len), -1, 1), th = Math.acos(cos) * 180 / Math.PI;
@@ -259,7 +263,7 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
     (doc.conics || []).forEach((it, i) => { const k = conicK(it), col = COLORS[i % COLORS.length];
       conicSegs(k, R).forEach(seg => { sh2 += `<polyline points="${seg.map(([x, y]) => `${X(x).toFixed(1)},${Y(y).toFixed(1)}`).join(" ")}" fill="none" stroke="${col}" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`; });
       if (k.ok && o.labels !== false) sh2 += `<text x="${X(k.c) + 4}" y="${Y(k.d) - 4}" font-size="11" fill="${col}" font-weight="700">#${i + 1}</text>`; });
-    (doc.vecs || []).forEach((it, i) => { const v = vecK(it), col = VCOLORS[i % VCOLORS.length]; if (!v.ok) return;
+    vecsOf(doc).forEach((it, i) => { const v = vecK(it), col = VCOLORS[i % VCOLORS.length]; if (!v.ok) return;
       const x0 = X(v.x0), y0 = Y(v.y0), x1 = X(v.x1), y1 = Y(v.y1), ang = Math.atan2(y1 - y0, x1 - x0), L = 12, W = 6;
       const hx = x1 - L * Math.cos(ang), hy = y1 - L * Math.sin(ang);
       sh2 += `<line x1="${x0}" y1="${y0}" x2="${hx}" y2="${hy}" stroke="${col}" stroke-width="2.4" stroke-linecap="round"/><polygon points="${x1},${y1} ${hx + W * Math.sin(ang)},${hy - W * Math.cos(ang)} ${hx - W * Math.sin(ang)},${hy + W * Math.cos(ang)}" fill="${col}"/><circle cx="${x0}" cy="${y0}" r="3" fill="${col}"/>`;
@@ -314,14 +318,14 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
     const tiles = `<div class="sh-acc">
       <div><small>① 위치 일치율 (거리)</small><b class="${A ? rate(A.rate) : ""}">${A ? fm(A.rate, 1) + "%" : "–"}</b><span>${A ? `${A.ok} / ${A.n}점이 $|\\overrightarrow{QP}|\\le ${fm(A.tol)}$` : "꼭짓점과 곡선·벡터가 필요합니다"}</span></div>
       <div><small>평균 거리 $|\\overrightarrow{QP}|$</small><b>${A ? fm(A.mean) : "–"}</b><span>${A ? `좌표 단위 · 가장 먼 점 ${fm(A.max)}` : ""}</span></div>
-      <div><small>② 방향 일치율 (각도)</small><b class="${G ? rate(G.rate) : ""}">${G ? fm(G.rate, 1) + "%" : "–"}</b><span>${G ? `${G.ok} / ${G.n}개 벡터가 $\\theta\\le ${fm(G.tolA, 1)}^\\circ$` : "3단계에서 벡터의 사진 기준선을 고르세요"}</span></div>
+      <div><small>② 방향 일치율 (각도)</small><b class="${G ? rate(G.rate) : ""}">${G ? fm(G.rate, 1) + "%" : "–"}</b><span>${G ? `${G.ok} / ${G.n}개 벡터가 $\\theta\\le ${fm(G.tolA, 1)}^\\circ$` : noVec(doc) ? NOVEC : "3단계에서 벡터의 사진 기준선을 고르세요"}</span></div>
       <div><small>평균 각도 차 $\\theta$</small><b>${G ? fm(G.mean, 2) + "°" : "–"}</b><span>${G ? `가장 큰 차 ${fm(G.max, 2)}°` : ""}</span></div></div>`;
     const t1 = A ? `<h4 class="sh-h">① 위치: 벡터의 거리 계산 ${tx("$\\overrightarrow{QP}=(x_P-x_Q,\\ y_P-y_Q)$,  $|\\overrightarrow{QP}|=\\sqrt{(x_P-x_Q)^2+(y_P-y_Q)^2}$")}</h4>
       <div class="tbl-wrap"><table class="t sh-num"><thead><tr><th>꼭짓점 $P$</th><th>모델 위의 점 $Q$</th><th>$\\overrightarrow{QP}$</th><th>$|\\overrightarrow{QP}|$</th><th>가장 가까운 선</th><th>일치</th></tr></thead><tbody>${A.rows.map(r => `<tr><td class="lab">${esc(r.n)} ${pt(r.x, r.y)}</td><td class="num">${pt(r.qx, r.qy)}</td><td class="num">${tx(`$${vt(r.dx, r.dy)}$`)}</td><td class="num">${fm(r.d)}</td><td>${esc(r.who)}</td><td>${okPill(r.ok)}</td></tr>`).join("")}</tbody></table></div>`
       : `<p class="sub">${ptList(doc).length ? "곡선이나 벡터를 하나 이상 그리면 위치 정확도가 계산됩니다." : "1단계에서 사진 위에 꼭짓점을 찍으면 위치 정확도가 계산됩니다."}</p>`;
     const t2 = G ? `<h4 class="sh-h">② 방향: 내적으로 각도 계산 ${tx("$\\cos\\theta=\\dfrac{\\vec u\\cdot\\vec v}{|\\vec u||\\vec v|}=\\dfrac{u_1v_1+u_2v_2}{|\\vec u||\\vec v|}$")}</h4>
       <div class="tbl-wrap"><table class="t sh-num"><thead><tr><th>벡터</th><th>사진 기준선 $\\vec u=\\overrightarrow{AB}$</th><th>모델 $\\vec v$</th><th>$\\vec u\\cdot\\vec v$</th><th>$|\\vec u|$, $|\\vec v|$</th><th>$\\cos\\theta$</th><th>$\\theta$</th><th>일치</th></tr></thead><tbody>${G.rows.map(r => `<tr><td class="lab">v${r.i + 1}<div class="sub">${esc(r.a)} → ${esc(r.b)}</div></td><td class="num">${tx(`$${vt(r.u1, r.u2)}$`)}</td><td class="num">${tx(`$${vt(r.v1, r.v2)}$`)}</td><td class="num">${fm(r.dot)}</td><td class="num">${fm(r.lu)} · ${fm(r.lv)}</td><td class="num">${fm(r.cos, 5)}</td><td class="num"><b>${fm(r.th, 2)}°</b></td><td>${okPill(r.ok)}</td></tr>`).join("")}</tbody></table></div>`
-      : `<p class="sub">3단계 벡터 카드에서 '사진 기준선'의 시작점 A와 끝점 B(1단계에서 찍은 꼭짓점)를 고르면 방향 정확도가 계산됩니다.</p>`;
+      : noVec(doc) ? `<h4 class="sh-h">② 방향: ${NOVEC}</h4><p class="sub">3단계에서 '벡터 사용 없음'을 골라 방향 정확도는 계산하지 않습니다.</p>` : `<p class="sub">3단계 벡터 카드에서 '사진 기준선'의 시작점 A와 끝점 B(1단계에서 찍은 꼭짓점)를 고르면 방향 정확도가 계산됩니다.</p>`;
     return tiles.replace(/\$[^$]+\$/g, m => tx(m)) + t1.replace(/<th>([^<]*\$[^<]*)<\/th>/g, (m, h) => `<th>${tx(h)}</th>`) + t2.replace(/<th>([^<]*\$[^<]*)<\/th>/g, (m, h) => `<th>${tx(h)}</th>`);
   }
 
@@ -347,15 +351,15 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
     const mapF = listFrac(doc.maps || [], GOAL.maps, [m => filled(m.part), m => filled(m.math), m => filled(m.desc)]);
     const s0 = ([filled(a.sh_obj), filled(a.sh_reason), !!cv(doc).img].filter(Boolean).length + Math.min(1, ptList(doc).length / GOAL.pts) + mapF) / 5;
     const s1 = listFrac(doc.conics || [], GOAL.conics, [it => conicK(it).ok, it => filled(it.role)]);
-    const s2 = listFrac(doc.vecs || [], GOAL.vecs, [it => vecK(it).ok, it => filled(it.meaning), it => !!(ptByName(doc, it.pa) && ptByName(doc, it.pb))]);
-    const s3 = (ANALYSIS.filter(([k]) => filled(a[k])).length + (accuracy(doc) ? 1 : 0) + (angleAcc(doc) ? 1 : 0)) / (ANALYSIS.length + 2);
+    const s2 = noVec(doc) ? 1 : listFrac(doc.vecs || [], GOAL.vecs, [it => vecK(it).ok, it => filled(it.meaning), it => !!(ptByName(doc, it.pa) && ptByName(doc, it.pb))]);
+    const nv = noVec(doc), s3 = (ANALYSIS.filter(([k]) => !(nv && k === "sh_a2") && filled(a[k])).length + (accuracy(doc) ? 1 : 0) + (nv ? 0 : angleAcc(doc) ? 1 : 0)) / (ANALYSIS.length + 2 - (nv ? 2 : 0));
     const s4 = (CHECKS.filter(([k]) => ck[k]).length / CHECKS.length + [a.sh_r1, a.sh_r2, a.sh_tool].filter(filled).length) / 4;
     return [s0, s1, s2, s3, s4];
   }
   function homeProgress(doc) { const a = doc.ans || {}; return [a.sh_obj, a.sh_src, a.sh_tool].filter(filled).length / 3; }
   function summary(doc) {
     const p = progress(doc), u = String((doc.ans || {}).sh_url || "").trim(), A = accuracy(doc), G = angleAcc(doc);
-    return { progress: Math.round(p.reduce((x, y) => x + y, 0) / 5 * 100), nConic: (doc.conics || []).filter(conicDone).length, nVec: (doc.vecs || []).filter(vecDone).length,
+    return { progress: Math.round(p.reduce((x, y) => x + y, 0) / 5 * 100), nConic: (doc.conics || []).filter(conicDone).length, nVec: vecsOf(doc).filter(vecDone).length,
       nPt: ptList(doc).length, acc: A ? Math.round(A.rate * 10) / 10 : null, dist: A ? Math.round(A.mean * 1000) / 1000 : null,
       accA: G ? Math.round(G.rate * 10) / 10 : null, ang: G ? Math.round(G.mean * 100) / 100 : null, url: /^https?:\/\//.test(u) ? u : "" };
   }
@@ -399,7 +403,7 @@ html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#05966
 .sh-par input{width:74px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:var(--fill);color:var(--ink);font:inherit;font-size:13px}
 .sh-par input:placeholder-shown{background:var(--good-soft)}.sh-par .sep{align-self:center;color:var(--muted);font-size:12px}
 .sh-auto{font-size:13px;padding:6px 10px;background:var(--label);border-radius:6px;overflow-x:auto}
-.sh-tools{padding:8px 12px;font-size:14px;line-height:1.6;min-width:0}.sh-toolguide{margin:0;padding-left:18px}.sh-toolguide li{margin:3px 0}
+.sh-novec{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:10px 12px;margin:0 0 10px;border:1px dashed var(--line);border-radius:10px;background:var(--fill);cursor:pointer}.sh-novec input{width:18px;height:18px;flex:none;align-self:center}.sh-novec .sub{flex:1 1 220px}.sh-tools{padding:8px 12px;font-size:14px;line-height:1.6;min-width:0}.sh-toolguide{margin:0;padding-left:18px}.sh-toolguide li{margin:3px 0}
 .sh-add{justify-self:start}.sh-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .sh-shot img{max-width:100%;border:1px solid var(--line);border-radius:8px}
 .sh-plane{position:relative}.sh-plane svg{width:100%;height:auto;display:block;border-radius:10px;background:#fff;touch-action:manipulation}
@@ -448,6 +452,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
     });
     app.addEventListener("change", e => {
       if (TASK !== "shape" || view !== "student" || !ME) return; const p = e.target.dataset && e.target.dataset.p; if (!p) return;
+      if (p === "checks.sh_novec") { if (locked()) return; (me.checks || (me.checks = {})).sh_novec = e.target.checked; scheduleSave(); renderStudent.keepScroll = true; renderStudent(); return; }
       if (/^conics\.\d+\.type$/.test(p) || p === "canvas.R") { renderStudent.keepScroll = true; renderStudent(); }   // 칸 이름·슬라이더 범위가 바뀜
     });
     app.addEventListener("click", e => {
@@ -599,10 +604,11 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
         + `<div class="card low hint">${help(["타원: $\\left(\\dfrac{x-c}{a}\\right)^2+\\left(\\dfrac{y-d}{b}\\right)^2=1$ · 중심 $(c,d)$, 가로 반지름 $a$, 세로 반지름 $b$", "원: $a=b=r$ 인 타원 · $(x-c)^2+(y-d)^2=r^2$", "쌍곡선: $\\left(\\dfrac{x-c}{a}\\right)^2-\\left(\\dfrac{y-d}{b}\\right)^2=1$ (좌우로 열림), $=-1$ (위아래로 열림) · 점근선 $y-d=\\pm\\dfrac{b}{a}(x-c)$", "포물선: $y-d=a(x-c)^2$ (위아래로 열림), $x-c=a(y-d)^2$ (좌우로 열림) · 꼭짓점 $(c,d)$, $|a|$가 클수록 좁아짐", "범위 제한: 곡선의 일부만 쓰려면 $x$·$y$의 최소·최대를 넣습니다. 예: 위쪽 반만 쓰려면 $y$ 최소에 $d$."])}</div>`;
     }
     if (si === 2) {
-      const vs = doc.vecs || [];
+      const vs = doc.vecs || [], nv = noVec(doc);
+      const nvBox = `<label class="sh-novec"><input type="checkbox" data-p="checks.sh_novec"${nv ? " checked" : ""}${ro ? " disabled" : ""}> <b>${NOVEC}</b> <span class="sub">물체에 벡터로 나타낼 직선 부분이 없으면 체크합니다. 넣어 둔 벡터는 지워지지 않고, 체크를 풀면 다시 나타납니다.</span></label>`;
       return `<div class="sh-pair rev">` + planeCard(doc, "show", ro, "좌표평면", "직선 부분은 벡터(화살표)로 나타냅니다.", "c5 sh-sticky")
         + card("①", "벡터로 나타내는 직선", "시점 $(x_0,y_0)$과 성분 $(v_1,v_2)$를 넣으면 화살표가 그려지고, 종점과 크기가 자동으로 나옵니다.",
-          `<div class="sh-items">${vs.map((it, i) => vecItem(doc, it, i, ro)).join("")}${vs.length ? "" : `<p class="sub">아직 벡터가 없습니다.</p>`}${addBtn("vecs", "벡터 추가하기", ro)}</div>`, "c7") + `</div>`
+          nvBox + (nv ? `<p class="sub" style="margin:10px 0 0">벡터를 사용하지 않습니다. 보고서의 3단계와 4단계 벡터 항목(방향 정확도, [2] 벡터 해석)에는 '${NOVEC}'으로 적힙니다.${vs.length ? ` 넣어 둔 벡터 ${vs.length}개는 보관 중입니다.` : ""}</p>` : `<div class="sh-items">${vs.map((it, i) => vecItem(doc, it, i, ro)).join("")}${vs.length ? "" : `<p class="sub">아직 벡터가 없습니다.</p>`}${addBtn("vecs", "벡터 추가하기", ro)}</div>`), "c7") + `</div>`
         + `<div class="card low hint">${help(["시점 $A(x_1,y_1)$, 종점 $B(x_2,y_2)$이면 $\\overrightarrow{AB}=(x_2-x_1,\\ y_2-y_1)$", "크기: $|\\vec v|=\\sqrt{v_1^2+v_2^2}$ · 단위벡터: $\\dfrac{\\vec v}{|\\vec v|}$", "두 벡터가 이루는 각: $\\cos\\theta=\\dfrac{\\vec a\\cdot\\vec b}{|\\vec a||\\vec b|}$ · 수직이면 $\\vec a\\cdot\\vec b=0$", "대칭축을 벡터로 나타내면 곡선이 그 축에 대해 대칭인지 설명하기 좋습니다."])}</div>`;
     }
     if (si === 3) {
@@ -611,7 +617,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
       return `<div class="sh-pair rev">` + planeCard(doc, "acc", ro, "정확도 보기", "초록·빨강 선분: 모델 위의 점 $Q$에서 꼭짓점 $P$로 가는 벡터 $\\overrightarrow{QP}$ · 점선 화살표: 사진 기준선 $\\vec u=\\overrightarrow{AB}$와 사이각 $\\theta$", "c5 sh-sticky")
         + card("①", "모델의 정확도: 벡터의 거리와 내적", "① 위치: 꼭짓점 $P$와 모델 위의 가장 가까운 점 $Q$ 사이 벡터 $\\overrightarrow{QP}$의 크기. ② 방향: 사진 기준선 $\\vec u$와 모델 벡터 $\\vec v$의 내적으로 구한 사이각 $\\theta$.",
           `${row("허용 거리 · 허용 각도", "sh_tolA", `<div class="sh-par" style="padding:8px 10px"><label>${tx("허용 거리 $|\\overrightarrow{QP}|$")}<input data-p="canvas.tol" value="${esc(cvs.tol == null ? "" : cvs.tol)}" placeholder="${C.tol}" inputmode="decimal"${ro ? " disabled" : ""} aria-label="허용 거리"></label><label>${tx("허용 각도 $\\theta$ (°)")}<input data-p="canvas.tolA" value="${esc(cvs.tolA == null ? "" : cvs.tolA)}" placeholder="${C.tolA}" inputmode="decimal"${ro ? " disabled" : ""} aria-label="허용 각도"></label></div>`)}<div data-shacc style="margin-top:10px"></div>`, "c7") + `</div>`
-        + ANALYSIS.map(([k, l], i) => card(["②", "③", "④"][i], l, HELP[k], ansRow(doc, k, l, "longmath", ro))).join("")
+        + ANALYSIS.map(([k, l], i) => card(["②", "③", "④"][i], l, HELP[k], k === "sh_a2" && noVec(doc) ? `<p class="sub" style="margin:0"><b>${NOVEC}</b> — 3단계에서 '${NOVEC}'을 골라 이 항목은 쓰지 않습니다.</p>` : ansRow(doc, k, l, "longmath", ro))).join("")
         + `<div class="card low hint">${help(["연결: 두 곡선이 만나는 점을 두 식에 모두 넣어 성립하는지 보이면 매끄럽게 이어진다는 근거가 됩니다.", "대칭: $x$ 대신 $-x$를 넣어도 식이 같으면 $y$축 대칭, $y$ 대신 $-y$를 넣어도 같으면 $x$축 대칭입니다.", "정확도가 낮다면: 어느 점이 벗어났는지 보고 그 부위의 계수·범위를 고치거나, 곡선을 나눠 더 그립니다."])}</div>`;
     }
     const ck = doc.checks || {}, T = doc.tools || {}, oldUrl = String((doc.ans || {}).sh_url || "").trim();
@@ -632,7 +638,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
   function dashHTML(doc) {
     const p = progress(doc), avg = Math.round(p.reduce((x, y) => x + y, 0) / 5 * 100), A = doc.act || {}, st = A.st || {}, acc = accuracy(doc), ang = angleAcc(doc);
     const keys = [-1, 0, 1, 2, 3, 4], mx = Math.max(1, ...keys.map(k => st[k] || 0)), logs = (A.log || []).slice(-5).reverse();
-    const nC = (doc.conics || []).filter(it => conicK(it).ok).length, nV = (doc.vecs || []).filter(it => vecK(it).ok).length;
+    const nC = (doc.conics || []).filter(it => conicK(it).ok).length, nV = vecsOf(doc).filter(it => vecK(it).ok).length;
     return `<div class="dash">
   <div class="dtop"><div class="dring">${ringSVG(avg).replace('stop-color="#4F46E5"', 'stop-color="#059669"').replace('stop-color="#0EA5E9"', 'stop-color="#22C55E"')}<div><b>전체 작성률</b><small>${doc.status === "submitted" ? "제출함" : "작성 중"}${doc.updatedAt ? ` · 저장 ${ago(doc.updatedAt)}` : ""}</small></div></div>
   <div class="dbars">${STAGES.map((s, k) => `<div><span>${k + 1} ${SHORT[k]}</span><i><b style="width:${Math.round(p[k] * 100)}%"></b></i><em>${Math.round(p[k] * 100)}%</em></div>`).join("")}</div></div>
@@ -640,7 +646,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
     <div><small>⏱ 탐구 시간</small><b>${tmFmt(A.explore)}</b><span>오늘 ${tmFmt((A.days || {})[dayKey()])}</span></div>
     <div><small>⌨ 입력 시간</small><b>${tmFmt(A.input)}</b><span>글·수식을 입력한 시간</span></div>
     <div><small>💤 활동 없음</small><b>${A.idleN || 0}회</b><span>모두 ${tmFmt(A.idleSec)}</span></div>
-    <div><small>⬭ 곡선 · ➚ 벡터</small><b>${nC}<em> · ${nV}</em></b><span>그려진 곡선 · 벡터</span></div>
+    <div><small>⬭ 곡선 · ➚ 벡터</small><b>${nC}<em> · ${noVec(doc) ? "없음" : nV}</em></b><span>그려진 곡선 · 벡터</span></div>
     <div><small>⊕ 꼭짓점</small><b>${ptList(doc).length}</b><span>정확도 기준점</span></div>
     <div><small>🎯 위치 · 방향 일치율</small><b class="acc">${acc ? fm(acc.rate, 1) + "%" : "–"}<em> · ${ang ? fm(ang.rate, 1) + "%" : "–"}</em></b><span>평균 거리 ${acc ? fm(acc.mean) : "–"} · 평균 각도 차 ${ang ? fm(ang.mean, 2) + "°" : "–"}</span></div>
   </div>
@@ -712,7 +718,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
     return `<tr data-sel="${esc(r.id)}" aria-selected="${r.id === sel}"><td class="num">${esc(r.sid) || "–"}</td><td>${esc(r.name) || '<span class="sub">이름 없음</span>'}${pasteBadge(r.doc)}<div class="sub">${esc(r.login)}</div></td>
   <td style="white-space:normal;min-width:160px">${esc(r.title) || '<span class="sub">아직 정하지 않음</span>'}${cv(d).img ? ' <span class="pill">사진</span>' : ""}</td>
   <td><div class="prog" title="${r.p.map((v, k) => `${k + 1}단계 ${Math.round(v * 100)}%`).join(", ")}">${r.p.map(v => `<span><i style="width:${Math.round(v * 100)}%"></i></span>`).join("")}</div></td>
-  <td class="num">${(d.conics || []).filter(it => conicK(it).ok).length} · ${(d.vecs || []).filter(it => vecK(it).ok).length} · ${ptList(d).length}</td>
+  <td class="num">${(d.conics || []).filter(it => conicK(it).ok).length} · ${noVec(d) ? "없음" : vecsOf(d).filter(it => vecK(it).ok).length} · ${ptList(d).length}</td>
   <td class="num">${A ? fm(A.rate, 1) + "%" : "–"} · ${G ? fm(G.rate, 1) + "%" : "–"}<div class="sub">${A ? "거리 " + fm(A.mean) : ""}${G ? " · 각도 " + fm(G.mean, 1) + "°" : ""}</div></td>
   <td>${d.status === "submitted" ? '<span class="pill sub">제출함</span>' : r.live ? '<span class="pill live">작성 중</span>' : r.upd ? '<span class="pill">미제출</span>' : '<span class="pill">시작 전</span>'}</td>
   <td class="sub">${ago(r.upd)}</td></tr>`; }).join("")}</tbody></table>`;
@@ -764,15 +770,15 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
         { no: "④", title: "물체 구성 요소별 매핑 계획도", parts: [{ t: "table", cols: ["#", "물체의 부위", "사용할 2D 수학 요소", "예상 형태 및 범위 제한 방식"], fill: [1, 2, 3],
           rows: (maps.length ? maps : [{}]).map((m, i) => [String(i + 1), v((m || {}).part), v((m || {}).math), v((m || {}).desc)]) }] }],
       [{ no: "", title: "완성된 모델 (좌표평면)", parts: [IMG(0, "물체 사진 위에 그린 이차곡선·벡터와 꼭짓점")] }].concat(conicRows),
-      vecRows,
+      noVec(doc) ? [{ no: "", title: NOVEC, parts: [{ t: "fields", rows: [["벡터 모델링", NOVEC]] }] }] : vecRows,
       [{ no: "①", title: "모델의 정확도: 벡터의 거리와 내적", parts: [
           { t: "fields", auto: 1, rows: [
             ["① 위치 (벡터의 거리)", A ? `일치율 ${fm(A.rate, 1)}% (${A.ok} / ${A.n}점, 허용 거리 ${fm(A.tol)}) · 평균 거리 ${fm(A.mean)} · 가장 먼 점 ${fm(A.max)}` : (pts.length ? (hasShapes ? "–" : "곡선·벡터가 없어 계산하지 못함") : "꼭짓점이 없어 계산하지 못함")],
-            ["② 방향 (내적으로 구한 각도)", G ? `일치율 ${fm(G.rate, 1)}% (${G.ok} / ${G.n}개, 허용 각도 ${fm(G.tolA, 1)}°) · 평균 각도 차 ${fm(G.mean, 2)}° · 가장 큰 차 ${fm(G.max, 2)}°` : "사진 기준선을 고른 벡터가 없어 계산하지 못함"]] }]
+            ["② 방향 (내적으로 구한 각도)", G ? `일치율 ${fm(G.rate, 1)}% (${G.ok} / ${G.n}개, 허용 각도 ${fm(G.tolA, 1)}°) · 평균 각도 차 ${fm(G.mean, 2)}° · 가장 큰 차 ${fm(G.max, 2)}°` : noVec(doc) ? NOVEC : "사진 기준선을 고른 벡터가 없어 계산하지 못함"]] }]
           .concat(A ? [{ t: "table", cols: ["꼭짓점 $P$", "모델 위의 점 $Q$", "$\\overrightarrow{QP}$", "$|\\overrightarrow{QP}|$", "가장 가까운 선", "일치"], rows: A.rows.map(r => [`${r.n} ${pt(r.x, r.y)}`, pt(r.qx, r.qy), `$${vt(r.dx, r.dy)}$`, fm(r.d), r.who, r.ok ? "일치" : "벗어남"]) }] : [])
           .concat(G ? [{ t: "table", cols: ["벡터", "$\\vec u=\\overrightarrow{AB}$", "$\\vec v$", "$\\vec u\\cdot\\vec v$", "$|\\vec u|,\\ |\\vec v|$", "$\\cos\\theta$", "$\\theta$", "일치"], rows: G.rows.map(r => [`v${r.i + 1} (${r.a}→${r.b})`, `$${vt(r.u1, r.u2)}$`, `$${vt(r.v1, r.v2)}$`, fm(r.dot), `${fm(r.lu)}, ${fm(r.lv)}`, fm(r.cos, 5), `${fm(r.th, 2)}°`, r.ok ? "일치" : "벗어남"]) }] : [])
           .concat(A || G ? [IMG(1, "초록·빨강 선분: 거리 벡터 QP · 점선 화살표: 사진 기준선 AB와 사이각 θ")] : []) }]
-        .concat(ANALYSIS.map(([k, l], i) => ({ no: ["②", "③", "④"][i], title: l, parts: [{ t: "fields", rows: [[l, v(a[k])]] }].concat(photo(k, "풀이 사진 · " + l)) }))),
+        .concat(ANALYSIS.map(([k, l], i) => ({ no: ["②", "③", "④"][i], title: l, parts: k === "sh_a2" && noVec(doc) ? [{ t: "fields", rows: [[l, NOVEC]] }] : [{ t: "fields", rows: [[l, v(a[k])]] }].concat(photo(k, "풀이 사진 · " + l)) }))),
       REFLECT.map(([k, l], i) => ({ no: ["①", "②"][i], title: l, parts: [{ t: "fields", rows: [[l, v(a[k])]] }].concat(photo(k, "풀이 사진 · " + l)) }))
         .concat([{ no: "③", title: "사용한 도구와 활용 설명", parts: [{ t: "fields", rows: [["사용한 도구", TOOLS_SH().filter(([k]) => (doc.tools || {})[k]).map(([, l]) => l).join(", ")], ["도구를 어디에, 어떻게 썼고 결과를 어떻게 확인했는지", v(a.sh_tool)]]
           .concat(filled(a.sh_url) ? [["예전에 입력한 작품 링크", v(a.sh_url)]] : []) }].concat(photo("sh_shot", "다른 도구로 만든 화면")) }])
@@ -782,7 +788,7 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
     const empty = { 2: "(아직 벡터가 없습니다)" };
     return { spec: { header: ["2026학년도 2학기 전문 수학 · 수행평가", "실생활 도형 디자인 보고서", "사진 위 좌표평면에서 이차곡선·벡터로 모델링 · 활동지 겸 보고서"],
       intro: "실생활 물체 사진을 좌표평면에 맞추고, 범위를 제한한 이차곡선과 벡터로 윤곽을 모델링한 뒤, 고른 꼭짓점으로 정확도를 확인하고 그 수학적 근거와 한계를 설명합니다. 다 채운 활동지가 그대로 보고서가 됩니다. AI 활용은 금지이며(적발 시 감점), 모든 곡선은 학생이 스스로 결정하고, 제출한 결과물로 인터뷰를 실시합니다.",
-      standards: "", info: { sid: info.sid || acct.sid || "", name: info.name || acct.name || "", title: info.title || v(a.sh_obj) },
+      standards: "", info: { sid: acct.sid || info.sid || "", name: info.name || acct.name || "", title: info.title || v(a.sh_obj) },
       stages: STAGES.map((s, si) => ({ name: `${si + 1}단계 · ${s.name}`, meta: s.time, goal: s.goal,
         blocks: stages[si].length ? stages[si] : [{ title: empty[si] || "", parts: [] }] })) }, svgs: [], pngs: planePNGs(doc, owner) };
   }

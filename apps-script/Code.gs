@@ -101,7 +101,7 @@ function api(action, payload, token) {
     if (TASK.key === 'shape') ensureTaskSheets_(TASK);   // 로그인한 요청만 도형 과제 시트를 준비합니다
     const mine = { me: apiMe_, save: apiSave_, status: apiStatus_, changePw: apiChangePw_, logout: apiLogout_, syncDoc: apiSyncDoc_, pdf: apiPdf_, upload: apiUpload_, getFile: apiGetFile_, consent: apiConsent_ };
     if (mine[action]) return Object.assign({ ok: true }, mine[action](user, payload, token));
-    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, organize: apiOrganize_, addNotice: apiAddNotice_, delNotice: apiDelNotice_, backupNow: apiBackupNow_ };  // 교사만
+    const teach = { roster: apiRoster_, saveGrade: apiSaveGrade_, setConfig: apiSetConfig_, reopen: apiReopen_, accounts: apiAccounts_, resetPw: apiResetPw_, setSid: apiSetSid_, deleteAccount: apiDeleteAccount_, driveInfo: apiDriveInfo_, shareFolder: apiShareFolder_, organize: apiOrganize_, addNotice: apiAddNotice_, delNotice: apiDelNotice_, backupNow: apiBackupNow_ };  // 교사만
     if (teach[action]) {
       if (user.role !== 'teacher') return { ok: false, error: 'FORBIDDEN' };
       return Object.assign({ ok: true }, teach[action](user, payload));
@@ -321,6 +321,21 @@ function apiResetPw_(user, p) {
     sh.getRange(row, 5, 1, 2).setValues([[salt, hash_(salt, pw)]]);
     sh.getRange(row, 9).setValue(true);  // 학생이 다음 로그인 때 새 비밀번호를 정합니다
     return {};
+  });
+}
+/** 교사가 학생 학번을 고칩니다. 계정 시트의 학번 칸만 바꾸고, 기록·문서·폴더 이름은 학생이 다음에 저장하거나 문서가 다시 그려질 때 가입 정보를 따라 맞춰집니다. 동의 시트·동의서는 서명 당시 그대로 둡니다. */
+function apiSetSid_(user, p) {
+  const id = String(p.id || ''), sid = String(p.sid || '').trim();
+  if (!/^\d{5}$/.test(sid)) fail_('BAD_SID');
+  return withLock_(() => {
+    const sh = sheet_(SHEETS.acc), row = findRow_(sh, id);
+    if (row < 0) fail_('NOT_FOUND');
+    const r = sh.getRange(row, 1, 1, 4).getValues()[0];
+    if (String(r[1]) === 'teacher') fail_('FORBIDDEN');
+    const dup = sh.getDataRange().getValues().slice(1).find(x => x[0] && String(x[0]) !== id && String(x[1]) !== 'teacher' && String(x[2]) === sid);
+    if (dup) return { ok: false, error: 'DUP_SID', who: String(dup[3] || dup[0]) };
+    const cellR = sh.getRange(row, 3); cellR.setNumberFormat('@'); cellR.setValue(sid);
+    return { old: String(r[2]), sid: sid };
   });
 }
 function apiDeleteAccount_(user, p) {

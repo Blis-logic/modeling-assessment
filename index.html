@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>전문수학 수행평가 도구</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230B1846%22%2F%3E%3Cstop%20offset%3D%22.55%22%20stop-color%3D%22%2305424A%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2303925A%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%2224%22%20height%3D%2224%22%20rx%3D%225.4%22%20fill%3D%22url(%23g)%22%2F%3E%3Cpath%20d%3D%22M2.4%2012h19.2M12%203.6v16.6%22%20stroke%3D%22%23E6F7F1%22%20stroke-width%3D%22.75%22%20opacity%3D%22.9%22%2F%3E%3Cpath%20d%3D%22M3.6%2012c1.4-2.6%202.6-4.3%204-4.3s3%201.6%204.4%204.3%202.8%204.3%204.2%204.3%202.6-1.7%203.9-4.3%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M15.9%2018.3l1.4%201.5%202.9-2.9%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E">
-<script src="config.js?v=202611222002"></script>
-<script src="mathtool.js?v=202611222002"></script>
-<script src="shape.js?v=202611222002"></script>
+<script src="config.js?v=202611222021"></script>
+<script src="mathtool.js?v=202611222021"></script>
+<script src="shape.js?v=202611222021"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -1286,7 +1286,7 @@ function buildSpec(doc,acct){
     if(si===4){ const T=doc.tools||{}, used=TOOLS.filter(([k])=>T[k]).map(([,l])=>l).join(", ");   // [나의 수행]의 출처와 도구
       blocks.push({no:"⑧",title:"출처와 도구",parts:[{t:"fields",rows:[[HOME_SRC.f[0][1],val("s5_src")],["사용한 도구",used],[HOME_SRC.f[1][1],val("s5_tool")]]}]}); }
     return {name:`${si+1}단계 · ${s.name}`,meta:`${s.time} | 평가요소: ${s.el}`,goal:s.goal,blocks}; });
-  return {spec:{header:DOC_HEADER,intro:DOC_INTRO,standards:DOC_STD,info:{sid:info.sid||acct.sid||"",name:info.name||acct.name||"",title:info.title||""},stages},svgs}; }
+  return {spec:{header:DOC_HEADER,intro:DOC_INTRO,standards:DOC_STD,info:{sid:acct.sid||info.sid||"",name:info.name||acct.name||"",title:info.title||""},stages},svgs}; }
 
 const SVG_CSS=".gl{stroke:#E7EEEC}.ax{stroke:#D5DEDC}text{fill:#5A6B6F;font-size:11px;font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif}.lbl{font-size:12px}.pt{fill:#18272B}.ca{stroke:#0E6874;fill:none;stroke-width:2}.cb{stroke:#A65A16;fill:none;stroke-width:2;stroke-dasharray:6 4}.ra{fill:#0E6874}.rb{fill:#A65A16}.zero{stroke:#5A6B6F;stroke-dasharray:3 3}.rr{fill:#C7D2FE;stroke:#4F46E5;stroke-width:.8}.rn{fill:#FECACA;stroke:#DC2626;stroke-width:.8}.mk{stroke:#B45309;stroke-dasharray:3 4}.mkt{fill:#B45309;font-size:11px}.lim{stroke:#B45309;stroke-width:1.5;stroke-dasharray:6 4}.limt{fill:#B45309;font-size:11px}.band{fill:#FEF3E2}";
 function svgToPng(svg){ return new Promise(res=>{ if(!/^<svg/.test(svg)) return res("");
@@ -1326,10 +1326,10 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202611222002"; // build:7098606b  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202611222021"; // build:8bee700a  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
-const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",CONSENT_SIGN:"서명을 저장하지 못했습니다. [다시 쓰기]를 누르고 서명해 주세요.",CONSENT_VER:"동의서가 바뀌었습니다. 새로고침한 뒤 다시 동의해 주세요.",CONSENT_AGREE:"동의 칸에 체크해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
+const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",CONSENT_SIGN:"서명을 저장하지 못했습니다. [다시 쓰기]를 누르고 서명해 주세요.",CONSENT_VER:"동의서가 바뀌었습니다. 새로고침한 뒤 다시 동의해 주세요.",CONSENT_AGREE:"동의 칸에 체크해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",DUP_SID:"다른 학생이 이미 쓰는 학번입니다.",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
   WRONG_LOGIN:"아이디 또는 비밀번호가 맞지 않습니다. 잊었다면 선생님께 초기화를 요청하세요.",CLASS_CODE:"학급 코드가 맞지 않습니다. 선생님께 확인하세요.",TEACHER_CODE:"교사 가입 코드가 맞지 않습니다.",
   LOCKED:"선생님이 작성을 마감해서 저장할 수 없습니다.",FORBIDDEN:"교사만 할 수 있습니다.",NOT_FOUND:"그 계정을 찾지 못했습니다.",WRONG_PW:"지금 비밀번호가 맞지 않습니다.",
   NO_SETUP:"선생님이 아직 초기 설정(setup)을 하지 않았습니다.",NETWORK:"저장 서버에 연결하지 못했습니다. 잠시 뒤 다시 해 주세요.",SELF:"내 계정은 지울 수 없습니다.",
@@ -1896,7 +1896,7 @@ app.addEventListener("keydown",e=>{ if((e.key==="Enter"||e.key===" ")&&e.target.
 function rowInfo(id,s){ const doc=s.doc||blankDoc(), an=analyze(doc), p=progress(doc), g=grades[id]; const sc=g&&g.scores||{};
   const tot=[1,2,3,4].map(i=>sc["s"+i]).filter(isNum); const live=s.updatedAt&&Date.now()-s.updatedAt<120000;
   return {id,doc,an,p,avg:p.reduce((a,b)=>a+b,0)/5,g,total:tot.length?tot.reduce((a,b)=>a+ +b,0):null,graded:tot.length===4,live,upd:s.updatedAt,
-    sid:(doc.info||{}).sid||s.sid||"",name:(doc.info||{}).name||s.name||"",title:(doc.info||{}).title||"",login:id}; }
+    sid:s.sid||(doc.info||{}).sid||"",name:(doc.info||{}).name||s.name||"",title:(doc.info||{}).title||"",login:id}; }
 function allRows(){ return [...roster.entries()].map(([id,s])=>rowInfo(id,s)); }
 function rosterRows(){ let rows=allRows();
   if(rFilter){ const q=rFilter.toLowerCase(); rows=rows.filter(r=>(r.sid+" "+r.name+" "+r.title+" "+r.login).toLowerCase().includes(q)); }
@@ -1986,6 +1986,11 @@ function teacherClick(t){
   if(act==="reopen"){ t.disabled=true; api("reopen",{id:sel}).then(pollRoster).catch(e=>{ t.disabled=false; alertMsg(errMsg(e)); }); return; }
   if(act==="noticeMgr"){ openNotices(false); return; }
   if(act==="accReset"){ accPending={id:t.dataset.id,kind:"reset"}; renderAccounts(); return; }
+  if(act==="accSid"){ accPending={id:t.dataset.id,kind:"sid"}; renderAccounts(); return; }
+  if(act==="accSidGo"){ const v=document.getElementById("acc_sid").value.trim(), er=document.getElementById("accErr"), id=accPending.id;
+    if(!/^\d{5}$/.test(v)){ er.textContent=ERR.BAD_SID; return; } t.disabled=true;
+    api("setSid",{id,sid:v}).then(r=>{ accPending=null; const s=roster.get(id); if(s) s.sid=r.sid; loadAccounts(`${id} 학생의 학번을 ${r.old||"–"} → ${r.sid}(으)로 고쳤습니다. 활동지·보고서 문서·폴더 이름은 학생이 다음에 저장할 때 맞춰집니다.`); })
+      .catch(e=>{ t.disabled=false; er.textContent=e.error==="DUP_SID"?`${ERR.DUP_SID} (${e.who||""})`:errMsg(e); }); return; }
   if(act==="accDel"){ accPending={id:t.dataset.id,kind:"del"}; renderAccounts(); return; }
   if(act==="accCancel"){ accPending=null; renderAccounts(); return; }
   if(act==="accResetGo"){ const pw=document.getElementById("acc_pw").value; t.disabled=true;
@@ -2004,8 +2009,9 @@ function renderAccounts(note){ const b=document.getElementById("accBox"); if(!b|
     <td>${a.mustChange?'<span class="pill live">초기화됨 · 바꾸기 전</span>':'<span class="sub">학생이 정함</span>'}</td>
     <td style="white-space:normal;min-width:220px">${a.id===ME.id?'<span class="sub">내 계정</span>':pend&&accPending.kind==="reset"?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input id="acc_pw" class="num" placeholder="임시 비밀번호 (4자 이상)" style="border:1px solid var(--line);border-radius:5px;padding:3px 6px;background:var(--fill);min-width:0;flex:1 1 120px"><button class="btn pri" type="button" data-act="accResetGo" data-id="${esc(a.id)}">초기화</button><button class="btn" type="button" data-act="accCancel">취소</button></div><div class="sub" id="accErr" style="color:var(--bad)"></div>`
       :pend&&accPending.kind==="del"?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="sub">계정과 활동지 기록이 모두 지워집니다.</span><button class="btn danger" type="button" data-act="accDelGo">지우기</button><button class="btn" type="button" data-act="accCancel">취소</button></div><div class="sub" id="accErr" style="color:var(--bad)"></div>`
-      :`<button class="btn" type="button" data-act="accReset" data-id="${esc(a.id)}">비밀번호 초기화</button> <button class="btn" type="button" data-act="accDel" data-id="${esc(a.id)}">삭제</button>`}</td></tr>`; }).join("")}</tbody></table></div>`;
-  const pw=document.getElementById("acc_pw"); if(pw) pw.focus(); }
+      :pend&&accPending.kind==="sid"?`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input id="acc_sid" class="num" inputmode="numeric" maxlength="5" value="${esc(a.sid)}" aria-label="새 학번 (숫자 5자리)" style="border:1px solid var(--line);border-radius:5px;padding:3px 6px;background:var(--fill);min-width:0;flex:1 1 90px"><button class="btn pri" type="button" data-act="accSidGo">저장</button><button class="btn" type="button" data-act="accCancel">취소</button></div><div class="sub">숫자 5자리. 활동지·보고서 문서·폴더 이름은 학생이 다음에 저장할 때 새 학번으로 맞춰집니다.</div><div class="sub" id="accErr" style="color:var(--bad)"></div>`
+      :`${a.role==="student"?`<button class="btn" type="button" data-act="accSid" data-id="${esc(a.id)}">학번 수정</button> `:""}<button class="btn" type="button" data-act="accReset" data-id="${esc(a.id)}">비밀번호 초기화</button> <button class="btn" type="button" data-act="accDel" data-id="${esc(a.id)}">삭제</button>`}</td></tr>`; }).join("")}</tbody></table></div>`;
+  const pw=document.getElementById("acc_pw")||document.getElementById("acc_sid"); if(pw){ pw.focus(); if(pw.id==="acc_sid") pw.select(); } }
 async function loadShare(note){ try{ share=await api("driveInfo"); renderShare(note); }catch(e){ const b=document.getElementById("shareBox"); if(b) b.innerHTML=`<div class="banner bad">${esc(errMsg(e))}</div>`; } }
 function renderShare(note){ const b=document.getElementById("shareBox"); if(!b||!share) return; const mails=new Set(share.editors.map(x=>x.toLowerCase()));
   b.innerHTML=`${note?`<div class="banner info" style="margin:0 0 10px">${esc(note)}</div>`:""}

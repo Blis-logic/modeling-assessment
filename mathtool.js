@@ -33,8 +33,20 @@
   }
 
   /* ───── 글 속 $수식$ 찾기 ───── */
-  function tokens(text) { const out = []; String(text || "").replace(TOKEN, (m, tex, at) => { out.push({ tex: tex.trim(), start: at, end: at + m.length }); return m; }); return out; }
-  function hasMath(text) { TOKEN.lastIndex = 0; return TOKEN.test(String(text || "")); }
+  /** 다른 곳에서 붙여 넣은 수식 표기 $$…$$ · \(…\) · \[…\] 를 $…$ 로 바꿉니다(한 줄 안에서만). 저장된 글은 그대로 두고 보여 줄 때만 바꿉니다. */
+  function normalize(text) {
+    return String(text ?? "").replace(/\$\$([^$\n]+?)\$\$/g, "$$$1$$").replace(/\\\((.+?)\\\)/g, "$$$1$$").replace(/\\\[(.+?)\\\]/g, "$$$1$$");
+  }
+  /** 그리지 못한 수식을 한 번 더 고쳐 봅니다: \_ → _, 빈 ^{}·_{} 빼기, 겹친 위첨자·아래첨자(x^{a}^{b}) → x^{a}{}^{b} */
+  function fixTex(tex) {
+    let t = String(tex || "").replace(/\\_/g, "_").replace(/\\\^/g, "^").replace(/[\^_]\{\s*\}/g, "");
+    const ARG = "(?:\\{[^{}]*\\}|\\\\[a-zA-Z]+|[^\\s\\\\{}])";
+    const dbl = c => new RegExp("(\\" + c + "\\s*" + ARG + ")(\\s*\\" + c + ")", "g");
+    for (let i = 0; i < 4; i++) { const u = t.replace(dbl("^"), "$1{}$2").replace(dbl("_"), "$1{}$2"); if (u === t) break; t = u; }
+    return t;
+  }
+  function tokens(text) { const out = []; normalize(text).replace(TOKEN, (m, tex, at) => { out.push({ tex: tex.trim(), start: at, end: at + m.length }); return m; }); return out; }
+  function hasMath(text) { TOKEN.lastIndex = 0; return TOKEN.test(normalize(text)); }
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
   /** 긴 수식을 맨 바깥 +·− 자리에서 조각으로 나눕니다(괄호·{} 안, 연산 기호 바로 뒤는 나누지 않음).
@@ -59,7 +71,7 @@
 
   /** 글을 HTML로 바꿉니다. 수식은 MathLive가 이미 불러와져 있을 때만 그림으로, 아니면 글자로 둡니다. */
   function render(text) {
-    const ML = window.MathLive; let out = "", last = 0; const s = String(text || "");
+    const ML = window.MathLive; let out = "", last = 0; const s = normalize(text);
     tokens(s).forEach((t, i) => {
       out += esc(s.slice(last, t.start));
       let m = ""; try { m = ML ? splitLong(t.tex).map(p => `<span class="mt-p">${ML.convertLatexToMarkup(p)}</span>`).join("") : ""; } catch (e) { m = ""; }
@@ -83,7 +95,8 @@
     const MJ = await loadMathJax();
     for (const tex of uniq) {
       try {
-        const node = await MJ.tex2svgPromise(tex, { display: false });
+        let node = await MJ.tex2svgPromise(tex, { display: false });
+        if (node.querySelector("[data-mjx-error]") && fixTex(tex) !== tex) node = await MJ.tex2svgPromise(fixTex(tex), { display: false });   // 겹친 첨자 등은 고쳐서 다시
         const svg = node.querySelector("svg"); if (!svg || node.querySelector("[data-mjx-error]")) continue;
         const wEx = parseFloat(svg.getAttribute("width")), hEx = parseFloat(svg.getAttribute("height"));
         if (!(wEx > 0 && hEx > 0)) continue;
@@ -478,5 +491,5 @@
   }
 
   injectCss();
-  window.MathTool = { iconSVG: ICON, symbolMatch, open, close, render, renderInto, toImages, tokens, hasMath, splitLong, buttonHTML, injectCss, preload: () => loadMathLive().catch(() => {}) };
+  window.MathTool = { iconSVG: ICON, symbolMatch, open, close, render, renderInto, toImages, tokens, hasMath, normalize, fixTex, splitLong, buttonHTML, injectCss, preload: () => loadMathLive().catch(() => {}) };
 })();

@@ -46,7 +46,7 @@
     st.textContent = `html:root[data-task="shape"]{--accent:#059669;--accent-soft:#E3F5EC}
 @media (prefers-color-scheme: dark){html:root[data-task="shape"]:not([data-theme="light"]){--accent:#34D399;--accent-soft:#123326}}
 html:root[data-task="shape"][data-theme="dark"]{--accent:#34D399;--accent-soft:#123326}
-html[data-task="shape"] .brand .logo{background:linear-gradient(135deg,#34D399,#059669 45%,#0D9488);box-shadow:0 6px 16px -4px rgba(5,150,105,.55)}
+html[data-task="shape"] .brand .logo{box-shadow:0 6px 16px -4px rgba(3,146,90,.5)}
 html[data-task="shape"] .brand b{background:linear-gradient(90deg,#047857,#059669 55%,#0D9488);-webkit-background-clip:text;background-clip:text;color:transparent}`;
     document.head.appendChild(st);
   })();
@@ -413,16 +413,18 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
 .sh-acc small{color:var(--muted)}.sh-acc b{font-size:24px}.sh-acc b.ok{color:var(--good)}.sh-acc b.warn{color:var(--bad)}.sh-acc span{font-size:12px;color:var(--muted)}
 .sh-pts td input{width:80px;border:1px solid var(--line);border-radius:6px;padding:3px 6px;background:var(--fill);color:var(--ink);font:inherit;font-size:13px}
 .chooser{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:24px}
-.chooser button{--c1:#4F46E5;--c2:#0EA5E9;--sh:rgba(79,70,229,.45);display:grid;gap:10px;justify-items:start;text-align:left;padding:26px 24px 24px;border:1px solid var(--line);border-top:5px solid var(--c1);border-radius:18px;background:var(--paper);background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 9%,var(--paper)),var(--paper) 60%);color:var(--ink);cursor:pointer;font:inherit;transition:transform .15s,box-shadow .15s}
+.chooser button{--c1:#4F46E5;--c2:#0EA5E9;--sh:rgba(79,70,229,.45);display:grid;gap:10px;justify-items:start;align-content:start;text-align:left;padding:28px 24px 24px;border:1px solid var(--line);border-top:5px solid var(--c1);border-radius:18px;background:var(--paper);background:linear-gradient(180deg,color-mix(in srgb,var(--c1) 9%,var(--paper)),var(--paper) 60%);color:var(--ink);cursor:pointer;font:inherit;transition:transform .15s,box-shadow .15s}
 .chooser button.t-shape{--c1:#059669;--c2:#22C55E;--sh:rgba(5,150,105,.45)}
 .chooser button:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 14px 30px -14px var(--sh);border-color:var(--c1)}
 .chooser button:disabled{opacity:.55;cursor:not-allowed}
-.chooser .cn{font-size:13px;font-weight:700;color:#fff;background:var(--c1);border-radius:999px;padding:2px 12px;letter-spacing:.02em}
 .chooser b{font-size:24px;font-weight:800;line-height:1.3;letter-spacing:-.02em;background:linear-gradient(90deg,var(--c1),var(--c2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .chooser small{color:var(--muted);font-size:14px;line-height:1.55}
-.chooser .ci{width:92px;height:92px;border-radius:24px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 12px 24px -10px var(--sh)}
-.chooser .ci svg{width:64px;height:64px}
-@media (max-width:560px){.chooser .ci{width:76px;height:76px;border-radius:20px}.chooser .ci svg{width:52px;height:52px}.chooser b{font-size:21px}.sh-ctl .rowc{grid-template-columns:86px minmax(0,1fr) 70px}}`;
+.chooser .ci{justify-self:center;margin:2px 0 8px;width:132px;height:132px;border-radius:32px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 14px 28px -12px var(--sh)}
+.chooser .ci svg{width:96px;height:96px}
+.chooser-guides{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.chooser-guides a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;padding:8px 14px;font-size:14px;border-radius:10px}
+.chooser-guides a.t-model{color:#4F46E5;border-color:#C7D2FE}.chooser-guides a.t-shape{color:#059669;border-color:#A7F3D0}
+@media (max-width:560px){.chooser .ci{width:104px;height:104px;border-radius:26px}.chooser .ci svg{width:76px;height:76px}.chooser b{font-size:21px}.chooser-guides a{width:100%}.sh-ctl .rowc{grid-template-columns:86px minmax(0,1fr) 70px}}`;
     document.head.appendChild(st);
     const live = p => /^(canvas|conics|vecs|pts)\./.test(p);
     // 입력: 슬라이더·숫자 칸 짝 맞추기, 좌표평면·식·정확도 다시 그리기, 탐구 대상 → 제목
@@ -770,11 +772,12 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
   const R0 = C => C.R;
 
   /* ── 로그인 뒤 과제 고르기 ── */
-  // 삼각함수·미적분: 소리의 음파(사인파 두 겹) + 한 점에서의 접선(미분)
-  const ICON_MODEL = '<path d="M4 19c2.5-9 5.5-9 8 0s5.5 9 8 0 5.5-9 8 0 5.5 9 8 0 5.5-9 8 0" stroke-width="2.8"/>'
-    + '<path d="M4 19c2.5-5 5.5-5 8 0s5.5 5 8 0 5.5-5 8 0 5.5 5 8 0 5.5-5 8 0" stroke-width="1.6" opacity=".45"/>'
-    + '<path d="M14.5 27.5 25.5 10.5" stroke="#FDE68A" stroke-width="2.4"/><circle cx="20" cy="19" r="2.6" fill="#FDE68A" stroke="none"/>'
-    + '<text x="24" y="42" text-anchor="middle" font-size="11" font-weight="700" font-style="italic" font-family="Georgia,serif" fill="#fff" stroke="none">d/dx</text>';
+  // 삼각함수·미적분: 소리의 음파(사인파 두 겹) + 한 점에서의 얇은 붉은 접선(미분) + dy/dx (분수 꼴)
+  const ICON_MODEL = '<path d="M4 17c2.5-9 5.5-9 8 0s5.5 9 8 0 5.5-9 8 0 5.5 9 8 0 5.5-9 8 0" stroke-width="2.6"/>'
+    + '<path d="M4 17c2.5-5 5.5-5 8 0s5.5 5 8 0 5.5-5 8 0 5.5 5 8 0 5.5-5 8 0" stroke-width="1.4" opacity=".45"/>'
+    + '<path d="M14 26.5 26 7.5" stroke="#FF7B7B" stroke-width="1.2"/><circle cx="20" cy="17" r="2.1" fill="#FF7B7B" stroke="none"/>'
+    + '<g fill="#fff" stroke="none" font-family="Georgia,serif" font-style="italic" font-weight="700" font-size="8.5" text-anchor="middle"><text x="24" y="34.5">dy</text><text x="24" y="45">dx</text></g>'
+    + '<path d="M18.5 37.2h11" stroke="#fff" stroke-width="1.1"/>';
   // 실생활 도형: 꼭짓점을 맞댄 원뿔 두 개(이중 원뿔) 안에 이차곡선(타원·포물선)
   //   원뿔은 반투명 면 + 얇은 윤곽(밑면 뒤쪽은 점선), 곡선은 원뿔 면 위에 얇은 선으로 · 곡선마다 색을 달리(타원 노랑, 포물선 장밋빛)
   //   위 원뿔: 비스듬한 평면이 자른 타원(양 끝이 원뿔 옆면에 닿음) · 아래 원뿔: 옆면과 평행한 평면이 자른 포물선(양 끝이 밑면 테두리)
@@ -785,12 +788,17 @@ table.t.sh-num td,table.t.sh-num th{white-space:nowrap;padding:6px 12px!importan
     + '<ellipse cx="25.9" cy="13.8" rx="7.4" ry="1.8" transform="rotate(-20.8 25.9 13.8)" stroke="#FDE047" stroke-width="1"/>'
     + '<path d="M17.6 43.6C20.5 34 26.2 28 28.9 30.8" stroke="#FF6B8B" stroke-width="1"/>'   // 앞면
     + '<path d="M28.9 30.8C30.6 32.6 31.4 36 31.6 38.4" stroke="#FF6B8B" stroke-width=".8" stroke-dasharray="1.4 1.2" opacity=".9"/>';   // 뒷면(점선)
+  // 과제 안내 PDF: GitHub Pages 의 docs/ 폴더(예비 주소 /exec 에서도 열리도록 전체 주소)
+  const GUIDE_BASE = "https://blis-logic.github.io/modeling-assessment/docs/";
+  const GUIDES = [["model", "삼각함수·미적분 수학적 모델링 안내", "guide-modeling.pdf"], ["shape", "실생활 도형 디자인 보고서 안내", "guide-shape.pdf"]];
+  const PDF_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 15h6M9 18h4"/></svg>';
   function chooserHTML(shapeOK) {
-    const one = (task, no, title, sub, icon, dis) => `<button type="button" class="t-${task}" data-task="${task}"${dis ? " disabled" : ""}><span class="ci"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg></span><span class="cn">${no}</span><b>${title}</b><small>${sub}</small></button>`;
+    const one = (task, title, sub, icon, dis) => `<button type="button" class="t-${task}" data-task="${task}"${dis ? " disabled" : ""}><span class="ci"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg></span><b>${title}</b><small>${sub}</small></button>`;
     init();
     return `<section style="margin-top:24px"><h2 style="margin:0;font-size:22px">어떤 수행평가를 하나요?</h2><p class="sub" style="margin:6px 0 0">${ME ? esc(ME.name || ME.id) + (ME.role === "teacher" ? " 선생님" : "") + " · " : ""}들어갈 과제를 고르세요. 위쪽의 [과제 바꾸기]로 언제든 다른 과제로 옮겨 갈 수 있습니다.</p>
-  <div class="chooser">${one("model", "1", "삼각함수·미적분 수학적 모델링", "자료를 모아 삼각함수 모델을 만들고, 미분·적분으로 현상을 분석합니다.", ICON_MODEL, false)}
-  ${one("shape", "2", "실생활 도형 디자인 보고서", shapeOK ? "실생활 물체 사진을 좌표평면에 올리고, 이차곡선과 벡터로 모델링해 정확도와 수학적 근거를 씁니다." : "저장 서버가 아직 이 과제를 지원하지 않습니다. 선생님께 알려 주세요.", ICON_SHAPE, !shapeOK)}</div></section>`;
+  <div class="chooser">${one("model", "삼각함수·미적분 수학적 모델링", "자료를 모아 삼각함수 모델을 만들고, 미분·적분으로 현상을 분석합니다.", ICON_MODEL, false)}
+  ${one("shape", "실생활 도형 디자인 보고서", shapeOK ? "실생활 물체 사진을 좌표평면에 올리고, 이차곡선과 벡터로 모델링해 정확도와 수학적 근거를 씁니다." : "저장 서버가 아직 이 과제를 지원하지 않습니다. 선생님께 알려 주세요.", ICON_SHAPE, !shapeOK)}</div>
+  <div class="chooser-guides"><span class="sub">📖 과제 안내 자료</span>${GUIDES.map(([t, l, f]) => `<a class="btn t-${t}" href="${GUIDE_BASE}${f}" target="_blank" rel="noopener">${PDF_ICON}<span>${l} (PDF)</span></a>`).join("")}</div></section>`;
   }
 
   window.Shape = { blank, afterLoad, progress, summary, renderStudent: renderStudentShape, refresh, outputs, dashHTML, renderRoster, renderDetail, spec, chooserHTML,

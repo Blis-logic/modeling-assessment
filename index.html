@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>전문수학 수행평가 도구</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%226%22 fill=%22%234F46E5%22/%3E%3Cpath d=%22M5 18c2.5-9 5.5-12 8-12s4.5 3 6 7%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.2%22 stroke-linecap=%22round%22/%3E%3Cpath d=%22M7 15l9-7M16 8h-3M16 8v3%22 fill=%22none%22 stroke=%22white%22 stroke-width=%221.8%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
-<script src="config.js?v=202611220938"></script>
-<script src="mathtool.js?v=202611220938"></script>
-<script src="shape.js?v=202611220938"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230B1846%22%2F%3E%3Cstop%20offset%3D%22.55%22%20stop-color%3D%22%2305424A%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%2303925A%22%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%2224%22%20height%3D%2224%22%20rx%3D%225.4%22%20fill%3D%22url(%23g)%22%2F%3E%3Cpath%20d%3D%22M2.4%2012h19.2M12%203.6v16.6%22%20stroke%3D%22%23E6F7F1%22%20stroke-width%3D%22.75%22%20opacity%3D%22.9%22%2F%3E%3Cpath%20d%3D%22M3.6%2012c1.4-2.6%202.6-4.3%204-4.3s3%201.6%204.4%204.3%202.8%204.3%204.2%204.3%202.6-1.7%203.9-4.3%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.7%22%2F%3E%3Cpath%20d%3D%22M15.9%2018.3l1.4%201.5%202.9-2.9%22%20stroke%3D%22%23fff%22%20stroke-width%3D%221.5%22%2F%3E%3C%2Fsvg%3E">
+<script src="config.js?v=202611221300"></script>
+<script src="mathtool.js?v=202611221300"></script>
+<script src="shape.js?v=202611221300"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -356,7 +356,7 @@ a.btn{color:var(--ink)}
 
 /* ── 제목·아이콘 ── */
 .brand{flex-direction:row;align-items:center;gap:11px}
-.brand .logo{width:40px;height:40px;flex:none;border-radius:12px;background:linear-gradient(135deg,#6366F1,#4F46E5 45%,#0EA5E9);display:grid;place-items:center;box-shadow:0 6px 16px -4px rgba(79,70,229,.55)}
+.brand .logo{width:40px;height:40px;flex:none;border-radius:12px;background:linear-gradient(135deg,#0B1846,#05424A 55%,#03925A);display:grid;place-items:center;box-shadow:0 6px 16px -4px rgba(5,66,74,.5)}
 .brand .logo svg{width:26px;height:26px}
 .brand .bt{display:flex;flex-direction:column;line-height:1.25;min-width:0}
 .brand b{font-family:var(--f-body);font-weight:700;font-size:19px;letter-spacing:-.02em;background:linear-gradient(90deg,#4F46E5,#7C3AED 55%,#0EA5E9);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -585,7 +585,7 @@ ul.files li.go:hover{border-color:var(--accent);background:var(--accent-soft)}
 <body>
 <header class="top" id="top">
   <div class="wrap">
-    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M3 21V3" stroke-width="1.6" opacity=".6"/><path d="M5 18c2.5-9 5.5-12 8-12s4.5 3 6 7" stroke-width="2.3"/><path d="M7 15l9-7M16 8h-3.2M16 8v3.2" stroke-width="1.8"/></svg></span><span class="bt"><b>전문수학 수행평가 도구</b><span id="taskName">전문 수학 수행평가</span></span><button class="iconbtn ntbtn" type="button" id="noticeBtn" hidden aria-label="공지" title="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><span class="nbadge" id="noticeBadge" hidden></span></button></div>
+    <div class="brand"><span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.4 12h19.2M12 3.6v16.6" stroke="#E6F7F1" stroke-width=".75" opacity=".9"/><path d="M3.6 12c1.4-2.6 2.6-4.3 4-4.3s3 1.6 4.4 4.3 2.8 4.3 4.2 4.3 2.6-1.7 3.9-4.3" stroke="#fff" stroke-width="1.7"/><path d="M15.9 18.3l1.4 1.5 2.9-2.9" stroke="#fff" stroke-width="1.5"/></svg></span><span class="bt"><b>전문수학 수행평가 도구</b><span id="taskName">전문 수학 수행평가</span></span><button class="iconbtn ntbtn" type="button" id="noticeBtn" hidden aria-label="공지" title="공지"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><span class="nbadge" id="noticeBadge" hidden></span></button></div>
     <div class="seg" id="roleSeg" hidden>
       <button id="roleT" type="button" aria-pressed="true">교사 대시보드</button>
       <button id="roleS" type="button" aria-pressed="false">학생 화면 미리보기</button>
@@ -1288,7 +1288,7 @@ function svgToPng(svg){ return new Promise(res=>{ if(!/^<svg/.test(svg)) return 
 async function makeDoc(doc,id,pdf,acct){ const built=TASK==="shape"?Shape.spec(doc,acct,id):buildSpec(doc,acct), svgs=built.svgs, images=await Promise.all(svgs.map(svgToPng));
   if(built.pngs) images.push(...await built.pngs);   // 도형 과제: 좌표평면 그림(PNG)을 화면에서 그려 보냅니다
   // 긴 수식은 +·− 자리에서 조각 그림 여러 개로 나눠(사이에 폭 없는 빈칸) 문서 칸 안에서 줄이 바뀌게 합니다
-  const spec=JSON.parse(JSON.stringify(built.spec,(k,v)=>typeof v==="string"?v.replace(/\$([^$\n]+?)\$/g,(m,t)=>{ const ps=MathTool.splitLong(t.trim()); return ps.length>1?ps.map(p=>`$${p}$`).join("​"):m; }):v));
+  const spec=JSON.parse(JSON.stringify(built.spec,(k,v)=>typeof v==="string"?MathTool.normalize(v).replace(/\$([^$\n]+?)\$/g,(m,t)=>{ const ps=MathTool.splitLong(t.trim()); return ps.length>1?ps.map(p=>`$${p}$`).join("​"):m; }):v));
   // $LaTeX$ 수식은 그림으로 바꿔 보냅니다 → 문서에 깨지지 않게 들어가고, 그림의 대체 텍스트에 LaTeX 원문이 남습니다
   const texs=[]; JSON.stringify(spec,(k,v)=>{ if(typeof v==="string") MathTool.tokens(v).forEach(t=>texs.push(t.tex)); return v; });
   if(texs.length){ try{ const m=await MathTool.toImages(texs); spec.math={}; Object.keys(m).forEach(tex=>{ spec.math[tex]={i:images.length,w:m[tex].w,h:m[tex].h}; images.push(m[tex].b64); }); }catch(e){} }
@@ -1317,7 +1317,7 @@ async function downloadPdf(btn){ const old=btn.textContent; btn.disabled=true; b
   btn.disabled=false; btn.textContent=old; updateDocSt(); }
 
 /* ───────── 서버 연결 (구글 Apps Script 웹 앱, config.js의 apiUrl) ───────── */
-const APP_VER="202611220938"; // build:0aceab2b  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
+const APP_VER="202611221300"; // build:0d29418a  ← node tools/build-gas.js 가 채웁니다(화면 파일이 바뀔 때만 새 번호)
 const API_URL=String((window.APP_CONFIG&&window.APP_CONFIG.apiUrl)||"").trim();
 let TOKEN=null; try{ TOKEN=localStorage.getItem("mt_token"); }catch(e){}
 const ERR={SESSION:"로그인이 끝났습니다. 다시 로그인해 주세요.",CONSENT_SIGN:"서명을 저장하지 못했습니다. [다시 쓰기]를 누르고 서명해 주세요.",CONSENT_VER:"동의서가 바뀌었습니다. 새로고침한 뒤 다시 동의해 주세요.",CONSENT_AGREE:"동의 칸에 체크해 주세요.",BAD_ID:"학생 아이디는 한글 이름(2~10자)만 쓸 수 있습니다. 영문·숫자·띄어쓰기는 쓸 수 없습니다.",BAD_ID_T:"교사 아이디는 한글·영문·숫자와 _ . - 로 2~20자입니다.",BAD_SID:"학번은 숫자 5자리로 써 주세요 (예: 20421).",BAD_PW:"비밀번호는 4자 이상이어야 합니다.",DUP_ID:"같은 이름으로 이미 가입한 학생이 있습니다. 선생님께 알려 주세요.",
